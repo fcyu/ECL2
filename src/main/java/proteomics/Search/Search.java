@@ -32,7 +32,7 @@ public class Search {
     private Map<Integer, Long> bin_candidate_num_map;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
-    public Search(BuildIndex build_index_obj, Map<String, String> parameter_map) throws Exception {
+    public Search(BuildIndex build_index_obj, Map<String, String> parameter_map) {
         this.build_index_obj = build_index_obj;
         chain_entry_map = build_index_obj.getSeqEntryMap();
         fix_mod_map = build_index_obj.getFixModMap();

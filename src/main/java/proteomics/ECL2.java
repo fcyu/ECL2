@@ -33,7 +33,7 @@ public class ECL2 {
     public static boolean debug;
     public static boolean dev;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         // Process inputs
         if (args.length != 2) {
             help();
@@ -197,7 +197,7 @@ public class ECL2 {
         logger.info("Done.");
     }
 
-    private static void saveTargetResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra) throws Exception {
+    private static void saveTargetResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra) {
         try {
             BufferedWriter writer;
             if (is_intra) {
@@ -241,7 +241,7 @@ public class ECL2 {
         }
     }
 
-    private static void saveDecoyResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra) throws Exception {
+    private static void saveDecoyResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra) {
         try {
             BufferedWriter writer;
             if (is_intra) {

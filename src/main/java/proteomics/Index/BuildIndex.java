@@ -34,7 +34,7 @@ public class BuildIndex {
     private TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map = new TreeMap<>();
     private Set<String> for_check_duplicate = new HashSet<>();
 
-    public BuildIndex(Map<String, String> parameter_map) throws Exception {
+    public BuildIndex(Map<String, String> parameter_map) {
         // initialize parameters
         int min_chain_length = Integer.valueOf(parameter_map.get("min_chain_length")) + 2; // n and c are counted in the sequence
         int max_chain_length = Integer.valueOf(parameter_map.get("max_chain_length")) + 2; // n and c are counted in the sequence
