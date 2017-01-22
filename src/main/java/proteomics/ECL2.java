@@ -157,8 +157,6 @@ public class ECL2 {
                     System.exit(1);
                 }
             }
-
-            System.gc();
         }
 
         // shutdown threads

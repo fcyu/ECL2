@@ -55,8 +55,6 @@ public class SearchWrap implements Callable<List<FinalResultEntry>> {
                         }
                     }
                 }
-
-                System.gc();
                 return outputList;
             }
         } catch (Exception ex) {
