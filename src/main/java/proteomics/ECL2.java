@@ -99,57 +99,56 @@ public class ECL2 {
 
         logger.info("Useful MS/MS spectra number: {}", num_spectrum_map.size());
 
+        logger.info("Start searching...");
+
         int thread_num = Integer.valueOf(parameter_map.get("thread_num"));
         if (thread_num == 0) {
             thread_num = 1 + Runtime.getRuntime().availableProcessors();
         }
         ExecutorService thread_pool = Executors.newFixedThreadPool(thread_num);
-
         Set<FinalResultEntry> final_search_results = new HashSet<>();
-
         Search search_obj = new Search(build_index_obj, parameter_map);
-        int start_idx = 0;
-        int end_idx;
-        int batchSize = scanNumArray.length / 20 + 1;
-        while (start_idx < scanNumArray.length) {
-            end_idx = Math.min(start_idx + batchSize, scanNumArray.length);
+        List<Future<FinalResultEntry>> temp_result_list = new LinkedList<>();
+        for (int scanNum : scanNumArray) {
+            temp_result_list.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge)));
+        }
 
-            logger.info("Searching {}%...", String.format("%d", start_idx * 100 / scanNumArray.length));
-
-            // divide and run in parallel
-            int batch_size_2 = (end_idx - start_idx) / thread_num + 1;
-            Collection<SearchWrap> task_list = new LinkedList<>();
-            for (int i = 0; i < thread_num; ++i) {
-                int left_idx = start_idx + i * batch_size_2;
-                int right_idx = Math.min(start_idx + (i + 1) * batch_size_2, end_idx);
-                if (left_idx >= end_idx) {
-                    break;
+        // check progress every minute
+        int lastProgress = 0;
+        try {
+            int count;
+            while (((count = finishedFutureNum(temp_result_list)) < scanNumArray.length) && hasUnfinishedFuture(temp_result_list)) {
+                int progress = count * 20 / scanNumArray.length;
+                if (progress != lastProgress) {
+                    logger.info("Searching {}%...", progress * 5);
+                    lastProgress = progress;
                 }
-
-                Integer[] subScanNumArray = Arrays.copyOfRange(scanNumArray, left_idx, right_idx);
-                task_list.add(new SearchWrap(search_obj, num_spectrum_map, subScanNumArray, build_index_obj, mass_tool_obj, max_common_ion_charge));
+                Thread.sleep(60000);
             }
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+            logger.error(ex.toString());
+            System.exit(1);
+        }
 
-            // record search results and save them to disk for the sake of memory.
-            try {
-                List<Future<Set<FinalResultEntry>>> temp_result_list = thread_pool.invokeAll(task_list);
-                for (Future<Set<FinalResultEntry>> temp_result : temp_result_list) {
-                    if (temp_result.isDone() && !temp_result.isCancelled()) {
-                        if (temp_result.get() != null) {
-                            final_search_results.addAll(temp_result.get());
-                        }
-                    } else {
-                        logger.error("Threads were not finished normally.");
-                        System.exit(1);
+        logger.info("Searching 100%...");
+
+        // record search results and save them to disk for the sake of memory.
+        try {
+            for (Future<FinalResultEntry> temp_result : temp_result_list) {
+                if (temp_result.isDone() && !temp_result.isCancelled()) {
+                    if (temp_result.get() != null) {
+                        final_search_results.add(temp_result.get());
                     }
+                } else {
+                    logger.error("Threads were not finished normally.");
+                    System.exit(1);
                 }
-            } catch (Exception ex) {
-                logger.error(ex.getMessage());
-                ex.printStackTrace();
-                System.exit(1);
             }
-
-            start_idx = end_idx;
+        } catch (Exception ex) {
+            logger.error(ex.getMessage());
+            ex.printStackTrace();
+            System.exit(1);
         }
 
         // shutdown threads
@@ -295,6 +294,25 @@ public class ECL2 {
         picked_result.add(inter_protein_result);
 
         return picked_result;
+    }
+
+    private static int finishedFutureNum(List<Future<FinalResultEntry>> futureList) {
+        int count = 0;
+        for (Future<FinalResultEntry> future : futureList) {
+            if (future.isDone()) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    private static boolean hasUnfinishedFuture(List<Future<FinalResultEntry>> futureList) {
+        for (Future<FinalResultEntry> future : futureList) {
+            if (!future.isDone()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void help() {
