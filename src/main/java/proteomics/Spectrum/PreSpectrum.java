@@ -5,26 +5,23 @@ import proteomics.Types.SparseVector;
 
 import java.util.*;
 
-class PreSpectrum {
+public class PreSpectrum {
 
     private static final float DEFAULT_INTENSITY = 1; // DO NOT change. Otherwise, change the whole project accordingly.
     private static final int XCORR_OFFSET = 75;
 
     private final MassTool mass_tool_obj;
 
-    PreSpectrum(MassTool mass_tool_obj) {
+    public PreSpectrum(MassTool mass_tool_obj) {
         this.mass_tool_obj = mass_tool_obj;
     }
 
-    SparseVector preSpectrum (Map<Double, Double> peaks_map, float precursor_mass) {
-        // normalize
-        TreeMap<Float, Float> temp_map = normalizeSpec(peaks_map, precursor_mass);
-
-        // prepare for XCorr
-        return prepareXcorr(temp_map, precursor_mass);
+    TreeMap<Float, Float> preSpectrum (Map<Double, Double> peaks_map, float precursor_mass) {
+        return normalizeSpec(peaks_map, precursor_mass);
     }
 
-    SparseVector prepareXcorr(TreeMap<Float, Float> pl_map, float precursor_mass) {
+    // prepare for XCorr
+    public SparseVector prepareXcorr(TreeMap<Float, Float> pl_map, float precursor_mass) {
         float[] pl_array = digitizeSpec(pl_map, precursor_mass);
 
         SparseVector xcorr_pl = new SparseVector();

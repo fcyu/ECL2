@@ -3,6 +3,7 @@ package proteomics.Search;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
+import proteomics.Spectrum.PreSpectrum;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.*;
 import proteomics.Index.BuildIndex;
@@ -53,215 +54,176 @@ public class Search {
         Arrays.sort(C13_correction_range);
     }
 
-    HashMap<Integer, ResultEntry> doSearch(NavigableMap<Integer, Set<SpectrumEntry>> bin_spectra_map) throws Exception {
-        // get the necessary max ms1 mass
-        int max_spectrum_mass_bin = bin_spectra_map.lastKey();
-        float max_spectrum_mass = build_index_obj.binToRightMass(max_spectrum_mass_bin);
-        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(max_spectrum_mass + C13_correction_range[C13_correction_range.length - 1] * mass_table.get("C13_DIFF") - build_index_obj.linker_mass) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
+    ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL) {
+        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.precursor_mass + C13_correction_range[C13_correction_range.length - 1] * mass_table.get("C13_DIFF") - build_index_obj.linker_mass) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
-        float min_additional_mass = build_index_obj.binToLeftMass(min_chain_bin_idx) + build_index_obj.linker_mass; // this is the minimum additional mass added to a peptide chain.
 
         if (max_chain_bin_idx < min_chain_bin_idx) {
-            return new HashMap<>();
+            return null;
         }
 
-        Map<Integer, List<DebugEntry>> debug_scan_entry_map = new HashMap<>();
-        Map<Integer, Map<String, Double>> dev_scan_chain_score_map = new HashMap<>();
+        float min_additional_mass = build_index_obj.binToLeftMass(min_chain_bin_idx) + build_index_obj.linker_mass; // this is the minimum additional mass added to a peptide chain.
 
-        Map<SpectrumEntry, TreeMap<Integer, ChainResultEntry>> scan_bin_chain_map = new HashMap<>();
-        for (int bin_idx : bin_seq_map.keySet()) {
-            if (bin_idx > max_chain_bin_idx) {
-                break;
-            }
+        // set MS1 tolerance for further useage.
+        float leftMs1Tol = ms1_tolerance;
+        float rightMs1Tol = ms1_tolerance;
+        if (ms1_tolerance_unit == 1) {
+            leftMs1Tol = spectrumEntry.precursor_mass - (spectrumEntry.precursor_mass / (1 + ms1_tolerance * 1e-6f));
+            rightMs1Tol = (spectrumEntry.precursor_mass / (1 - ms1_tolerance * 1e-6f)) - spectrumEntry.precursor_mass;
+        }
 
-            float bin_left_mass = build_index_obj.binToLeftMass(bin_idx - 1);
-            float left_mass = bin_left_mass + min_additional_mass + C13_correction_range[0] * mass_table.get("C13_DIFF");
-            if (ms1_tolerance_unit == 0) {
-                left_mass -= ms1_tolerance;
+        // for debug
+        List<DebugEntry> debugEntryList = new LinkedList<>();
+        Map<String, Double> devChainScoreMap = new HashMap<>();
+
+        // Scan 1: linear scan
+        TreeMap<Integer, ChainResultEntry> binChainMap = new TreeMap<>();
+        for (int binIdx : bin_seq_map.keySet()) {
+            if (binIdx <= max_chain_bin_idx) {
+                if (spectrumEntry.precursor_mass >= build_index_obj.binToLeftMass(binIdx - 1) + min_additional_mass + C13_correction_range[0] * mass_table.get("C13_DIFF") - leftMs1Tol) {
+                    for (String seq : bin_seq_map.get(binIdx)) {
+                        ChainEntry chainEntry = chain_entry_map.get(seq);
+                        linearScan(spectrumEntry, xcorrPL, chainEntry, binIdx, binChainMap, debugEntryList, devChainScoreMap);
+                    }
+                } else {
+                    break;
+                }
             } else {
-                left_mass -= (left_mass + build_index_obj.binToRightMass(max_chain_bin_idx) + build_index_obj.linker_mass) * ms1_tolerance * 1e-6f;
-            }
-
-            NavigableMap<Integer, Set<SpectrumEntry>> sub_spectra_map = bin_spectra_map.subMap(Math.max(build_index_obj.massToBin(left_mass), bin_spectra_map.firstKey()), true, max_spectrum_mass_bin, true);
-
-            if (sub_spectra_map.isEmpty()) {
-                continue;
-            }
-
-            Set<String> seq_set = bin_seq_map.get(bin_idx);
-            for (String seq : seq_set) {
-                ChainEntry chain_entry = chain_entry_map.get(seq);
-                linearScan(sub_spectra_map, chain_entry, bin_idx, scan_bin_chain_map, debug_scan_entry_map, dev_scan_chain_score_map);
+                break;
             }
         }
 
         // write debug file
         if (ECL2.debug) {
-            for (int scan_num : debug_scan_entry_map.keySet()) {
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".csv"))) {
-                    List<DebugEntry> temp = debug_scan_entry_map.get(scan_num);
-                    Collections.sort(temp, Comparator.reverseOrder());
-                    writer.write("chain,link_site,mass,score\n");
-                    for (DebugEntry t : temp) {
-                        writer.write(String.format("%s,%d,%f,%f\n", t.chain, t.link_site, t.mass, t.score));
-                    }
-                } catch (IOException ex) {
-                    logger.error(ex.getMessage());
-                    ex.printStackTrace();
-                    System.exit(1);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.spectrum_id + ".csv"))) {
+                debugEntryList.sort(Comparator.reverseOrder()); // todo: check
+                writer.write("chain,link_site,mass,score\n");
+                for (DebugEntry t : debugEntryList) {
+                    writer.write(String.format("%s,%d,%f,%f\n", t.chain, t.link_site, t.mass, t.score));
                 }
+            } catch (IOException ex) {
+                logger.error(ex.getMessage());
+                ex.printStackTrace();
+                System.exit(1);
             }
         }
 
-        HashMap<Integer, ResultEntry> scan_result_map = new HashMap<>();
-        for (SpectrumEntry spectrum_entry : scan_bin_chain_map.keySet()) {
-            float max_mass = spectrum_entry.mass_without_linker_mass / 2;
-            float left_tol = ms1_tolerance;
-            float right_tol = ms1_tolerance;
-            if (ms1_tolerance_unit == 1) {
-                left_tol = spectrum_entry.precursor_mass - (spectrum_entry.precursor_mass / (1 + ms1_tolerance * 1e-6f));
-                right_tol = (spectrum_entry.precursor_mass / (1 - ms1_tolerance * 1e-6f)) - spectrum_entry.precursor_mass;
+        // Scan 2: pair peptide-peptide pairs
+        float max_mass = spectrumEntry.mass_without_linker_mass / 2 + rightMs1Tol;
+        int max_v = build_index_obj.massToBin(max_mass) + 1;
+
+        long candidate_num = 0;
+        ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge);
+        for (int idx_1 : binChainMap.keySet()) {
+            if (idx_1 > max_v) {
+                break;
             }
-            max_mass += right_tol;
 
-            int max_v = build_index_obj.massToBin(max_mass) + 1;
+            long bin1_candidate_num = bin_candidate_num_map.get(idx_1);
 
-            long candidate_num = 0;
+            float left_mass_2;
+            float right_mass_2;
+            int left_idx_2;
+            int right_idx_2;
+            NavigableMap<Integer, ChainResultEntry> sub_map = new TreeMap<>();
 
-            TreeMap<Integer, ChainResultEntry> bin_chain_map = scan_bin_chain_map.get(spectrum_entry);
-            for (int idx_1 : bin_chain_map.keySet()) {
-                if (idx_1 > max_v) {
-                    break;
-                }
+            // consider C13 correction from -2 to +1
+            for (int i : C13_correction_range) {
+                left_mass_2 = spectrumEntry.mass_without_linker_mass + i * mass_table.get("C13_DIFF") - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
+                right_mass_2 = spectrumEntry.mass_without_linker_mass + i * mass_table.get("C13_DIFF") - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
+                left_idx_2 = build_index_obj.massToBin(left_mass_2);
+                right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
+                sub_map.putAll(binChainMap.subMap(left_idx_2, true, right_idx_2, true));
+            }
 
-                long bin1_candidate_num = bin_candidate_num_map.get(idx_1);
+            if (!sub_map.isEmpty()) {
+                ChainResultEntry chain_score_entry_1 = binChainMap.get(idx_1);
+                for (int idx_2 : sub_map.keySet()) {
+                    if (idx_1 == idx_2) {
+                        candidate_num += bin1_candidate_num * (bin1_candidate_num + 1) / 2;
+                    } else {
+                        candidate_num += bin1_candidate_num * bin_candidate_num_map.get(idx_2);
+                    }
 
-                float left_mass_2;
-                float right_mass_2;
-                int left_idx_2;
-                int right_idx_2;
-                NavigableMap<Integer, ChainResultEntry> sub_map = new TreeMap<>();
-
-                // consider C13 correction from -2 to +1
-                for (int i : C13_correction_range) {
-                    left_mass_2 = spectrum_entry.mass_without_linker_mass + i * mass_table.get("C13_DIFF") - build_index_obj.binToRightMass(idx_1) - left_tol;
-                    right_mass_2 = spectrum_entry.mass_without_linker_mass + i * mass_table.get("C13_DIFF") - build_index_obj.binToLeftMass(idx_1) + right_tol;
-                    left_idx_2 = build_index_obj.massToBin(left_mass_2);
-                    right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
-                    sub_map.putAll(bin_chain_map.subMap(left_idx_2, true, right_idx_2, true));
-                }
-
-                if (!sub_map.isEmpty()) {
-                    ChainResultEntry chain_score_entry_1 = bin_chain_map.get(idx_1);
-                    for (int idx_2 : sub_map.keySet()) {
-                        if (idx_1 == idx_2) {
-                            candidate_num += bin1_candidate_num * (bin1_candidate_num + 1) / 2;
-                        } else {
-                            candidate_num += bin1_candidate_num * bin_candidate_num_map.get(idx_2);
-                        }
-
-                        ChainResultEntry chain_score_entry_2 = bin_chain_map.get(idx_2);
-                        double score = 0;
-                        if (chain_score_entry_1.getNormalizedSeq().contentEquals(chain_score_entry_2.getNormalizedSeq())) {
-                            if (consider_two_identical_chains) {
-                                score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
-                            }
-                        } else {
+                    ChainResultEntry chain_score_entry_2 = binChainMap.get(idx_2);
+                    double score = 0;
+                    if (chain_score_entry_1.getNormalizedSeq().contentEquals(chain_score_entry_2.getNormalizedSeq())) {
+                        if (consider_two_identical_chains) {
                             score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
                         }
+                    } else {
+                        score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
+                    }
 
-                        double second_score = 0;
-                        double temp_1 = -1;
-                        if (chain_score_entry_1.getSecondSeq() != null) {
-                            if (chain_score_entry_1.getNormalizedSecondSeq().contentEquals(chain_score_entry_2.getNormalizedSeq())) {
-                                if (consider_two_identical_chains) {
-                                    temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
-                                }
-                            } else {
+                    // calculate second score
+                    double second_score = 0;
+                    double temp_1 = -1;
+                    if (chain_score_entry_1.getSecondSeq() != null) {
+                        if (chain_score_entry_1.getNormalizedSecondSeq().contentEquals(chain_score_entry_2.getNormalizedSeq())) {
+                            if (consider_two_identical_chains) {
                                 temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
                             }
+                        } else {
+                            temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
                         }
-                        double temp_2 = -1;
-                        if (chain_score_entry_2.getSecondSeq() != null) {
-                            if (chain_score_entry_1.getNormalizedSeq().contentEquals(chain_score_entry_2.getNormalizedSecondSeq())) {
-                                if (consider_two_identical_chains) {
-                                    temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
-                                }
-                            } else {
+                    }
+                    double temp_2 = -1;
+                    if (chain_score_entry_2.getSecondSeq() != null) {
+                        if (chain_score_entry_1.getNormalizedSeq().contentEquals(chain_score_entry_2.getNormalizedSecondSeq())) {
+                            if (consider_two_identical_chains) {
                                 temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
                             }
-                        }
-
-                        if (temp_1 > 0) {
-                            if (temp_1 >= temp_2) {
-                                second_score = temp_1;
-                            }
-                        } else if (temp_2 > 0) {
-                            if (temp_2 > temp_1) {
-                                second_score = temp_2;
-                            }
-                        }
-
-                        if (scan_result_map.containsKey(spectrum_entry.scan_num)) {
-                            ResultEntry result_entry = scan_result_map.get(spectrum_entry.scan_num);
-                            if (ECL2.cal_evalue && (result_entry.getScoreCount() < ECL2.score_point_t)) {
-                                for (double s1 : chain_score_entry_1.getScoreList()) {
-                                    for (double s2 : chain_score_entry_2.getScoreList()) {
-                                        result_entry.addToScoreHistogram(s1 + s2);
-                                    }
-                                }
-                            }
-                            if (score > result_entry.getScore()) {
-                                result_entry.setSecondScore(Math.max(result_entry.getScore(), second_score));
-                                result_entry.setScore(score);
-                                result_entry.setChain1(chain_score_entry_1.getSeq());
-                                result_entry.setChain2(chain_score_entry_2.getSeq());
-                                result_entry.setLinkSite1(chain_score_entry_1.getLinkSite());
-                                result_entry.setLinkSite2(chain_score_entry_2.getLinkSite());
-                            } else if (Math.max(score, second_score) > result_entry.getSecondScore()) {
-                                result_entry.setSecondScore(Math.max(score, second_score));
-                            }
                         } else {
-                            ResultEntry result_entry = new ResultEntry(spectrum_entry.spectrum_id, spectrum_entry.precursor_mz, spectrum_entry.precursor_mass, spectrum_entry.rt, spectrum_entry.precursor_charge);
-                            if (ECL2.cal_evalue && (result_entry.getScoreCount() < ECL2.score_point_t)) {
-                                for (double s1 : chain_score_entry_1.getScoreList()) {
-                                    for (double s2 : chain_score_entry_2.getScoreList()) {
-                                        result_entry.addToScoreHistogram(s1 + s2);
-                                    }
-                                }
-                            }
-                            result_entry.setScore(score);
-                            result_entry.setSecondScore(second_score);
-                            result_entry.setChain1(chain_score_entry_1.getSeq());
-                            result_entry.setChain2(chain_score_entry_2.getSeq());
-                            result_entry.setLinkSite1(chain_score_entry_1.getLinkSite());
-                            result_entry.setLinkSite2(chain_score_entry_2.getLinkSite());
-                            scan_result_map.put(spectrum_entry.scan_num, result_entry);
+                            temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
                         }
+                    }
+
+                    if (temp_1 > 0) {
+                        if (temp_1 >= temp_2) {
+                            second_score = temp_1;
+                        }
+                    } else if (temp_2 > 0) {
+                        if (temp_2 > temp_1) {
+                            second_score = temp_2;
+                        }
+                    }
+
+                    if (ECL2.cal_evalue && (resultEntry.getScoreCount() < ECL2.score_point_t)) {
+                        for (double s1 : chain_score_entry_1.getScoreList()) {
+                            for (double s2 : chain_score_entry_2.getScoreList()) {
+                                resultEntry.addToScoreHistogram(s1 + s2);
+                            }
+                        }
+                    }
+                    if (score > resultEntry.getScore()) {
+                        resultEntry.setSecondScore(Math.max(resultEntry.getScore(), second_score));
+                        resultEntry.setScore(score);
+                        resultEntry.setChain1(chain_score_entry_1.getSeq());
+                        resultEntry.setChain2(chain_score_entry_2.getSeq());
+                        resultEntry.setLinkSite1(chain_score_entry_1.getLinkSite());
+                        resultEntry.setLinkSite2(chain_score_entry_2.getLinkSite());
+                    } else if (Math.max(score, second_score) > resultEntry.getSecondScore()) {
+                        resultEntry.setSecondScore(Math.max(score, second_score));
                     }
                 }
             }
-
-            // set candidate number
-            if (scan_result_map.containsKey(spectrum_entry.scan_num)) {
-                scan_result_map.get(spectrum_entry.scan_num).setCandidateNum(candidate_num);
-            }
-
-            if (ECL2.dev) {
-                if (scan_result_map.containsKey(spectrum_entry.scan_num)) {
-                    ResultEntry result_entry = scan_result_map.get(spectrum_entry.scan_num);
-                    Map<String, Double> chain_score_map = dev_scan_chain_score_map.get(spectrum_entry.scan_num);
-                    Double chain_score_1 = chain_score_map.get(result_entry.getChain1() + "-" + result_entry.getLinkSite1());
-                    Double chain_score_2 = chain_score_map.get(result_entry.getChain2() + "-" + result_entry.getLinkSite2());
-                    List<Double> scores = new LinkedList<>(chain_score_map.values());
-                    Collections.sort(scores, Comparator.reverseOrder());
-                    int chain_rank_1 = scores.indexOf(chain_score_1) + 1;
-                    int chain_rank_2 = scores.indexOf(chain_score_2) + 1;
-                    result_entry.setChainDetails(chain_score_1, chain_rank_1, chain_score_2, chain_rank_2);
-                }
-            }
         }
-        return scan_result_map;
+
+        // set candidate number
+        resultEntry.setCandidateNum(candidate_num);
+
+        if (ECL2.dev) {
+            // get ranks of each chain
+            Double chain_score_1 = devChainScoreMap.get(resultEntry.getChain1() + "-" + resultEntry.getLinkSite1());
+            Double chain_score_2 = devChainScoreMap.get(resultEntry.getChain2() + "-" + resultEntry.getLinkSite2());
+            List<Double> scores = new LinkedList<>(devChainScoreMap.values());
+            scores.sort(Comparator.reverseOrder());
+            int chain_rank_1 = scores.indexOf(chain_score_1) + 1;
+            int chain_rank_2 = scores.indexOf(chain_score_2) + 1;
+            resultEntry.setChainDetails(chain_score_1, chain_rank_1, chain_score_2, chain_rank_2);
+        }
+
+        return resultEntry;
     }
 
     public FinalResultEntry convertResultEntry(int scanNum, ResultEntry result_entry) {
@@ -326,80 +288,45 @@ public class Search {
         return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), pro_1, final_seq_2, result_entry.getLinkSite2(), pro_2, cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum());
     }
 
-    private void linearScan(NavigableMap<Integer, Set<SpectrumEntry>> sub_spectra_map, ChainEntry chain_entry, int chain_bin_idx, Map<SpectrumEntry, TreeMap<Integer, ChainResultEntry>> scan_bin_chain_map, Map<Integer, List<DebugEntry>> debug_scan_entry_map, Map<Integer, Map<String, Double>> dev_scan_chain_score_map) {
-        for (int spectra_bin_idx : sub_spectra_map.keySet()) {
-            Map<Float, SparseBooleanVector> massVectorMap = new HashMap<>();
-            for (int link_site_1 : chain_entry.link_site_set) {
-                for (SpectrumEntry spectrum_entry : sub_spectra_map.get(spectra_bin_idx)) {
-                    SparseBooleanVector theo_mz;
-                    if (massVectorMap.containsKey(spectrum_entry.precursor_mass)) {
-                        theo_mz = massVectorMap.get(spectrum_entry.precursor_mass);
-                    } else {
-                        int precursor_charge = spectrum_entry.precursor_charge;
-                        theo_mz = mass_tool_obj.buildVector(mass_tool_obj.buildPseudoCLIonArray(chain_entry.chain_ion_array, link_site_1, max_common_ion_charge, spectrum_entry.precursor_mass - chain_entry.chain_mass, precursor_charge), precursor_charge);
-                    }
+    private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
+        for (int link_site_1 : chainEntry.link_site_set) {
+            int precursor_charge = spectrumEntry.precursor_charge;
+            SparseBooleanVector theo_mz = mass_tool_obj.buildVector(mass_tool_obj.buildPseudoCLIonArray(chainEntry.chain_ion_array, link_site_1, max_common_ion_charge, spectrumEntry.precursor_mass - chainEntry.chain_mass, precursor_charge), precursor_charge);
 
-                    // Calculate dot produce
-                    double dot_product = theo_mz.dot(spectrum_entry.pl_map_xcorr) * 0.25;
+            // Calculate dot produce
+            double dot_product = theo_mz.dot(xcorrPL) * 0.25;
 
-                    if (ECL2.debug) {
-                        if (debug_scan_entry_map.containsKey(spectrum_entry.scan_num)) {
-                            debug_scan_entry_map.get(spectrum_entry.scan_num).add(new DebugEntry(chain_entry.seq, link_site_1, chain_entry.chain_mass, dot_product));
-                        } else {
-                            List<DebugEntry> temp = new LinkedList<>();
-                            temp.add(new DebugEntry(chain_entry.seq, link_site_1, chain_entry.chain_mass, dot_product));
-                            debug_scan_entry_map.put(spectrum_entry.scan_num, temp);
-                        }
-                    }
+            if (ECL2.debug) {
+                debugEntryList.add(new DebugEntry(chainEntry.seq, link_site_1, chainEntry.chain_mass, dot_product));
+            }
 
-                    if (ECL2.dev && (dot_product > single_chain_t)) {
-                        if (dev_scan_chain_score_map.containsKey(spectrum_entry.scan_num)) {
-                            dev_scan_chain_score_map.get(spectrum_entry.scan_num).put(chain_entry.seq + "-" + link_site_1, dot_product);
-                        } else {
-                            Map<String, Double> temp_map = new HashMap<>();
-                            temp_map.put(chain_entry.seq + "-" + link_site_1, dot_product);
-                            dev_scan_chain_score_map.put(spectrum_entry.scan_num, temp_map);
-                        }
-                    }
+            if (ECL2.dev && (dot_product > single_chain_t)) {
+                devChainScoreMap.put(chainEntry.seq + "-" + link_site_1, dot_product);
+            }
 
-                    // Record result
-                    if (dot_product > single_chain_t) {
-                        if (scan_bin_chain_map.containsKey(spectrum_entry)) {
-                            Map<Integer, ChainResultEntry> temp_map = scan_bin_chain_map.get(spectrum_entry);
-                            if (temp_map.containsKey(chain_bin_idx)) {
-                                ChainResultEntry chain_result_entry = temp_map.get(chain_bin_idx);
-                                chain_result_entry.addToScoreList(dot_product);
-                                if (dot_product > chain_result_entry.getScore()) {
-                                    chain_result_entry.setSecondScore(chain_result_entry.getScore());
-                                    chain_result_entry.setSecondSeq(chain_result_entry.getSeq());
-                                    chain_result_entry.setScore(dot_product);
-                                    chain_result_entry.setSeq(chain_entry.seq);
-                                    chain_result_entry.setLinkSite(link_site_1);
-                                } else if (dot_product > chain_result_entry.getSecondScore()) {
-                                    chain_result_entry.setSecondScore(dot_product);
-                                    chain_result_entry.setSecondSeq(chain_entry.seq);
-                                }
-                            } else {
-                                ChainResultEntry chain_result_entry = new ChainResultEntry();
-                                chain_result_entry.addToScoreList(dot_product);
-                                chain_result_entry.setSeq(chain_entry.seq);
-                                chain_result_entry.setLinkSite(link_site_1);
-                                chain_result_entry.setScore(dot_product);
-                                chain_result_entry.setSecondScore(0);
-                                temp_map.put(chain_bin_idx, chain_result_entry);
-                            }
-                        } else {
-                            TreeMap<Integer, ChainResultEntry> temp_map = new TreeMap<>();
-                            ChainResultEntry chain_result_entry = new ChainResultEntry();
-                            chain_result_entry.addToScoreList(dot_product);
-                            chain_result_entry.setSeq(chain_entry.seq);
-                            chain_result_entry.setLinkSite(link_site_1);
-                            chain_result_entry.setScore(dot_product);
-                            chain_result_entry.setSecondScore(0);
-                            temp_map.put(chain_bin_idx, chain_result_entry);
-                            scan_bin_chain_map.put(spectrum_entry, temp_map);
-                        }
+            // Record result
+            if (dot_product > single_chain_t) {
+                if (binChainMap.containsKey(binInx)) {
+                    ChainResultEntry chain_result_entry = binChainMap.get(binInx);
+                    chain_result_entry.addToScoreList(dot_product);
+                    if (dot_product > chain_result_entry.getScore()) {
+                        chain_result_entry.setSecondScore(chain_result_entry.getScore());
+                        chain_result_entry.setSecondSeq(chain_result_entry.getSeq());
+                        chain_result_entry.setScore(dot_product);
+                        chain_result_entry.setSeq(chainEntry.seq);
+                        chain_result_entry.setLinkSite(link_site_1);
+                    } else if (dot_product > chain_result_entry.getSecondScore()) {
+                        chain_result_entry.setSecondScore(dot_product);
+                        chain_result_entry.setSecondSeq(chainEntry.seq);
                     }
+                } else {
+                    ChainResultEntry chain_result_entry = new ChainResultEntry();
+                    chain_result_entry.addToScoreList(dot_product);
+                    chain_result_entry.setSeq(chainEntry.seq);
+                    chain_result_entry.setLinkSite(link_site_1);
+                    chain_result_entry.setScore(dot_product);
+                    chain_result_entry.setSecondScore(0);
+                    binChainMap.put(binInx, chain_result_entry);
                 }
             }
         }

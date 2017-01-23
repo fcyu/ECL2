@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import proteomics.Index.BuildIndex;
 import proteomics.Parameter.Parameter;
 import proteomics.Search.SearchWrap;
-import proteomics.Spectrum.FilterSpectra;
 import proteomics.Types.FinalResultEntry;
 import proteomics.Search.Search;
 import proteomics.Spectrum.PreSpectra;
@@ -28,7 +27,7 @@ public class ECL2 {
     public static final int random_score_point_t = 2;
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
-    private static final String version = "2.0.0";
+    private static final String version = "2.1.0";
 
     public static boolean debug;
     public static boolean dev;
@@ -51,7 +50,6 @@ public class ECL2 {
         // Get the parameter map
         Parameter parameter = new Parameter(parameter_path);
         Map<String, String> parameter_map = parameter.returnParameterMap();
-        int batch_size = Integer.valueOf(parameter_map.get("batch_size"));
         int max_common_ion_charge = Integer.valueOf(parameter_map.get("max_common_ion_charge"));
 
         debug = parameter_map.get("debug").contentEquals("1");
@@ -94,10 +92,12 @@ public class ECL2 {
             System.exit(1);
         }
 
-        FilterSpectra filter_spectra_obj = new FilterSpectra(spectra_parser, parameter_map, mass_tool_obj.getMassTable());
-        FilterSpectra.MassScan[] scan_num_array = filter_spectra_obj.getScanNumArray();
+        PreSpectra pre_spectra_obj = new PreSpectra(spectra_parser, build_index_obj, parameter_map, mass_tool_obj);
+        Map<Integer, SpectrumEntry> num_spectrum_map = pre_spectra_obj.getNumSpectrumMap();
+        Integer[] scanNumArray = num_spectrum_map.keySet().toArray(new Integer[num_spectrum_map.size()]);
+        Arrays.sort(scanNumArray);
 
-        logger.info("Useful MS/MS spectra number: {}", scan_num_array.length);
+        logger.info("Useful MS/MS spectra number: {}", num_spectrum_map.size());
 
         int thread_num = Integer.valueOf(parameter_map.get("thread_num"));
         if (thread_num == 0) {
@@ -105,58 +105,51 @@ public class ECL2 {
         }
         ExecutorService thread_pool = Executors.newFixedThreadPool(thread_num);
 
-        List<FinalResultEntry> final_search_results = new LinkedList<>();
+        Set<FinalResultEntry> final_search_results = new HashSet<>();
 
         Search search_obj = new Search(build_index_obj, parameter_map);
-        int start_idx;
-        int end_idx = 0;
-        while (end_idx < scan_num_array.length) {
-            start_idx = end_idx;
-            end_idx = Math.min(start_idx + batch_size, scan_num_array.length);
+        int start_idx = 0;
+        int end_idx;
+        int batchSize = scanNumArray.length / 20 + 1;
+        while (start_idx < scanNumArray.length) {
+            end_idx = Math.min(start_idx + batchSize, scanNumArray.length);
 
-            logger.info("Searching batch {} - {} ({}%)...", start_idx, end_idx, String.format("%.1f", (float) end_idx * 100 / (float) scan_num_array.length));
-            PreSpectra pre_spectra_obj = new PreSpectra(spectra_parser, build_index_obj, parameter_map, mass_tool_obj, scan_num_array, start_idx, end_idx);
-            TreeMap<Integer, Set<SpectrumEntry>> bin_spectra_map = pre_spectra_obj.returnMassNumMap();
-            Map<Integer, SpectrumEntry> num_spectrum_map = pre_spectra_obj.getNumSpectrumMap();
+            logger.info("Searching {}%...", String.format("%d", start_idx * 100 / scanNumArray.length));
 
-            if (!bin_spectra_map.isEmpty()) {
-                // divide and run in parallel
-                int batch_size_2 = (bin_spectra_map.size() / thread_num) + 1;
-                Integer[] bin_array = bin_spectra_map.keySet().toArray(new Integer[bin_spectra_map.size()]);
-                Collection<SearchWrap> task_list = new LinkedList<>();
-                for (int i = 0; i < thread_num; ++i) {
-                    int left_idx = i * batch_size_2;
-                    int right_idx = Math.min((i + 1) * batch_size_2, bin_array.length - 1);
-                    if (left_idx > bin_array.length - 1) {
-                        break;
-                    }
-
-                    if (right_idx < bin_array.length - 1) {
-                        task_list.add(new SearchWrap(search_obj, bin_spectra_map.subMap(bin_array[left_idx], true, bin_array[right_idx], false), num_spectrum_map, build_index_obj, mass_tool_obj, max_common_ion_charge));
-                    } else {
-                        task_list.add(new SearchWrap(search_obj, bin_spectra_map.subMap(bin_array[left_idx], true, bin_array[right_idx], true), num_spectrum_map, build_index_obj, mass_tool_obj, max_common_ion_charge));
-                    }
+            // divide and run in parallel
+            int batch_size_2 = (end_idx - start_idx) / thread_num + 1;
+            Collection<SearchWrap> task_list = new LinkedList<>();
+            for (int i = 0; i < thread_num; ++i) {
+                int left_idx = start_idx + i * batch_size_2;
+                int right_idx = Math.min(start_idx + (i + 1) * batch_size_2, end_idx);
+                if (left_idx >= end_idx) {
+                    break;
                 }
 
-                // record search results and save them to disk for the sake of memory.
-                try {
-                    List<Future<List<FinalResultEntry>>> temp_result_list = thread_pool.invokeAll(task_list);
-                    for (Future<List<FinalResultEntry>> temp_result : temp_result_list) {
-                        if (temp_result.isDone() && !temp_result.isCancelled()) {
-                            if (temp_result.get() != null) {
-                                final_search_results.addAll(temp_result.get());
-                            }
-                        } else {
-                            logger.error("Threads were not finished normally.");
-                            System.exit(1);
-                        }
-                    }
-                } catch (Exception ex) {
-                    logger.error(ex.getMessage());
-                    ex.printStackTrace();
-                    System.exit(1);
-                }
+                Integer[] subScanNumArray = Arrays.copyOfRange(scanNumArray, left_idx, right_idx);
+                task_list.add(new SearchWrap(search_obj, num_spectrum_map, subScanNumArray, build_index_obj, mass_tool_obj, max_common_ion_charge));
             }
+
+            // record search results and save them to disk for the sake of memory.
+            try {
+                List<Future<Set<FinalResultEntry>>> temp_result_list = thread_pool.invokeAll(task_list);
+                for (Future<Set<FinalResultEntry>> temp_result : temp_result_list) {
+                    if (temp_result.isDone() && !temp_result.isCancelled()) {
+                        if (temp_result.get() != null) {
+                            final_search_results.addAll(temp_result.get());
+                        }
+                    } else {
+                        logger.error("Threads were not finished normally.");
+                        System.exit(1);
+                    }
+                }
+            } catch (Exception ex) {
+                logger.error(ex.getMessage());
+                ex.printStackTrace();
+                System.exit(1);
+            }
+
+            start_idx = end_idx;
         }
 
         // shutdown threads
@@ -285,7 +278,7 @@ public class ECL2 {
         }
     }
 
-    private static List<List<FinalResultEntry>> pickResult(List<FinalResultEntry> search_result) {
+    private static List<List<FinalResultEntry>> pickResult(Set<FinalResultEntry> search_result) {
         List<List<FinalResultEntry>> picked_result = new LinkedList<>();
         List<FinalResultEntry> inter_protein_result = new LinkedList<>();
         List<FinalResultEntry> intra_protein_result = new LinkedList<>();
