@@ -28,6 +28,8 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
     public final double negative_log10_evalue;
     public float qvalue = -1;
 
+    private final String toString;
+
     public final long candidate_num;
 
     public int point_count;
@@ -88,6 +90,8 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
         this.chain_rank_2 = chain_rank_2;
 
         this.candidate_num = candidate_num;
+
+        toString = scan_num + "-" + seq_1 + "-" + link_site_1 + "-" + seq_2 + link_site_2;
     }
 
     public int compareTo(FinalResultEntry other) {
@@ -108,5 +112,9 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
                 return 0;
             }
         }
+    }
+
+    public int hashCode() {
+        return toString.hashCode();
     }
 }

@@ -105,7 +105,7 @@ public class ECL2 {
         }
         ExecutorService thread_pool = Executors.newFixedThreadPool(thread_num);
 
-        List<FinalResultEntry> final_search_results = new LinkedList<>();
+        Set<FinalResultEntry> final_search_results = new HashSet<>();
 
         Search search_obj = new Search(build_index_obj, parameter_map);
         int start_idx = 0;
@@ -132,8 +132,8 @@ public class ECL2 {
 
             // record search results and save them to disk for the sake of memory.
             try {
-                List<Future<List<FinalResultEntry>>> temp_result_list = thread_pool.invokeAll(task_list);
-                for (Future<List<FinalResultEntry>> temp_result : temp_result_list) {
+                List<Future<Set<FinalResultEntry>>> temp_result_list = thread_pool.invokeAll(task_list);
+                for (Future<Set<FinalResultEntry>> temp_result : temp_result_list) {
                     if (temp_result.isDone() && !temp_result.isCancelled()) {
                         if (temp_result.get() != null) {
                             final_search_results.addAll(temp_result.get());
@@ -278,7 +278,7 @@ public class ECL2 {
         }
     }
 
-    private static List<List<FinalResultEntry>> pickResult(List<FinalResultEntry> search_result) {
+    private static List<List<FinalResultEntry>> pickResult(Set<FinalResultEntry> search_result) {
         List<List<FinalResultEntry>> picked_result = new LinkedList<>();
         List<FinalResultEntry> inter_protein_result = new LinkedList<>();
         List<FinalResultEntry> intra_protein_result = new LinkedList<>();

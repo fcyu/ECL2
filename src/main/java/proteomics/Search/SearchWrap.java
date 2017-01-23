@@ -14,7 +14,7 @@ import proteomics.Types.SpectrumEntry;
 import java.util.*;
 import java.util.concurrent.Callable;
 
-public class SearchWrap implements Callable<List<FinalResultEntry>> {
+public class SearchWrap implements Callable<Set<FinalResultEntry>> {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchWrap.class);
 
@@ -37,8 +37,8 @@ public class SearchWrap implements Callable<List<FinalResultEntry>> {
     }
 
     @Override
-    public List<FinalResultEntry> call() {
-        List<FinalResultEntry> outputList = new LinkedList<>();
+    public Set<FinalResultEntry> call() {
+        Set<FinalResultEntry> outputList = new HashSet<>();
         for (int scanNum : scanNumArray) {
             SpectrumEntry spectrumEntry = numSpectrumMap.get(scanNum);
             SparseVector xcorrPL = preSpectrumObj.prepareXcorr(spectrumEntry.originalPlMap, spectrumEntry.precursor_mass);
