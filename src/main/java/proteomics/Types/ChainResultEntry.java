@@ -8,9 +8,9 @@ import java.util.List;
 public class ChainResultEntry implements Comparable<ChainResultEntry>{
 
     private String seq;
-    private String normalized_seq;
+    private String ptmFreeSeq;
     private String second_seq;
-    private String normalized_second_seq;
+    private String secondPtmFreeSeq;
     private int link_site;
     private double score;
     private double second_score;
@@ -20,12 +20,12 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
 
     public void setSeq(String seq) {
         this.seq = seq;
-        normalized_seq = seq.replaceAll("I", "L").replaceAll("K", "Q");
+        ptmFreeSeq = seq.replaceAll("[^A-Z]", "");
     }
 
     public void setSecondSeq(String second_seq) {
         this.second_seq = second_seq;
-        normalized_second_seq = second_seq.replaceAll("I", "L").replaceAll("K", "Q");
+        secondPtmFreeSeq = second_seq.replaceAll("[^A-Z]", "");
     }
 
     public void addToScoreList(double score) {
@@ -50,16 +50,16 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
         return seq;
     }
 
-    public String getNormalizedSeq() {
-        return normalized_seq;
+    public String getPtmFreeSeq() {
+        return ptmFreeSeq;
     }
 
     public String getSecondSeq() {
         return second_seq;
     }
 
-    public String getNormalizedSecondSeq() {
-        return normalized_second_seq;
+    public String getSecondPtmFreeSeq() {
+        return secondPtmFreeSeq;
     }
 
     public int getLinkSite() {

@@ -3,7 +3,6 @@ package proteomics.Search;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
-import proteomics.Spectrum.PreSpectrum;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.*;
 import proteomics.Index.BuildIndex;
@@ -147,7 +146,7 @@ public class Search {
 
                     ChainResultEntry chain_score_entry_2 = binChainMap.get(idx_2);
                     double score = 0;
-                    if (chain_score_entry_1.getNormalizedSeq().contentEquals(chain_score_entry_2.getNormalizedSeq())) {
+                    if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
                         if (consider_two_identical_chains) {
                             score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
                         }
@@ -159,7 +158,7 @@ public class Search {
                     double second_score = 0;
                     double temp_1 = -1;
                     if (chain_score_entry_1.getSecondSeq() != null) {
-                        if (chain_score_entry_1.getNormalizedSecondSeq().contentEquals(chain_score_entry_2.getNormalizedSeq())) {
+                        if (chain_score_entry_1.getSecondPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
                             if (consider_two_identical_chains) {
                                 temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
                             }
@@ -169,7 +168,7 @@ public class Search {
                     }
                     double temp_2 = -1;
                     if (chain_score_entry_2.getSecondSeq() != null) {
-                        if (chain_score_entry_1.getNormalizedSeq().contentEquals(chain_score_entry_2.getNormalizedSecondSeq())) {
+                        if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getSecondPtmFreeSeq())) {
                             if (consider_two_identical_chains) {
                                 temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
                             }
