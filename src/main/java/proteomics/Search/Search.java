@@ -63,7 +63,7 @@ public class Search {
 
         float min_additional_mass = build_index_obj.binToLeftMass(min_chain_bin_idx) + build_index_obj.linker_mass; // this is the minimum additional mass added to a peptide chain.
 
-        // set MS1 tolerance for further useage.
+        // set MS1 tolerance for further usage.
         float leftMs1Tol = ms1_tolerance;
         float rightMs1Tol = ms1_tolerance;
         if (ms1_tolerance_unit == 1) {
@@ -95,7 +95,7 @@ public class Search {
         // write debug file
         if (ECL2.debug) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.spectrum_id + ".csv"))) {
-                debugEntryList.sort(Comparator.reverseOrder()); // todo: check
+                debugEntryList.sort(Comparator.reverseOrder());
                 writer.write("chain,link_site,mass,score\n");
                 for (DebugEntry t : debugEntryList) {
                     writer.write(String.format("%s,%d,%f,%f\n", t.chain, t.link_site, t.mass, t.score));

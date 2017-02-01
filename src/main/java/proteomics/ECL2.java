@@ -133,7 +133,7 @@ public class ECL2 {
 
         logger.info("Searching 100%...");
 
-        // record search results and save them to disk for the sake of memory.
+        // record search results.
         try {
             for (Future<FinalResultEntry> temp_result : temp_result_list) {
                 if (temp_result.isDone() && !temp_result.isCancelled()) {
