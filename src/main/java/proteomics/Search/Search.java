@@ -98,7 +98,7 @@ public class Search {
                 debugEntryList.sort(Comparator.reverseOrder());
                 writer.write("chain,link_site,mass,score\n");
                 for (DebugEntry t : debugEntryList) {
-                    writer.write(String.format("%s,%d,%f,%f\n", t.chain, t.link_site, t.mass, t.score));
+                    writer.write(String.format("%s,%d,%f,%f\n", addFixMod(t.chain, t.link_site), t.link_site, t.mass, t.score));
                 }
             } catch (IOException ex) {
                 logger.error(ex.getMessage());
