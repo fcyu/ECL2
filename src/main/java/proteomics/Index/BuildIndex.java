@@ -124,7 +124,7 @@ public class BuildIndex {
             Set<String> proIdSet = seq_pro_map.get(seq);
 
             // mod free
-            Set<Integer> linkSiteSet = getLinkSiteSet(seq, proteinNTerm);
+            Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm);
             if (!linkSiteSet.isEmpty()) {
                 AA[] aaList = mass_tool_obj.seqToAAList(seq);
                 float totalMass = mass_tool_obj.calResidueMass(aaList) + mass_table.get("H2O");
@@ -323,7 +323,7 @@ public class BuildIndex {
         return seq_pro_map;
     }
 
-    private Set<String> generateModSeq(String seq, Set<Integer> modFreeListSites, Set<VarModParam> varModParams, int varModMaxNum) { // todo: check
+    private Set<String> generateModSeq(String seq, Set<Short> modFreeListSites, Set<VarModParam> varModParams, int varModMaxNum) { // todo: check
         // get all locations' var lists
         Map<Integer, List<Float>> idxModMassMap = new HashMap<>();
         for (int i = 0; i < seq.length(); ++i) {
@@ -377,7 +377,7 @@ public class BuildIndex {
         return outputList;
     }
 
-    private boolean checkIdxArray(int[] idxArray, Set<Integer> modFreeLinkSites) {
+    private boolean checkIdxArray(int[] idxArray, Set<Short> modFreeLinkSites) {
         for (int modFreeLinkSite : modFreeLinkSites) {
             if (Arrays.binarySearch(idxArray, modFreeLinkSite) < 0) {
                 return true;
@@ -509,16 +509,16 @@ public class BuildIndex {
         }
     }
 
-    private Set<Integer> getLinkSiteSet(String seq, boolean n_term) {
+    private Set<Short> getLinkSiteSet(String seq, boolean n_term) {
         AA[] aa_list = mass_tool_obj.seqToAAList(seq);
-        Set<Integer> output = new HashSet<>();
+        Set<Short> output = new HashSet<>();
         for (int i = 1; i < aa_list.length - 2; ++i) {
             if (aa_list[i].aa.contentEquals("K") && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
-                output.add(i);
+                output.add((short) i);
             }
         }
-        if (n_term && !output.contains(1) && (Math.abs(aa_list[0].delta_mass) < varModMassResolution)) {
-            output.add(0);
+        if (n_term && !output.contains((short) 1) && (Math.abs(aa_list[0].delta_mass) < varModMassResolution)) {
+            output.add((short) 0);
         }
         return output;
     }
