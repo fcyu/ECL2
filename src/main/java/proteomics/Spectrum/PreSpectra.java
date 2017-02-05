@@ -77,7 +77,7 @@ public class PreSpectra {
                 }
 
                 float precursor_mz = spectrum.getPrecursorMZ().floatValue();
-                float precursor_mass = precursor_mz * precursor_charge - precursor_charge * mass_table.get("PROTON");
+                float precursor_mass = precursor_mz * precursor_charge - precursor_charge * 1.00727646688f;
 
                 if ((precursor_mass > max_precursor_mass) || (precursor_mass < min_precursor_mass)) {
                     continue;

@@ -54,7 +54,7 @@ public class Search {
     }
 
     ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL) {
-        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.precursor_mass + C13_correction_range[C13_correction_range.length - 1] * mass_table.get("C13_DIFF") - build_index_obj.linker_mass) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
+        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.precursor_mass + C13_correction_range[C13_correction_range.length - 1] * 1.00335483f - build_index_obj.linker_mass) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
         if (max_chain_bin_idx < min_chain_bin_idx) {
@@ -79,7 +79,7 @@ public class Search {
         TreeMap<Integer, ChainResultEntry> binChainMap = new TreeMap<>();
         for (int binIdx : bin_seq_map.keySet()) {
             if (binIdx <= max_chain_bin_idx) {
-                if (spectrumEntry.precursor_mass >= build_index_obj.binToLeftMass(binIdx - 1) + min_additional_mass + C13_correction_range[0] * mass_table.get("C13_DIFF") - leftMs1Tol) {
+                if (spectrumEntry.precursor_mass >= build_index_obj.binToLeftMass(binIdx - 1) + min_additional_mass + C13_correction_range[0] * 1.00335483f - leftMs1Tol) {
                     for (String seq : bin_seq_map.get(binIdx)) {
                         ChainEntry chainEntry = chain_entry_map.get(seq);
                         linearScan(spectrumEntry, xcorrPL, chainEntry, binIdx, binChainMap, debugEntryList, devChainScoreMap);
@@ -128,8 +128,8 @@ public class Search {
 
             // consider C13 correction from -2 to +1
             for (int i : C13_correction_range) {
-                left_mass_2 = spectrumEntry.mass_without_linker_mass + i * mass_table.get("C13_DIFF") - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
-                right_mass_2 = spectrumEntry.mass_without_linker_mass + i * mass_table.get("C13_DIFF") - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
+                left_mass_2 = spectrumEntry.mass_without_linker_mass + i * 1.00335483f - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
+                right_mass_2 = spectrumEntry.mass_without_linker_mass + i * 1.00335483f - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
                 left_idx_2 = build_index_obj.massToBin(left_mass_2);
                 right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
                 sub_map.putAll(binChainMap.subMap(left_idx_2, true, right_idx_2, true));
@@ -236,7 +236,7 @@ public class Search {
         float theo_mass = chain_entry_1.chain_mass + chain_entry_2.chain_mass + build_index_obj.linker_mass;
 
         int C13_Diff_num = getC13Num(spectrum_mass, theo_mass);
-        spectrum_mass += C13_Diff_num * mass_table.get("C13_DIFF");
+        spectrum_mass += C13_Diff_num * 1.00335483f;
         float ppm = (spectrum_mass - theo_mass) * 1e6f / theo_mass;
 
         String pro_1 = "";
@@ -336,7 +336,7 @@ public class Search {
         int num = 0;
 
         for (int i : C13_correction_range) {
-            float temp = Math.abs(exp_mass + i * mass_table.get("C13_DIFF") - theo_mass);
+            float temp = Math.abs(exp_mass + i * 1.00335483f - theo_mass);
             if (temp < min_diff) {
                 min_diff = temp;
                 num = i;

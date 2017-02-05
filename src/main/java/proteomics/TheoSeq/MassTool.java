@@ -49,10 +49,7 @@ public class MassTool {
         mass_table.put("O", 237.147727f + fix_mod_map.get("O"));
         mass_table.put("n", fix_mod_map.get("n"));
         mass_table.put("c", fix_mod_map.get("c"));
-        mass_table.put("C13_DIFF", 1.00335483f);
         mass_table.put("H2O", 18.010564684f);
-        mass_table.put("NH3", 17.026549106f);
-        mass_table.put("PROTON", 1.00727646688f);
         mass_table.put("Hatom", 1.007825032f);
         mass_table.put("Natom", 14.00307401f);
         mass_table.put("Oatom", 15.99491462f);
