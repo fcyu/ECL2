@@ -513,7 +513,7 @@ public class BuildIndex {
         AA[] aa_list = mass_tool_obj.seqToAAList(seq);
         Set<Short> output = new HashSet<>();
         for (int i = 1; i < aa_list.length - 2; ++i) {
-            if (aa_list[i].aa.contentEquals("K") && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
+            if (aa_list[i].aa == 'K' && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
                 output.add((short) i);
             }
         }

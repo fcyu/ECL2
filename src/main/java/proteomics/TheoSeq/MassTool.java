@@ -189,7 +189,7 @@ public class MassTool {
         Matcher matcher = mod_aa_pattern.matcher(seq);
         List<AA> temp = new LinkedList<>();
         while (matcher.find()) {
-            String aa = matcher.group(1);
+            char aa = matcher.group(1).charAt(0);
             float delta_mass = 0;
             if (matcher.group(3) != null) {
                 delta_mass = Float.valueOf(matcher.group(3));
