@@ -28,16 +28,7 @@ public class ChainEntry {
     public boolean equals(Object other) {
         if (other instanceof ChainEntry) {
             ChainEntry temp = (ChainEntry) other;
-            if (seq.contentEquals(temp.seq) && (Math.abs(chain_mass - temp.chain_mass) <= 0.001) && pro_id.equals(temp.pro_id) && link_site_set.equals(temp.link_site_set) && (n_term == temp.n_term) && (c_term == temp.c_term) && (is_decoy == temp.is_decoy)) {
-                for (int i = 0; i < chain_ion_array.length; ++i) {
-                    if (!Arrays.equals(chain_ion_array[i], temp.chain_ion_array[i])) {
-                        return false;
-                    }
-                }
-                return true;
-            } else {
-                return false;
-            }
+            return seq.contentEquals(temp.seq);
         } else {
             return false;
         }
