@@ -136,7 +136,6 @@ public class BuildIndex {
                         temp.add(seq);
                         bin_seq_map.put(bin, temp);
                     }
-                    float[][] chainIonArray = mass_tool_obj.buildChainIonArray(aaList);
                     ChainEntry chainEntry = new ChainEntry(seq, aaArray, totalMass, linkSiteSet, proteinNTerm, proteinCTerm);
                     seq_entry_map.put(seq, chainEntry);
                 }
@@ -158,7 +157,6 @@ public class BuildIndex {
                             temp.add(varSeq);
                             bin_seq_map.put(bin, temp);
                         }
-                        float[][] chainIonArray = mass_tool_obj.buildChainIonArray(aaArray);
                         ChainEntry chainEntry = new ChainEntry(varSeq, aaArray, totalMass, linkSiteSet, proteinNTerm, proteinCTerm);
                         seq_entry_map.put(varSeq, chainEntry);
                     }

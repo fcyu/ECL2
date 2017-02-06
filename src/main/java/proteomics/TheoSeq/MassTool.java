@@ -86,98 +86,70 @@ public class MassTool {
         return chain_seq_set;
     }
 
-    public float[][] buildChainIonArray(AA[] aa_array) {
-        // [NOTE] The b/y-ions charge 0
-        float[][] chain_ion_array = new float[2 * max_charge][aa_array.length - 2];
-        AA n = aa_array[0];
-        AA c = aa_array[aa_array.length - 1];
-        float b_ion_mass = mass_table.get(n.aa) + n.delta_mass;
-        float y_ion_mass = calResidueMass(aa_array) + mass_table.get("H2O");
-
-        for (int charge = 1; charge <= max_charge; ++charge) {
-            float b_ion_mass_charge = (b_ion_mass + charge * mass_table.get("PROTON")) / charge;
-            float y_ion_mass_charge = (y_ion_mass + charge * mass_table.get("PROTON")) / charge;
-            int charge_idx = charge - 1;
-
-            for (int idx = 1; idx < aa_array.length - 1; ++idx) {
-                // y-ion
-                chain_ion_array[2 * charge_idx + 1][idx - 1] = y_ion_mass_charge;
-
-                AA aa = aa_array[idx];
-
-                // b-ion
-                if (idx == aa_array.length - 2) {
-                    b_ion_mass_charge += (mass_table.get(aa.aa) + aa.delta_mass + mass_table.get(c.aa) + c.delta_mass) / charge;
-                } else {
-                    b_ion_mass_charge += (mass_table.get(aa.aa) + aa.delta_mass) / charge;
-                }
-                chain_ion_array[2 * charge_idx][idx - 1] = b_ion_mass_charge;
-
-                // Calculate next y-ion
-                if (idx == 1) {
-                    y_ion_mass_charge -= (mass_table.get(aa.aa) + aa.delta_mass + mass_table.get(n.aa) + n.delta_mass) / charge;
-                } else {
-                    y_ion_mass_charge -= (mass_table.get(aa.aa) + aa.delta_mass) / charge;
-                }
-            }
-        }
-
-        return chain_ion_array;
-    }
-
-    public Map<String, Float> getMassTable() {
+    public Map<Character, Float> getMassTable() {
         return mass_table;
     }
 
-    public SparseBooleanVector buildVector(float[][] ion_matrix, int precursor_charge) {
-        SparseBooleanVector output_vector = new SparseBooleanVector();
+    public SparseBooleanVector buildTheoVector(AA[] seq, short linkSite, float additional_mass, int precursor_charge, int max_common_ion_charge) {
+        linkSite = (short) Math.max(1, linkSite);
 
-        int max_row = Math.min(max_charge, precursor_charge - 1) * 2;
-        if (precursor_charge == 1) {
-            max_row = 2;
+        int localMaxCharge = Math.min(max_charge, Math.max(precursor_charge - 1, 1));
+        int localMaxCommonIonCharge = Math.min(max_common_ion_charge, localMaxCharge);
+
+        SparseBooleanVector outputVector = new SparseBooleanVector();
+
+        // traverse the sequence to get b-ion
+        float bIonMass = seq[0].delta_mass; // add N-term modification
+        for (int i = 1; i < seq.length - 2; ++i) {
+            bIonMass += mass_table.get(seq[i].aa) + seq[i].delta_mass;
+            if (i < linkSite) {
+                for (int charge = 1; charge <= localMaxCommonIonCharge; ++charge) {
+                    outputVector.put(mzToBin(bIonMass / charge + 1.00727646688f));
+                }
+            } else {
+                for (int charge = 1; charge <= localMaxCharge; ++charge) {
+                    outputVector.put(mzToBin((bIonMass + additional_mass) / charge + 1.00727646688f));
+                }
+            }
+        }
+        // calculate the last b-ion with C-term modification
+        bIonMass +=  mass_table.get(seq[seq.length - 2].aa) + seq[seq.length - 2].delta_mass + mass_table.get(seq[seq.length - 1].aa) + seq[seq.length - 1].delta_mass;
+        for (int charge = 1; charge <= localMaxCharge; ++charge) {
+            outputVector.put(mzToBin((bIonMass + additional_mass) / charge + 1.00727646688f)); // for the fragment containing all amino acids, the additional mass is always included.
         }
 
-        for (int i = 0; i < max_row; ++i) {
-            for (int j = 0; j < ion_matrix[0].length; ++j) {
-                if (ion_matrix[i][j] > 1e-6) {
-                    output_vector.put(mzToBin(ion_matrix[i][j]));
+        // traverse the sequence with reversed order to get y-ion
+        // the whole sequence
+        float yIonMass = bIonMass + H2O;
+        for (int charge = 1; charge <= localMaxCharge; ++charge) {
+            outputVector.put(mzToBin((yIonMass + additional_mass) / charge + 1.00727646688f)); // for the fragment containing all amino acids, the additional mass is always included.
+        }
+        // delete the first amino acid and N-term modification
+        yIonMass -= mass_table.get(seq[0].aa) + seq[0].delta_mass + mass_table.get(seq[1].aa) + seq[1].delta_mass;
+        if (1 >= linkSite) {
+            for (int charge = 1; charge <= localMaxCommonIonCharge; ++charge) {
+                outputVector.put(mzToBin(yIonMass / charge + 1.00727646688f));
+            }
+        } else {
+            for (int charge = 1; charge <= localMaxCharge; ++charge) {
+                outputVector.put(mzToBin((yIonMass + additional_mass) / charge + 1.00727646688f));
+            }
+        }
+        // rest of the sequence
+        for (int i = 2; i < seq.length - 2; ++i) {
+            yIonMass -= mass_table.get(seq[i].aa) + seq[i].delta_mass;
+            if (i >= linkSite) { // caution: here, it is different from b-ion
+                for (int charge = 1; charge <= localMaxCommonIonCharge; ++charge) {
+                    outputVector.put(mzToBin(yIonMass / charge + 1.00727646688f));
+                }
+            } else {
+                for (int charge = 1; charge <= localMaxCharge; ++charge) {
+                    outputVector.put(mzToBin((yIonMass + additional_mass) / charge + 1.00727646688f));
                 }
             }
         }
 
-        return output_vector;
-    }
-
-    public float[][] buildPseudoCLIonArray(float[][] seq_ion, int link_site, int max_common_ion_charge, float additional_mass, int precursor_charge) {
-        int charge = Math.min(precursor_charge - 1, max_charge);
-        float[][] pseudo_cl_ion_array = new float[charge * 2][seq_ion[0].length];
-
-        if (link_site > 0) {
-            link_site -= 1;
-        }
-
-        for (int i = 0; i < charge; ++i) {
-            // common ion
-            if (i < max_common_ion_charge) {
-                System.arraycopy(seq_ion[i * 2], 0, pseudo_cl_ion_array[i * 2], 0, link_site);
-                System.arraycopy(seq_ion[i * 2 + 1], link_site + 1, pseudo_cl_ion_array[i * 2 + 1], link_site + 1, seq_ion[0].length - link_site - 1);
-            }
-
-            // xlink ion
-            float addition_mz = additional_mass / (i + 1);
-            for (int j = 0; j < seq_ion[0].length; ++j) {
-                if (j < link_site) {
-                    pseudo_cl_ion_array[i * 2 + 1][j] = seq_ion[i * 2 + 1][j] + addition_mz;
-                } else if (j == link_site) {
-                    pseudo_cl_ion_array[i * 2][j] = seq_ion[i * 2][j] + addition_mz;
-                    pseudo_cl_ion_array[i * 2 + 1][j] = seq_ion[i * 2 + 1][j] + addition_mz;
-                } else {
-                    pseudo_cl_ion_array[i * 2][j] = seq_ion[i * 2][j] + addition_mz;
-                }
-            }
-        }
-
-        return pseudo_cl_ion_array;
+        return outputVector;
     }
 
     public static AA[] seqToAAList(String seq) {
