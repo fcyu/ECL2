@@ -20,12 +20,12 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
 
     public void setSeq(String seq) {
         this.seq = seq;
-        ptmFreeSeq = seq.replaceAll("[^A-Z]", "");
+        ptmFreeSeq = seq.replaceAll("[^A-Znc]", "");
     }
 
     public void setSecondSeq(String second_seq) {
         this.second_seq = second_seq;
-        secondPtmFreeSeq = second_seq.replaceAll("[^A-Z]", "");
+        secondPtmFreeSeq = second_seq.replaceAll("[^A-Znc]", "");
     }
 
     public void addToScoreList(double score) {
