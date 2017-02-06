@@ -126,8 +126,8 @@ public class BuildIndex {
             // mod free
             Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm);
             if (!linkSiteSet.isEmpty()) {
-                AA[] aaList = mass_tool_obj.seqToAAList(seq);
                 float totalMass = mass_tool_obj.calResidueMass(aaList) + mass_table.get("H2O");
+                AA[] aaArray = MassTool.seqToAAList(seq);
                 if (totalMass < max_precursor_mass - linker_mass) {
                     int bin = massToBin(totalMass);
                     if (bin_seq_map.containsKey(bin)) {
@@ -148,7 +148,7 @@ public class BuildIndex {
             for (String varSeq : varSeqSet) {
                 linkSiteSet = getLinkSiteSet(varSeq, proteinNTerm);
                 if (!linkSiteSet.isEmpty()) {
-                    AA[] aaArray = mass_tool_obj.seqToAAList(varSeq);
+                    AA[] aaArray = MassTool.seqToAAList(varSeq);
                     float totalMass = mass_tool_obj.calResidueMass(aaArray) + mass_table.get("H2O");
                     if (totalMass < max_precursor_mass - linker_mass) {
                         int bin = massToBin(totalMass);
@@ -191,7 +191,7 @@ public class BuildIndex {
                                 int temp_int = mod_free_seq.indexOf('K'); // only use the first K
                                 if ((temp_int != -1) && (temp_int != mod_free_seq.length() - 2)) { // only consider chains whose link site is in the middle.
                                     // consider PTM free
-                                    float mass = mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(mod_free_seq)) + mass_table.get("H2O");
+                                    float mass = mass_tool_obj.calResidueMass(MassTool.seqToAAList(mod_free_seq)) + mass_table.get("H2O");
                                     if (mass < max_precursor_mass - linker_mass) {
                                         if (uniprot_decoy_mass_seq_map.containsKey(mass)) {
                                             if (uniprot_decoy_mass_seq_map.get(mass).size() < ECL2.random_score_point_t) { // limit the size of set for the sake of memory.
@@ -474,10 +474,10 @@ public class BuildIndex {
     private Set<String> checkKCTermMod(Set<String> varSeqSet) { // eliminate those sequence that the middle amino acids having the same mod mass and the n-term and the first amino acid or the c-term and the last amino acid have the same mod mass. todo: check
         String[] varSeqArray = varSeqSet.toArray(new String[varSeqSet.size()]);
         Arrays.sort(varSeqArray); // Make sure that nK[].... is before n[]K..., so that n[]K... will be kept.
-        int seqLength = mass_tool_obj.seqToAAList(varSeqArray[0]).length;
+        int seqLength = MassTool.seqToAAList(varSeqArray[0]).length;
         AA[][] aaArrays = new AA[varSeqArray.length][seqLength];
         for (int i = 0; i < varSeqArray.length; ++i) {
-            aaArrays[i] = mass_tool_obj.seqToAAList(varSeqArray[i]);
+            aaArrays[i] = MassTool.seqToAAList(varSeqArray[i]);
         }
 
         if (aaArrays.length > 1) {
@@ -510,7 +510,7 @@ public class BuildIndex {
     }
 
     private Set<Short> getLinkSiteSet(String seq, boolean n_term) {
-        AA[] aa_list = mass_tool_obj.seqToAAList(seq);
+        AA[] aa_list = MassTool.seqToAAList(seq);
         Set<Short> output = new HashSet<>();
         for (int i = 1; i < aa_list.length - 2; ++i) {
             if (aa_list[i].aa == 'K' && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {

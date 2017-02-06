@@ -347,7 +347,7 @@ public class Search {
     }
 
     private String addFixMod(String seq, int linkSite) {
-        AA[] aaList = mass_tool_obj.seqToAAList(seq);
+        AA[] aaList = MassTool.seqToAAList(seq);
         StringBuilder sb = new StringBuilder(seq.length() * 3);
         for (int i = 0; i < aaList.length; ++i) {
             AA aa = aaList[i];

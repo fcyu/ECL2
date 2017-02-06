@@ -45,7 +45,7 @@ public class MassToolTest {
     @Test
     public void calResidueMass() throws Exception {
         MassTool mass_tool_obj = new MassTool(1, fix_mod_map, "KR", "P", 1.0005f, 0.6f);
-        assertEquals(2503.1357421875, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList("nGASPVTCILNDQKEMHFRYWc")), 0.001);
+        assertEquals(2503.1357421875, mass_tool_obj.calResidueMass(MassTool.seqToAAList("nGASPVTCILNDQKEMHFRYWc")), 0.001);
     }
 
     @Test
@@ -320,12 +320,12 @@ public class MassToolTest {
     public void seqToAAList() {
         MassTool mass_tool_obj = new MassTool(1, fix_mod_map, "KR", "P", 1.0005f, 0.6f);
         String seq = "nGHUKc";
-        AA[] result = mass_tool_obj.seqToAAList(seq);
+        AA[] result = MassTool.seqToAAList(seq);
         AA[] ground_truth = new AA[]{new AA('n', 0), new AA('G', 0), new AA('H', 0), new AA('U', 0), new AA('K', 0), new AA('c', 0)};
         assertArrayEquals(ground_truth, result);
 
         seq = "nGH[3.02]UKc";
-        result = mass_tool_obj.seqToAAList(seq);
+        result = MassTool.seqToAAList(seq);
         ground_truth = new AA[]{new AA('n', 0), new AA('G', 0), new AA('H', 3.02f), new AA('U', 0), new AA('K', 0), new AA('c', 0)};
         assertArrayEquals(ground_truth, result);
     }

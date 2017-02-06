@@ -185,7 +185,7 @@ public class MassTool {
         return pseudo_cl_ion_array;
     }
 
-    public AA[] seqToAAList(String seq) {
+    public static AA[] seqToAAList(String seq) {
         Matcher matcher = mod_aa_pattern.matcher(seq);
         List<AA> temp = new LinkedList<>();
         while (matcher.find()) {
