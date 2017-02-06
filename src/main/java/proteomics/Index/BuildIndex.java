@@ -26,7 +26,7 @@ public class BuildIndex {
 
     private final MassTool mass_tool_obj;
     private final Map<String, String> pro_annotate_map;
-    private Map<String, Float> fix_mod_map = new HashMap<>();
+    private Map<Character, Float> fix_mod_map = new HashMap<>();
     private TreeMap<Integer, Set<String>> bin_seq_map = new TreeMap<>();
     private Map<Integer, Long> bin_candidate_num_map = new HashMap<>();
     private Map<String, ChainEntry> seq_entry_map = new HashMap<>();
@@ -46,37 +46,37 @@ public class BuildIndex {
         float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
 
         // Read fix modification
-        fix_mod_map.put("G", Float.valueOf(parameter_map.get("G")));
-        fix_mod_map.put("A", Float.valueOf(parameter_map.get("A")));
-        fix_mod_map.put("S", Float.valueOf(parameter_map.get("S")));
-        fix_mod_map.put("P", Float.valueOf(parameter_map.get("P")));
-        fix_mod_map.put("V", Float.valueOf(parameter_map.get("V")));
-        fix_mod_map.put("T", Float.valueOf(parameter_map.get("T")));
-        fix_mod_map.put("C", Float.valueOf(parameter_map.get("C")));
-        fix_mod_map.put("I", Float.valueOf(parameter_map.get("I")));
-        fix_mod_map.put("L", Float.valueOf(parameter_map.get("L")));
-        fix_mod_map.put("N", Float.valueOf(parameter_map.get("N")));
-        fix_mod_map.put("D", Float.valueOf(parameter_map.get("D")));
-        fix_mod_map.put("Q", Float.valueOf(parameter_map.get("Q")));
-        fix_mod_map.put("K", Float.valueOf(parameter_map.get("K")));
-        fix_mod_map.put("E", Float.valueOf(parameter_map.get("E")));
-        fix_mod_map.put("M", Float.valueOf(parameter_map.get("M")));
-        fix_mod_map.put("H", Float.valueOf(parameter_map.get("H")));
-        fix_mod_map.put("F", Float.valueOf(parameter_map.get("F")));
-        fix_mod_map.put("R", Float.valueOf(parameter_map.get("R")));
-        fix_mod_map.put("Y", Float.valueOf(parameter_map.get("Y")));
-        fix_mod_map.put("W", Float.valueOf(parameter_map.get("W")));
-        fix_mod_map.put("U", Float.valueOf(parameter_map.get("U")));
-        fix_mod_map.put("O", Float.valueOf(parameter_map.get("O")));
-        fix_mod_map.put("n", Float.valueOf(parameter_map.get("n")));
-        fix_mod_map.put("c", Float.valueOf(parameter_map.get("c")));
+        fix_mod_map.put('G', Float.valueOf(parameter_map.get("G")));
+        fix_mod_map.put('A', Float.valueOf(parameter_map.get("A")));
+        fix_mod_map.put('S', Float.valueOf(parameter_map.get("S")));
+        fix_mod_map.put('P', Float.valueOf(parameter_map.get("P")));
+        fix_mod_map.put('V', Float.valueOf(parameter_map.get("V")));
+        fix_mod_map.put('T', Float.valueOf(parameter_map.get("T")));
+        fix_mod_map.put('C', Float.valueOf(parameter_map.get("C")));
+        fix_mod_map.put('I', Float.valueOf(parameter_map.get("I")));
+        fix_mod_map.put('L', Float.valueOf(parameter_map.get("L")));
+        fix_mod_map.put('N', Float.valueOf(parameter_map.get("N")));
+        fix_mod_map.put('D', Float.valueOf(parameter_map.get("D")));
+        fix_mod_map.put('Q', Float.valueOf(parameter_map.get("Q")));
+        fix_mod_map.put('K', Float.valueOf(parameter_map.get("K")));
+        fix_mod_map.put('E', Float.valueOf(parameter_map.get("E")));
+        fix_mod_map.put('M', Float.valueOf(parameter_map.get("M")));
+        fix_mod_map.put('H', Float.valueOf(parameter_map.get("H")));
+        fix_mod_map.put('F', Float.valueOf(parameter_map.get("F")));
+        fix_mod_map.put('R', Float.valueOf(parameter_map.get("R")));
+        fix_mod_map.put('Y', Float.valueOf(parameter_map.get("Y")));
+        fix_mod_map.put('W', Float.valueOf(parameter_map.get("W")));
+        fix_mod_map.put('U', Float.valueOf(parameter_map.get("U")));
+        fix_mod_map.put('O', Float.valueOf(parameter_map.get("O")));
+        fix_mod_map.put('n', Float.valueOf(parameter_map.get("n")));
+        fix_mod_map.put('c', Float.valueOf(parameter_map.get("c")));
 
-        if (Math.abs(fix_mod_map.get("K") - fix_mod_map.get("n")) > 1e-6) { // todo improve
+        if (Math.abs(fix_mod_map.get('K') - fix_mod_map.get('n')) > 1e-6) { // todo improve
             logger.error("K and N-term have different fixed modification. Exit.");
             System.exit(1);
         }
 
-        linker_mass = Float.valueOf(parameter_map.get("cl_mass")) - 2 * fix_mod_map.get("K"); // todo improve
+        linker_mass = Float.valueOf(parameter_map.get("cl_mass")) - 2 * fix_mod_map.get('K'); // todo improve
 
         // read protein database
         DbTool db_tool_obj = new DbTool(db_path);
@@ -220,7 +220,7 @@ public class BuildIndex {
         return pro_annotate_map;
     }
 
-    public Map<String, Float> getFixModMap() {
+    public Map<Character, Float> getFixModMap() {
         return fix_mod_map;
     }
 

@@ -22,7 +22,7 @@ public class Search {
     public final float ms1_tolerance;
     public final int ms1_tolerance_unit;
     private final Map<String, ChainEntry> chain_entry_map;
-    private final Map<String, Float> fix_mod_map;
+    private final Map<Character, Float> fix_mod_map;
     private final MassTool mass_tool_obj;
     private final Map<String, Float> mass_table;
     private final TreeMap<Integer, Set<String>> bin_seq_map;
@@ -354,10 +354,10 @@ public class Search {
             if (i == linkSite) { // priority order: linkSite > fixMod > varMod
                 sb.append(aa.aa);
             } else if (Math.abs(fix_mod_map.get(aa.aa)) > 1e-6) {
-                sb.append(String.format("%s[%.2f]", aa.aa, fix_mod_map.get(aa.aa)));
+                sb.append(String.format("%c[%.2f]", aa.aa, fix_mod_map.get(aa.aa)));
             } else {
                 if (Math.abs(aa.delta_mass) > 1e-6) {
-                    sb.append(String.format("%s[%.2f]", aa.aa, aa.delta_mass));
+                    sb.append(String.format("%c[%.2f]", aa.aa, aa.delta_mass));
                 } else {
                     sb.append(aa.aa);
                 }

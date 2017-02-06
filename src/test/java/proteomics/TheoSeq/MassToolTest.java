@@ -12,34 +12,34 @@ import static org.junit.Assert.*;
 
 public class MassToolTest {
 
-    private static Map<String, Float> fix_mod_map = new HashMap<>();
+    private static Map<Character, Float> fix_mod_map = new HashMap<>();
 
     @BeforeClass
     public static void setUp() throws Exception {
-        fix_mod_map.put("G", 0f);
-        fix_mod_map.put("A", 0f);
-        fix_mod_map.put("S", 0f);
-        fix_mod_map.put("P", 0f);
-        fix_mod_map.put("V", 0f);
-        fix_mod_map.put("T", 0f);
-        fix_mod_map.put("C", 57.02146f);
-        fix_mod_map.put("I", 0f);
-        fix_mod_map.put("L", 0f);
-        fix_mod_map.put("N", 0f);
-        fix_mod_map.put("D", 0f);
-        fix_mod_map.put("Q", 0f);
-        fix_mod_map.put("K", 0f);
-        fix_mod_map.put("E", 0f);
-        fix_mod_map.put("M", 0f);
-        fix_mod_map.put("H", 0f);
-        fix_mod_map.put("F", 0f);
-        fix_mod_map.put("R", 0f);
-        fix_mod_map.put("Y", 0f);
-        fix_mod_map.put("W", 0f);
-        fix_mod_map.put("U", 0f);
-        fix_mod_map.put("O", 0f);
-        fix_mod_map.put("n", 60f);
-        fix_mod_map.put("c", 10f);
+        fix_mod_map.put('G', 0f);
+        fix_mod_map.put('A', 0f);
+        fix_mod_map.put('S', 0f);
+        fix_mod_map.put('P', 0f);
+        fix_mod_map.put('V', 0f);
+        fix_mod_map.put('T', 0f);
+        fix_mod_map.put('C', 57.02146f);
+        fix_mod_map.put('I', 0f);
+        fix_mod_map.put('L', 0f);
+        fix_mod_map.put('N', 0f);
+        fix_mod_map.put('D', 0f);
+        fix_mod_map.put('Q', 0f);
+        fix_mod_map.put('K', 0f);
+        fix_mod_map.put('E', 0f);
+        fix_mod_map.put('M', 0f);
+        fix_mod_map.put('H', 0f);
+        fix_mod_map.put('F', 0f);
+        fix_mod_map.put('R', 0f);
+        fix_mod_map.put('Y', 0f);
+        fix_mod_map.put('W', 0f);
+        fix_mod_map.put('U', 0f);
+        fix_mod_map.put('O', 0f);
+        fix_mod_map.put('n', 60f);
+        fix_mod_map.put('c', 10f);
     }
 
     @Test
@@ -321,12 +321,12 @@ public class MassToolTest {
         MassTool mass_tool_obj = new MassTool(1, fix_mod_map, "KR", "P", 1.0005f, 0.6f);
         String seq = "nGHUKc";
         AA[] result = mass_tool_obj.seqToAAList(seq);
-        AA[] ground_truth = new AA[]{new AA("n", 0), new AA("G", 0), new AA("H", 0), new AA("U", 0), new AA("K", 0), new AA("c", 0)};
+        AA[] ground_truth = new AA[]{new AA('n', 0), new AA('G', 0), new AA('H', 0), new AA('U', 0), new AA('K', 0), new AA('c', 0)};
         assertArrayEquals(ground_truth, result);
 
         seq = "nGH[3.02]UKc";
         result = mass_tool_obj.seqToAAList(seq);
-        ground_truth = new AA[]{new AA("n", 0), new AA("G", 0), new AA("H", 3.02f), new AA("U", 0), new AA("K", 0), new AA("c", 0)};
+        ground_truth = new AA[]{new AA('n', 0), new AA('G', 0), new AA('H', 3.02f), new AA('U', 0), new AA('K', 0), new AA('c', 0)};
         assertArrayEquals(ground_truth, result);
     }
 

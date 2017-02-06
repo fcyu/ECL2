@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 
 public class PreSpectrumTest {
 
-    private static Map<String, Float> fix_mod_map = new HashMap<>();
+    private static Map<Character, Float> fix_mod_map = new HashMap<>();
     private static MassTool mass_tool_obj;
     private static PreSpectrum pre_spectrum_obj;
 
@@ -23,29 +23,29 @@ public class PreSpectrumTest {
         float mz_bin_size = 0.02f;
         float one_minus_bin_offset = 1;
 
-        fix_mod_map.put("G", 0f);
-        fix_mod_map.put("A", 0f);
-        fix_mod_map.put("S", 0f);
-        fix_mod_map.put("P", 0f);
-        fix_mod_map.put("V", 0f);
-        fix_mod_map.put("T", 0f);
-        fix_mod_map.put("C", 57.02146f);
-        fix_mod_map.put("I", 0f);
-        fix_mod_map.put("L", 0f);
-        fix_mod_map.put("N", 0f);
-        fix_mod_map.put("D", 0f);
-        fix_mod_map.put("Q", 0f);
-        fix_mod_map.put("K", 0f);
-        fix_mod_map.put("E", 0f);
-        fix_mod_map.put("M", 0f);
-        fix_mod_map.put("H", 0f);
-        fix_mod_map.put("F", 0f);
-        fix_mod_map.put("R", 0f);
-        fix_mod_map.put("Y", 0f);
-        fix_mod_map.put("W", 0f);
-        fix_mod_map.put("U", 0f);
-        fix_mod_map.put("O", 0f);
-        fix_mod_map.put("n", 0f);
+        fix_mod_map.put('G', 0f);
+        fix_mod_map.put('A', 0f);
+        fix_mod_map.put('S', 0f);
+        fix_mod_map.put('P', 0f);
+        fix_mod_map.put('V', 0f);
+        fix_mod_map.put('T', 0f);
+        fix_mod_map.put('C', 57.02146f);
+        fix_mod_map.put('I', 0f);
+        fix_mod_map.put('L', 0f);
+        fix_mod_map.put('N', 0f);
+        fix_mod_map.put('D', 0f);
+        fix_mod_map.put('Q', 0f);
+        fix_mod_map.put('K', 0f);
+        fix_mod_map.put('E', 0f);
+        fix_mod_map.put('M', 0f);
+        fix_mod_map.put('H', 0f);
+        fix_mod_map.put('F', 0f);
+        fix_mod_map.put('R', 0f);
+        fix_mod_map.put('Y', 0f);
+        fix_mod_map.put('W', 0f);
+        fix_mod_map.put('U', 0f);
+        fix_mod_map.put('O', 0f);
+        fix_mod_map.put('n', 0f);
 
         mass_tool_obj = new MassTool(0, fix_mod_map, "KR", "P", mz_bin_size, one_minus_bin_offset);
         pre_spectrum_obj = new PreSpectrum(mass_tool_obj);
