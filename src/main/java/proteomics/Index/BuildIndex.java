@@ -33,6 +33,7 @@ public class BuildIndex {
     private Map<String, boolean[]> seq_term_map = new HashMap<>();
     private TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map = new TreeMap<>();
     private Set<String> for_check_duplicate = new HashSet<>();
+    private Map<String, Set<String>> seqProMap;
 
     public BuildIndex(Map<String, String> parameter_map) {
         // initialize parameters
@@ -85,10 +86,9 @@ public class BuildIndex {
 
         // define a new MassTool object
         mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, "KR", "P", mz_bin_size, one_minus_bin_offset);
-        Map<Character, Float> mass_table = mass_tool_obj.getMassTable();
 
         // generate seq_pro_map
-        Map<String, Set<String>> seq_pro_map = buildSeqProMap(pro_seq_map, min_chain_length, max_chain_length);
+        seqProMap = buildSeqProMap(pro_seq_map, min_chain_length, max_chain_length);
 
         // read var mods
         Set<VarModParam> varModParams = new HashSet<>();
@@ -118,10 +118,9 @@ public class BuildIndex {
         int varModMaxNum = Math.min(globalVarModMaxNum, Integer.valueOf(parameter_map.get("var_mod_max_num")));
 
         // generate all peptide entries
-        for (String seq : seq_pro_map.keySet()) {
+        for (String seq : seqProMap.keySet()) {
             boolean proteinNTerm = seq_term_map.get(seq)[0];
             boolean proteinCTerm = seq_term_map.get(seq)[1];
-            Set<String> proIdSet = seq_pro_map.get(seq);
 
             // mod free
             Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm);
@@ -138,7 +137,7 @@ public class BuildIndex {
                         bin_seq_map.put(bin, temp);
                     }
                     float[][] chainIonArray = mass_tool_obj.buildChainIonArray(aaList);
-                    ChainEntry chainEntry = new ChainEntry(seq, totalMass, proIdSet, linkSiteSet, chainIonArray, proteinNTerm, proteinCTerm);
+                    ChainEntry chainEntry = new ChainEntry(seq, aaArray, totalMass, linkSiteSet, proteinNTerm, proteinCTerm);
                     seq_entry_map.put(seq, chainEntry);
                 }
             }
@@ -160,7 +159,7 @@ public class BuildIndex {
                             bin_seq_map.put(bin, temp);
                         }
                         float[][] chainIonArray = mass_tool_obj.buildChainIonArray(aaArray);
-                        ChainEntry chainEntry = new ChainEntry(varSeq, totalMass, proIdSet, linkSiteSet, chainIonArray, proteinNTerm, proteinCTerm);
+                        ChainEntry chainEntry = new ChainEntry(varSeq, aaArray, totalMass, linkSiteSet, proteinNTerm, proteinCTerm);
                         seq_entry_map.put(varSeq, chainEntry);
                     }
                 }
@@ -210,6 +209,10 @@ public class BuildIndex {
                 }
             }
         }
+    }
+
+    public Map<String, Set<String>> getSeqProMap() {
+        return seqProMap;
     }
 
     public MassTool returnMassTool() {

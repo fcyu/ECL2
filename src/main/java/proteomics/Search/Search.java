@@ -223,7 +223,7 @@ public class Search {
         return resultEntry;
     }
 
-    public FinalResultEntry convertResultEntry(int scanNum, ResultEntry result_entry) {
+    public FinalResultEntry convertResultEntry(int scanNum, ResultEntry result_entry, Map<String, Set<String>> seqProMap) {
         int rank = 1;
         String chain_seq_1 = result_entry.getChain1();
         String chain_seq_2 = result_entry.getChain2();
@@ -238,11 +238,11 @@ public class Search {
         float ppm = (spectrum_mass - theo_mass) * 1e6f / theo_mass;
 
         String pro_1 = "";
-        for (String temp : chain_entry_1.pro_id) {
+        for (String temp : seqProMap.get(chain_entry_1.seq.replaceAll("[^A-Znc]", ""))) {
             pro_1 += temp + ";";
         }
         String pro_2 = "";
-        for (String temp : chain_entry_2.pro_id) {
+        for (String temp : seqProMap.get(chain_entry_2.seq.replaceAll("[^A-Znc]", ""))) {
             pro_2 += temp + ";";
         }
 
@@ -257,11 +257,11 @@ public class Search {
 
         String cl_type = "intra_protein";
         boolean keep = false;
-        for (String temp_1 : chain_entry_1.pro_id) {
+        for (String temp_1 : seqProMap.get(chain_entry_1.seq.replaceAll("[^A-Znc]", ""))) {
             if (temp_1.startsWith("DECOY_")) {
                 temp_1 = temp_1.substring(6);
             }
-            for (String temp_2 : chain_entry_2.pro_id) {
+            for (String temp_2 : seqProMap.get(chain_entry_2.seq.replaceAll("[^A-Znc]", ""))) {
                 if (temp_2.startsWith("DECOY_")) {
                     temp_2 = temp_2.substring(6);
                 }

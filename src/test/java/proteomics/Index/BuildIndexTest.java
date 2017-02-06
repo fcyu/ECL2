@@ -254,40 +254,31 @@ public class BuildIndexTest {
         Map<String, ChainEntry> result = build_idx_obj.getSeqEntryMap();
         Map<String, ChainEntry> group_truth = new HashMap<>();
 
-        Set<String> pro_id;
         Set<Short> link_site_set;
 
         String seq = "nASRIATAAAASKPSLNKc";
-        pro_id = new HashSet<>();
-        pro_id.add("Pro1");
         link_site_set = new HashSet<>();
-        ChainEntry chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(seq)) + mass_table.get("H2O"), pro_id, link_site_set, mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq)), true, false);
         link_site_set.add((short) 0);
         link_site_set.add((short) 12);
+        ChainEntry chain_entry = new ChainEntry(seq, MassTool.seqToAAList(seq), mass_tool_obj.calResidueMass(MassTool.seqToAAList(seq)) + MassTool.H2O, link_site_set, true, false);
         group_truth.put(seq, chain_entry);
 
         seq = "nIATAAAASKPSLNK[28.03]c";
-        pro_id = new HashSet<>();
-        pro_id.add("Pro1");
         link_site_set = new HashSet<>();
-        chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(seq)) + mass_table.get("H2O"), pro_id, link_site_set, mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq)), false, false);
         link_site_set.add((short) 9);
+        chain_entry = new ChainEntry(seq, MassTool.seqToAAList(seq), mass_tool_obj.calResidueMass(MassTool.seqToAAList(seq)) + MassTool.H2O, link_site_set, false, false);
         group_truth.put(seq, chain_entry);
 
         seq = "nNLSPK[34.06]SAAAATAIRSAK[34.06]c";
-        pro_id = new HashSet<>();
-        pro_id.add("DECOY_Pro1");
         link_site_set = new HashSet<>();
-        chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(seq)) + mass_table.get("H2O"), pro_id, link_site_set, mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq)), true, false);
         link_site_set.add((short) 0);
+        chain_entry = new ChainEntry(seq, MassTool.seqToAAList(seq), mass_tool_obj.calResidueMass(MassTool.seqToAAList(seq)) + MassTool.H2O, link_site_set, true, false);
         group_truth.put(seq, chain_entry);
 
         seq = "n[28.03]KNLSPK[28.03]SAAAATAIRSAFc";
-        pro_id = new HashSet<>();
-        pro_id.add("DECOY_Pro1");
         link_site_set = new HashSet<>();
-        chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(seq)) + mass_table.get("H2O"), pro_id, link_site_set, mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq)), true, true);
         link_site_set.add((short) 1);
+        chain_entry = new ChainEntry(seq, MassTool.seqToAAList(seq), mass_tool_obj.calResidueMass(MassTool.seqToAAList(seq)) + MassTool.H2O, link_site_set, true, true);
         group_truth.put(seq, chain_entry);
 
         for (String temp : group_truth.keySet()) {

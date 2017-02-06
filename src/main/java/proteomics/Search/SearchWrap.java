@@ -11,6 +11,8 @@ import proteomics.Types.ResultEntry;
 import proteomics.Types.SparseVector;
 import proteomics.Types.SpectrumEntry;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 public class SearchWrap implements Callable<FinalResultEntry> {
@@ -23,14 +25,16 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     private final MassTool mass_tool_obj;
     private final int max_common_ion_charge;
     private final PreSpectrum preSpectrumObj;
+    private final Map<String, Set<String>> seqProMap;
 
-    public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, int max_common_ion_charge) {
+    public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, int max_common_ion_charge, Map<String, Set<String>> seqProMap) {
         this.search_obj = search_obj;
         this.spectrumEntry = spectrumEntry;
         this.build_index_obj = build_index_obj;
         this.mass_tool_obj = mass_tool_obj;
         this.max_common_ion_charge = max_common_ion_charge;
         preSpectrumObj = new PreSpectrum(mass_tool_obj);
+        this.seqProMap = seqProMap;
     }
 
     @Override
@@ -48,12 +52,12 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                     }
                     new CalEValue(spectrumEntry.scan_num, resultEntry, xcorrPL, build_index_obj.getUniprotDecoyMassSeqMap(), mass_tool_obj, build_index_obj.linker_mass, max_common_ion_charge, search_obj.consider_two_identical_chains, e_value_precursor_mass_tol);
                     if (resultEntry.getEValue() != 9999) {
-                        return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry);
+                        return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap);
                     } else {
                         return null;
                     }
                 } else {
-                    return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry);
+                    return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap);
                 }
             } else {
                 return null;

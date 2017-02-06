@@ -110,7 +110,7 @@ public class ECL2 {
         Search search_obj = new Search(build_index_obj, parameter_map);
         List<Future<FinalResultEntry>> temp_result_list = new LinkedList<>();
         for (int scanNum : scanNumArray) {
-            temp_result_list.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge)));
+            temp_result_list.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge, build_index_obj.getSeqProMap())));
         }
 
         // check progress every minute
