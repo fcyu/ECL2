@@ -47,7 +47,7 @@ public class MassTool {
         mass_table.put('Y', 163.063329f + fix_mod_map.get('Y'));
         mass_table.put('W', 186.079313f + fix_mod_map.get('W'));
         mass_table.put('U', 150.953636f + fix_mod_map.get('U'));
-        mass_table.put('O', 237.147727f + fix_mod_map.get('O'));
+        mass_table.put('O', 132.08988f + fix_mod_map.get('O'));
         mass_table.put('n', fix_mod_map.get('n'));
         mass_table.put('c', fix_mod_map.get('c'));
     }
