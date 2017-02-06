@@ -329,13 +329,4 @@ public class MassToolTest {
         ground_truth = new AA[]{new AA('n', 0), new AA('G', 0), new AA('H', 3.02f), new AA('U', 0), new AA('K', 0), new AA('c', 0)};
         assertArrayEquals(ground_truth, result);
     }
-
-    @Test
-    public void getModFreeSeq() {
-        MassTool mass_tool_obj = new MassTool(1, fix_mod_map, "KR", "P", 1.0005f, 0.6f);
-        String seq = "GH[3.02]UK";
-        String result = mass_tool_obj.getModFreeSeq(seq);
-        String ground_truth = "GHUK";
-        assertEquals(ground_truth, result);
-    }
 }

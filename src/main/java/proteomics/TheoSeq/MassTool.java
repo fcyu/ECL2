@@ -199,15 +199,6 @@ public class MassTool {
         return temp.toArray(new AA[temp.size()]);
     }
 
-    public String getModFreeSeq(String mod_seq) {
-        Matcher matcher = mod_aa_pattern.matcher(mod_seq);
-        StringBuilder sb = new StringBuilder(mod_seq.length());
-        while (matcher.find()) {
-            sb.append(matcher.group(1));
-        }
-        return sb.toString();
-    }
-
     Map<Integer, List<int[]>> digestTrypsin(String pro_seq) {
         // Cut a protein
         List<Integer> cut_point_list = new LinkedList<>();
