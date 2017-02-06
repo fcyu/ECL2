@@ -250,7 +250,7 @@ public class BuildIndexTest {
     public void getSeqEntryMap() throws Exception {
         BuildIndex build_idx_obj = new BuildIndex(parameter_map);
         MassTool mass_tool_obj = build_idx_obj.returnMassTool();
-        Map<String, Float> mass_table = mass_tool_obj.getMassTable();
+        Map<Character, Float> mass_table = mass_tool_obj.getMassTable();
         Map<String, ChainEntry> result = build_idx_obj.getSeqEntryMap();
         Map<String, ChainEntry> group_truth = new HashMap<>();
 

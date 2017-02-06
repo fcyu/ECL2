@@ -24,7 +24,6 @@ public class Search {
     private final Map<String, ChainEntry> chain_entry_map;
     private final Map<Character, Float> fix_mod_map;
     private final MassTool mass_tool_obj;
-    private final Map<String, Float> mass_table;
     private final TreeMap<Integer, Set<String>> bin_seq_map;
     private final BuildIndex build_index_obj;
     private int[] C13_correction_range;
@@ -40,7 +39,6 @@ public class Search {
         max_common_ion_charge = Integer.valueOf(parameter_map.get("max_common_ion_charge"));
         ms1_tolerance_unit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
         ms1_tolerance = Float.valueOf(parameter_map.get("ms1_tolerance"));
-        mass_table = mass_tool_obj.getMassTable();
         bin_seq_map = build_index_obj.getMassBinSeqMap();
         consider_two_identical_chains = parameter_map.get("consider_two_identical_chains").contentEquals("1");
         bin_candidate_num_map = build_index_obj.getBinCandidateNumMap();

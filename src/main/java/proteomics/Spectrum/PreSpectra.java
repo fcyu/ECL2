@@ -32,7 +32,6 @@ public class PreSpectra {
         float min_precursor_mass =  Float.valueOf(parameter_map.get("min_precursor_mass"));
         float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
         int min_peak_num = Integer.valueOf(parameter_map.get("min_peak_num"));
-        Map<String, Float> mass_table = mass_tool_obj.getMassTable();
 
         //  In DEBUG mode, filter out unlisted scan num
         if (ECL2.debug) {
