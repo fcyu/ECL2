@@ -184,8 +184,8 @@ public class CalEValue {
                     for (String seq_1_link_site : uniprot_decoy_mass_seq_map.get(mass_1)) {
                         String[] temp = seq_1_link_site.split("-");
                         String seq_1 = temp[0];
-                        int link_site = Integer.valueOf(temp[1]);
                         SparseBooleanVector theo_mz_1 = mass_tool_obj.buildVector(mass_tool_obj.buildPseudoCLIonArray(mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq_1)), link_site, max_common_ion_charge, precursor_mass - mass_1, result_entry.charge), result_entry.charge);
+                        short link_site = Short.valueOf(temp[1]);
                         double score1 = theo_mz_1.dot(pl_map_xcorr) * 0.25;
                         if (score1 > Search.single_chain_t) {
                             gap_num = generateMoreScoresSub(sub_map, seq_1, score1, precursor_mass, gap_num);
@@ -205,7 +205,7 @@ public class CalEValue {
             for (String seq_2_link_site : sub_map.get(mass_2)) {
                 String[] temp = seq_2_link_site.split("-");
                 String seq_2 = temp[0];
-                int link_site = Integer.valueOf(temp[1]);
+                short link_site = Short.valueOf(temp[1]);
                 if (!seq_1.contentEquals(seq_2) || consider_two_identical_chains) {
                     SparseBooleanVector theo_mz_2 = mass_tool_obj.buildVector(mass_tool_obj.buildPseudoCLIonArray(mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq_2)), link_site, max_common_ion_charge, precursor_mass - mass_2, result_entry.charge), result_entry.charge);
                     double score2 = theo_mz_2.dot(pl_map_xcorr) * 0.25;

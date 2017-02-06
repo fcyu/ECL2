@@ -7,8 +7,8 @@ public class ChainEntry {
     public final String seq;
     public final float chain_mass;
     public final Set<String> pro_id;
-    public final Set<Integer> link_site_set;
     public final float[][] chain_ion_array;
+    public final Set<Short> link_site_set;
     public final boolean n_term;
     public final boolean c_term;
     public final boolean is_decoy;

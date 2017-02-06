@@ -255,39 +255,39 @@ public class BuildIndexTest {
         Map<String, ChainEntry> group_truth = new HashMap<>();
 
         Set<String> pro_id;
-        Set<Integer> link_site_set;
+        Set<Short> link_site_set;
 
         String seq = "nASRIATAAAASKPSLNKc";
         pro_id = new HashSet<>();
         pro_id.add("Pro1");
         link_site_set = new HashSet<>();
-        link_site_set.add(0);
-        link_site_set.add(12);
         ChainEntry chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(seq)) + mass_table.get("H2O"), pro_id, link_site_set, mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq)), true, false);
+        link_site_set.add((short) 0);
+        link_site_set.add((short) 12);
         group_truth.put(seq, chain_entry);
 
         seq = "nIATAAAASKPSLNK[28.03]c";
         pro_id = new HashSet<>();
         pro_id.add("Pro1");
         link_site_set = new HashSet<>();
-        link_site_set.add(9);
         chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(seq)) + mass_table.get("H2O"), pro_id, link_site_set, mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq)), false, false);
+        link_site_set.add((short) 9);
         group_truth.put(seq, chain_entry);
 
         seq = "nNLSPK[34.06]SAAAATAIRSAK[34.06]c";
         pro_id = new HashSet<>();
         pro_id.add("DECOY_Pro1");
         link_site_set = new HashSet<>();
-        link_site_set.add(0);
         chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(seq)) + mass_table.get("H2O"), pro_id, link_site_set, mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq)), true, false);
+        link_site_set.add((short) 0);
         group_truth.put(seq, chain_entry);
 
         seq = "n[28.03]KNLSPK[28.03]SAAAATAIRSAFc";
         pro_id = new HashSet<>();
         pro_id.add("DECOY_Pro1");
         link_site_set = new HashSet<>();
-        link_site_set.add(1);
         chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(mass_tool_obj.seqToAAList(seq)) + mass_table.get("H2O"), pro_id, link_site_set, mass_tool_obj.buildChainIonArray(mass_tool_obj.seqToAAList(seq)), true, true);
+        link_site_set.add((short) 1);
         group_truth.put(seq, chain_entry);
 
         for (String temp : group_truth.keySet()) {
