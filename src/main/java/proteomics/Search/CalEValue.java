@@ -25,17 +25,15 @@ public class CalEValue {
     private MassTool mass_tool_obj;
     private int max_common_ion_charge;
     private SparseVector pl_map_xcorr;
-    private boolean consider_two_identical_chains;
     private float e_value_precursor_mass_tol;
 
-    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, boolean consider_two_identical_chains, float e_value_precursor_mass_tol) {
+    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, float e_value_precursor_mass_tol) {
         this.result_entry = result_entry;
         this.uniprot_decoy_mass_seq_map = uniprot_decoy_mass_seq_map;
         this.linker_mass = linker_mass;
         this.mass_tool_obj = mass_tool_obj;
         this.max_common_ion_charge = max_common_ion_charge;
         this.pl_map_xcorr = pl_map_xcorr;
-        this.consider_two_identical_chains = consider_two_identical_chains;
         this.e_value_precursor_mass_tol = e_value_precursor_mass_tol;
 
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
@@ -206,7 +204,7 @@ public class CalEValue {
                 String[] temp = seq_2_link_site.split("-");
                 String seq_2 = temp[0];
                 short link_site = Short.valueOf(temp[1]);
-                if (!seq_1.contentEquals(seq_2) || consider_two_identical_chains) {
+                if (!seq_1.contentEquals(seq_2)) {
                     SparseBooleanVector theo_mz_2 = mass_tool_obj.buildTheoVector(MassTool.seqToAAList(seq_2), link_site, precursor_mass - mass_2, result_entry.charge, max_common_ion_charge);
                     double score2 = theo_mz_2.dot(pl_map_xcorr) * 0.25;
                     if (score2 > Search.single_chain_t) {

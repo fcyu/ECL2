@@ -27,7 +27,6 @@ public class Search {
     private final TreeMap<Integer, Set<String>> bin_seq_map;
     private final BuildIndex build_index_obj;
     private int[] C13_correction_range;
-    public final boolean consider_two_identical_chains;
     private Map<Integer, Long> bin_candidate_num_map;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
@@ -40,7 +39,6 @@ public class Search {
         ms1_tolerance_unit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
         ms1_tolerance = Float.valueOf(parameter_map.get("ms1_tolerance"));
         bin_seq_map = build_index_obj.getMassBinSeqMap();
-        consider_two_identical_chains = parameter_map.get("consider_two_identical_chains").contentEquals("1");
         bin_candidate_num_map = build_index_obj.getBinCandidateNumMap();
 
         String[] temp = parameter_map.get("C13_correction_range").split(",");
@@ -145,9 +143,7 @@ public class Search {
                     ChainResultEntry chain_score_entry_2 = binChainMap.get(idx_2);
                     double score = 0;
                     if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
-                        if (consider_two_identical_chains) {
-                            score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
-                        }
+                        score = (chain_score_entry_1.getScore() + chain_score_entry_2.getScore()) / 2;
                     } else {
                         score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
                     }
@@ -157,9 +153,7 @@ public class Search {
                     double temp_1 = -1;
                     if (chain_score_entry_1.getSecondSeq() != null) {
                         if (chain_score_entry_1.getSecondPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
-                            if (consider_two_identical_chains) {
-                                temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
-                            }
+                            temp_1 = (chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore()) / 2;
                         } else {
                             temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
                         }
@@ -167,9 +161,7 @@ public class Search {
                     double temp_2 = -1;
                     if (chain_score_entry_2.getSecondSeq() != null) {
                         if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getSecondPtmFreeSeq())) {
-                            if (consider_two_identical_chains) {
-                                temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
-                            }
+                            temp_2 = (chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore()) / 2;
                         } else {
                             temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
                         }

@@ -1,14 +1,13 @@
 thread_num = 0
-batch_size = 1000
 debug = 0
 dev = 0
 
 # Database
-db = Synthetic_peptides_10_Proteins.fasta # The whole protein database
+db = small+random50.fasta # The whole protein database
 decoy_pool_db = uniprot.decoy.fasta
 missed_cleavage = 2 # maximum number of missed cleavage
 min_precursor_mass = 1000
-max_precursor_mass = 5000
+max_precursor_mass = 12000
 min_chain_length = 5 # minimum length of a peptide chain
 max_chain_length = 50
 
@@ -22,17 +21,25 @@ C13_correction_range = 0
 # Tolerance
 ms1_tolerance_unit = 1 # 0: Da; 1: ppm
 ms1_tolerance = 10
-mz_bin_size = 0.02	
+mz_bin_size = 0.02
 mz_bin_offset = 0
 
 # Cross-linking parameter.
 # Cross-linking site can not be modified.
 cl_mass = 138.0680796
 
-# Binary var modification
+# Var modification
 # format: <mass> <residues>
-binary_mod_1 = 28.031300 Kn
-binary_mod_2 = 34.063117 Kn
+var_mod1 = 0.0 X
+var_mod2 = 0.0 X
+var_mod3 = 0.0 X
+var_mod4 = 0.0 X
+var_mod5 = 0.0 X
+var_mod6 = 0.0 X
+var_mod7 = 0.0 X
+var_mod8 = 0.0 X
+var_mod9 = 0.0 X
+var_mod_max_num = 5 # max number of modified amino acids in a peptide. The max value is 5
 
 # Fix modification
 G = 0
@@ -41,7 +48,7 @@ S = 0
 P = 0
 V = 0
 T = 0
-C = 57.02146 
+C = 57.02146
 I = 0
 L = 0
 N = 0
@@ -59,5 +66,3 @@ U = 0
 O = 0
 n = 0
 c = 0
-
-# debug scan num
