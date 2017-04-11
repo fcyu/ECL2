@@ -201,15 +201,22 @@ public class Search {
         // set candidate number
         resultEntry.setCandidateNum(candidate_num);
 
-        if (ECL2.dev) {
-            // get ranks of each chain
-            Double chain_score_1 = devChainScoreMap.get(resultEntry.getChain1() + "-" + resultEntry.getLinkSite1());
-            Double chain_score_2 = devChainScoreMap.get(resultEntry.getChain2() + "-" + resultEntry.getLinkSite2());
-            List<Double> scores = new LinkedList<>(devChainScoreMap.values());
-            scores.sort(Comparator.reverseOrder());
-            int chain_rank_1 = scores.indexOf(chain_score_1) + 1;
-            int chain_rank_2 = scores.indexOf(chain_score_2) + 1;
-            resultEntry.setChainDetails(chain_score_1, chain_rank_1, chain_score_2, chain_rank_2);
+        if (ECL2.dev && (candidate_num > 0)) {
+            try {
+                // get ranks of each chain
+                Double chain_score_1 = devChainScoreMap.get(resultEntry.getChain1() + "-" + resultEntry.getLinkSite1());
+                Double chain_score_2 = devChainScoreMap.get(resultEntry.getChain2() + "-" + resultEntry.getLinkSite2());
+                List<Double> scores = new LinkedList<>(devChainScoreMap.values());
+                scores.sort(Comparator.reverseOrder());
+                int chain_rank_1 = scores.indexOf(chain_score_1) + 1;
+                int chain_rank_2 = scores.indexOf(chain_score_2) + 1;
+                resultEntry.setChainDetails(chain_score_1, chain_rank_1, chain_score_2, chain_rank_2);
+            } catch (NullPointerException ex) {
+                ex.printStackTrace();
+                logger.error(ex.toString());
+                logger.error("scan num = {}.", spectrumEntry.scan_num);
+                System.exit(1);
+            }
         }
 
         return resultEntry;
