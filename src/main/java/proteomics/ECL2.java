@@ -22,8 +22,7 @@ public class ECL2 {
 
     public static final boolean cal_evalue = true;
     public static final double delta_c_t = 0;
-    public static final int score_point_t = 6000;
-    public static final int chain_score_point_t = 10;
+    public static final int score_point_t = 15000;
     public static final int random_score_point_t = 2;
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);

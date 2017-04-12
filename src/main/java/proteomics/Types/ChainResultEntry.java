@@ -29,7 +29,7 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
     }
 
     public void addToScoreList(double score) {
-        if (ECL2.cal_evalue && (score_list.size() < ECL2.chain_score_point_t)) {
+        if (ECL2.cal_evalue) {
             score_list.add(score);
         }
     }
