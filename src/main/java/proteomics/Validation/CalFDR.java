@@ -92,7 +92,7 @@ public class CalFDR {
             if (target_count == 0) {
                 fdr = 0;
             } else if (fuse_count < decoy_count) {
-                fdr = (float) decoy_count / (float) target_count;
+                fdr = 0;
             } else {
                 fdr = (float) (fuse_count - decoy_count) / (float) target_count;
             }
