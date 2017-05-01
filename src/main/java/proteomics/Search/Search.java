@@ -16,7 +16,7 @@ public class Search {
 
     private static final Logger logger = LoggerFactory.getLogger(Search.class);
 
-    public static final double single_chain_t = 0;
+    public static final double single_chain_t = 0.1;
 
     private final int max_common_ion_charge;
     public final float ms1_tolerance;
