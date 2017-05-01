@@ -66,3 +66,6 @@ U = 0
 O = 0
 n = 0
 c = 0
+
+# for debug
+# put your cared scan number below. One number each line
