@@ -38,7 +38,7 @@ public class SparseVector {
         }
     }
 
-    Set<Integer> idxSet() {
+    public Set<Integer> getIdxSet() {
         return sparse_vector.keySet();
     }
 

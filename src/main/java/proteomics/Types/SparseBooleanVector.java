@@ -47,6 +47,10 @@ public class SparseBooleanVector {
         return sparse_vector.contains(v);
     }
 
+    public Set<Integer> getIdxSet() {
+        return sparse_vector;
+    }
+
     public boolean equals(Object other) {
         if (other instanceof SparseBooleanVector) {
             SparseBooleanVector temp = (SparseBooleanVector) other;

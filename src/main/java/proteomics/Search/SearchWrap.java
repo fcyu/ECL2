@@ -6,11 +6,11 @@ import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
 import proteomics.Spectrum.PreSpectrum;
 import proteomics.TheoSeq.MassTool;
-import proteomics.Types.FinalResultEntry;
-import proteomics.Types.ResultEntry;
-import proteomics.Types.SparseVector;
-import proteomics.Types.SpectrumEntry;
+import proteomics.Types.*;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -40,8 +40,38 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     @Override
     public FinalResultEntry call() {
         SparseVector xcorrPL = preSpectrumObj.prepareXcorr(spectrumEntry.originalPlMap, spectrumEntry.precursor_mass);
+        if (ECL2.debug) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".xcorr.spectrum.csv"))) {
+                writer.write("bin_idx,intensity\n");
+                for (int idx : xcorrPL.getIdxSet()) {
+                    writer.write(idx + "," + xcorrPL.get(idx) + "\n");
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                logger.error(ex.getMessage());
+                System.exit(1);
+            }
+        }
         ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL);
         if (resultEntry != null) {
+            if (ECL2.debug) {
+                SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(MassTool.seqToAAList(resultEntry.getChain1()), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - mass_tool_obj.calResidueMass(MassTool.seqToAAList(resultEntry.getChain1())), spectrumEntry.precursor_charge, max_common_ion_charge);
+                SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(MassTool.seqToAAList(resultEntry.getChain2()), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - mass_tool_obj.calResidueMass(MassTool.seqToAAList(resultEntry.getChain2())), spectrumEntry.precursor_charge, max_common_ion_charge);
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".chain.spectrum.csv"))) {
+                    writer.write("chain1 bin idx\n");
+                    for (int idx : chainVector1.getIdxSet()) {
+                        writer.write(idx + "\n");
+                    }
+                    writer.write("chain2 bin idx\n");
+                    for (int idx : chainVector2.getIdxSet()) {
+                        writer.write(idx + "\n");
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    logger.error(ex.getMessage());
+                    System.exit(1);
+                }
+            }
             if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) > ECL2.delta_c_t) {
                 if (ECL2.cal_evalue) {
                     float e_value_precursor_mass_tol;

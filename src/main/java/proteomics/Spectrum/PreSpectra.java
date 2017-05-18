@@ -11,9 +11,7 @@ import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLFile;
 import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLParsingException;
 import uk.ac.ebi.pride.tools.mzxml_parser.mzxml.model.Scan;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,12 +82,41 @@ public class PreSpectra {
 
                 Map<Double, Double> raw_mz_intensity_map = spectrum.getPeakList();
 
+                if (ECL2.debug) {
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".raw.spectrum.csv"))) {
+                        writer.write("mz,intensity\n");
+                        for (double mz : raw_mz_intensity_map.keySet()) {
+                            if (Math.abs(raw_mz_intensity_map.get(mz)) > 1e-6) {
+                                writer.write(mz + "," + raw_mz_intensity_map.get(mz) + "\n");
+                            }
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                        logger.error(ex.getMessage());
+                        System.exit(1);
+                    }
+                }
+
                 if (raw_mz_intensity_map.size() < min_peak_num) {
                     logger.debug("Scan {} doesn't contain enough peak number ({}). Skip.", spectrum.getId(), min_peak_num);
                     continue;
                 }
 
                 TreeMap<Float, Float> originalPlMap = pre_spectrum_obj.preSpectrum(raw_mz_intensity_map, precursor_mass);
+
+                if (ECL2.debug) {
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".normalized.spectrum.csv"))) {
+                        writer.write("mz,intensity\n");
+                        for (float mz : originalPlMap.keySet()) {
+                            writer.write(mz + "," + originalPlMap.get(mz) + "\n");
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                        logger.error(ex.getMessage());
+                        System.exit(1);
+                    }
+                }
+
                 if (originalPlMap.size() <= min_peak_num) {
                     continue;
                 }
