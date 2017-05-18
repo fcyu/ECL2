@@ -82,7 +82,7 @@ public class ECL2 {
             if (ext.contentEquals("mzXML")) {
                 spectra_parser = new MzXMLFile(spectra_file);
             } else {
-                logger.error("Unsupported data format {}. ECL 2.0 only support mzXML.", ext);
+                logger.error("Unsupported data format {}. ECL2 only support mzXML.", ext);
                 System.exit(1);
             }
         } catch (FileNotFoundException | MzXMLParsingException | NullPointerException ex) {
@@ -315,12 +315,12 @@ public class ECL2 {
     }
 
     private static void help() {
-        String help_str = "ECL 2.0 version " + version + "\r\n"
+        String help_str = "ECL2 version " + version + "\r\n"
                 + "A cross-linked peptides identification tool with exhaustive searching and linear computational complexity\r\n"
                 + "Author: Fengchao Yu\r\n"
                 + "Email: fyuab@connect.ust.hk\r\n"
                 + "ECL2 usage: java -Xmx25g -jar /path/to/ECL2.jar <parameter_file> <data_file>\r\n"
-                + "\t<parameter_file>: parameter file. Can be download along with ECL 2.0.\r\n"
+                + "\t<parameter_file>: parameter file. Can be download along with ECL2.\r\n"
                 + "\t<data_file>: spectra data file (mzXML)\r\n"
                 + "\texample: java -Xmx32g -jar ECL2.jar parameter.def data.mzxml\r\n";
         System.out.print(help_str);

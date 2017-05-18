@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>hk.ust.bioinformatics</groupId>
-    <artifactId>ECL2.0</artifactId>
+    <artifactId>ECL2</artifactId>
     <version>2.1.3</version>
     <packaging>jar</packaging>
 
-    <name>ECL2.0</name>
+    <name>ECL2</name>
     <licenses>
         <license>
             <name>Apache 2</name>
