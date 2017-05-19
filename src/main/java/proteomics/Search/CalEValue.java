@@ -44,12 +44,42 @@ public class CalEValue {
         int[] score_histogram = result_entry.getScoreHistogram();
         double histogram_bin_size = result_entry.getHistogramBinSize();
 
-        // find the max non-zero idx. It may be an outlier.
-        int max_nonzero_idx = 0;
+        int min_nonzero_idx = 0;
         for (int i = 0; i < score_histogram.length; ++i) {
             if (score_histogram[i] > 0) {
-                max_nonzero_idx = i;
+                min_nonzero_idx = i;
+                break;
             }
+        }
+        if (min_nonzero_idx == score_histogram.length - 1) {
+            logger.debug("Fail to estimate e-value for Scan {} (an empty score histogram).", scan_num);
+            result_entry.setEValue(9999);
+            return;
+        }
+
+        int max_nonzero_idx = 0;
+        for (int i = score_histogram.length - 1; i >= 0; --i) {
+            if (score_histogram[i] > 0) {
+                max_nonzero_idx = i;
+                break;
+            }
+        }
+        if (max_nonzero_idx - min_nonzero_idx < 5) {
+            logger.debug("Fail to estimate e-value for Scan {} (doesn't have a useful score histogram).", scan_num);
+            result_entry.setEValue(9999);
+            if (ECL2.debug) {
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"))) {
+                    writer.write("histogram\n");
+                    for (int i = 0; i < max_nonzero_idx; ++i) {
+                        writer.write(String.format("%d\n", score_histogram[i]));
+                    }
+                } catch (IOException ex) {
+                    logger.error(ex.getMessage());
+                    ex.printStackTrace();
+                    System.exit(1);
+                }
+            }
+            return;
         }
 
         // generate survival array
@@ -60,12 +90,13 @@ public class CalEValue {
         }
 
         // find the next max nonzero idx. from this down to the changing point are from null.
-        int top_count = (int) (survival_count_array[0] * 0.01); // these are from non-null.
-        int null_end_idx = 0;
-        for (int i = max_nonzero_idx - 1; i >= 0; --i) {
-            if (survival_count_array[i] > top_count) {
-                null_end_idx = i;
-                break;
+        int null_end_idx = max_nonzero_idx;
+        for (int i = min_nonzero_idx; i <= max_nonzero_idx; ++i) {
+            if (score_histogram[i] == 0) {
+                if (i == max_nonzero_idx || score_histogram[i + 1] == 0) {
+                    null_end_idx = i - 1;
+                    break;
+                }
             }
         }
 
@@ -75,13 +106,20 @@ public class CalEValue {
             ln_survival_count_array[i] = Math.log(survival_count_array[i]);
         }
 
-        // try and find the best linear regression result
-        int start_idx = (int) (null_end_idx * 0.5);
+        // find the start point
+        int start_idx = min_nonzero_idx;
+        if (null_end_idx > 3 / ResultEntry.histogram_bin_size) {
+            start_idx = Math.max(min_nonzero_idx, (int) (0.75 * null_end_idx));
+        } else if (null_end_idx > 1.5 / ResultEntry.histogram_bin_size) {
+            start_idx = Math.max(min_nonzero_idx, (int) ( 0.5 * null_end_idx));
+        }
+
+        // linear regression
         double max_r_square = 0;
         double optimal_slope = 1;
         double optimal_intercept = 0;
         int optimal_start_idx = 0;
-        while (start_idx >= 0) {
+        while (start_idx >= min_nonzero_idx) {
             double x_sum = 0;
             double y_sum = 0;
             double x_mean = 0;
@@ -134,11 +172,12 @@ public class CalEValue {
             }
 
             r_square = ssr / yy_mean;
-            if (r_square > max_r_square) {
+            if (slope < 0) {
                 optimal_slope = slope;
                 optimal_intercept = intercept;
                 max_r_square = r_square;
                 optimal_start_idx = start_idx;
+                break;
             }
             --start_idx;
         }

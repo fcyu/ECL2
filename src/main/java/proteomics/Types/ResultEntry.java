@@ -7,7 +7,7 @@ import proteomics.ECL2;
 public class ResultEntry{
 
     private static final Logger logger = LoggerFactory.getLogger(ResultEntry.class);
-    private static final double histogram_bin_size = 0.01f;
+    public static final double histogram_bin_size = 0.05f;
     private static final double max_score = 20;
 
     public final String spectrum_id;
