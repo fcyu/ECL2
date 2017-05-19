@@ -26,7 +26,7 @@ public class ECL2 {
     public static final int random_score_point_t = 2;
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
-    private static final String version = "2.1.3-try--comet-evalue";
+    private static final String version = "2.1.3";
 
     public static boolean debug;
     public static boolean dev;
