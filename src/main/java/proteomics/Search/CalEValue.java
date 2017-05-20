@@ -41,6 +41,10 @@ public class CalEValue {
             generateRandomRandomScores(gap_num);
         }
 
+        if (gap_num > 0) {
+            logger.debug("Scan {}: Estimated e-value may not be accurate ({} data points).", scan_num, ECL2.score_point_t - gap_num);
+        }
+
         int[] score_histogram = result_entry.getScoreHistogram();
         double histogram_bin_size = result_entry.getHistogramBinSize();
 
