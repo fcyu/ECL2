@@ -122,7 +122,11 @@ public class ECL2 {
                     logger.info("Searching {}%...", progress * 5);
                     lastProgress = progress;
                 }
-                Thread.sleep(60000);
+                if (debug) {
+                    Thread.sleep(1000);
+                } else {
+                    Thread.sleep(60000);
+                }
             }
         } catch (InterruptedException ex) {
             ex.printStackTrace();
