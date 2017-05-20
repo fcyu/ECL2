@@ -52,8 +52,8 @@ public class MassTool {
         mass_table.put('c', fix_mod_map.get('c'));
     }
 
-        return (int) Math.floor(mz / mz_bin_size + one_minus_bin_offset);
     public int mzToBin(double mz) {
+        return (int) (mz / mz_bin_size + one_minus_bin_offset);
     }
 
     public float calResidueMass(AA[] aa_array) { // n and c are also AA.
