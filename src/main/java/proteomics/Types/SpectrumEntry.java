@@ -1,6 +1,6 @@
 package proteomics.Types;
 
-import java.util.TreeMap;
+import java.util.Map;
 
 public class SpectrumEntry {
     public final int scan_num;
@@ -10,10 +10,10 @@ public class SpectrumEntry {
     public final float rt;
     public final float mass_without_linker_mass;
     public final int precursor_charge;
-    public TreeMap<Float, Float> originalPlMap;
+    public Map<Double, Double> originalPlMap;
     private final String to_string;
 
-    public SpectrumEntry(int scan_num, String spectrum_id, float precursor_mz, float precursor_mass, int precursor_charge, float rt, TreeMap<Float, Float> originalPlMap, float linker_mass) {
+    public SpectrumEntry(int scan_num, String spectrum_id, float precursor_mz, float precursor_mass, int precursor_charge, float rt, Map<Double, Double> originalPlMap, float linker_mass) {
         this.scan_num = scan_num;
         this.spectrum_id = spectrum_id;
         this.precursor_mz = precursor_mz;

@@ -39,7 +39,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
 
     @Override
     public FinalResultEntry call() {
-        SparseVector xcorrPL = preSpectrumObj.prepareXcorr(spectrumEntry.originalPlMap, spectrumEntry.precursor_mass);
+        SparseVector xcorrPL = preSpectrumObj.preSpectrum(spectrumEntry.originalPlMap, spectrumEntry.precursor_mass, spectrumEntry.scan_num);
         if (ECL2.debug) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".xcorr.spectrum.csv"))) {
                 writer.write("bin_idx,intensity\n");

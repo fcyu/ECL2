@@ -1,13 +1,19 @@
 package proteomics.Spectrum;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import proteomics.ECL2;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.SparseVector;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 public class PreSpectrum {
 
-    private static final float DEFAULT_INTENSITY = 1; // DO NOT change. Otherwise, change the whole project accordingly.
+    private static final Logger logger = LoggerFactory.getLogger(PreSpectrum.class);
     private static final int XCORR_OFFSET = 75;
 
     private final MassTool mass_tool_obj;
@@ -16,22 +22,48 @@ public class PreSpectrum {
         this.mass_tool_obj = mass_tool_obj;
     }
 
-    TreeMap<Float, Float> preSpectrum (Map<Double, Double> peaks_map, float precursor_mass) {
-        return normalizeSpec(peaks_map, precursor_mass);
+    public SparseVector preSpectrum (Map<Double, Double> peaks_map, float precursor_mass, int scanNum) {
+        // sqrt the intensity
+        Map<Double, Double> sqrt_pl_map = new HashMap<>();
+        for (double mz : peaks_map.keySet()) {
+            if ((peaks_map.get(mz) > 1e-6) && (mz < precursor_mass)) {
+                sqrt_pl_map.put(mz, Math.sqrt(peaks_map.get(mz)));
+            }
+        }
+
+        // digitize the spectrum
+        double[] pl_array = digitizeSpec(sqrt_pl_map);
+
+        // normalize the spectrum
+        double[] normalizedSpectrum =  normalizeSpec(pl_array);
+
+        if (ECL2.debug) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(scanNum + ".normalized.spectrum.csv"))) {
+                writer.write("bin_idx,intensity\n");
+                for (int i = 0; i < normalizedSpectrum.length; ++i) {
+                    writer.write(i + "," + normalizedSpectrum[i] + "\n");
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                logger.error(ex.getMessage());
+                System.exit(1);
+            }
+        }
+
+        return prepareXcorr(normalizedSpectrum);
     }
 
     // prepare for XCorr
-    public SparseVector prepareXcorr(TreeMap<Float, Float> pl_map, float precursor_mass) {
-        float[] pl_array = digitizeSpec(pl_map, precursor_mass);
-
+    private SparseVector prepareXcorr(double[] pl_array) {
         SparseVector xcorr_pl = new SparseVector();
-        float my_sum = 0;
         int offset_range = 2 * XCORR_OFFSET + 1;
+        double factor = 1 / (double) (offset_range - 1); // caution: 1/150 rather than 1/151
+        double my_sum = 0;
         for (int i = 0; i < XCORR_OFFSET; ++i) {
             my_sum += pl_array[i];
         }
 
-        float factor = 1 / (float) (offset_range - 1); // caution: 1/150 rather than 1/151
+        double[] tempArray = new double[pl_array.length];
         for (int i = XCORR_OFFSET; i < pl_array.length + XCORR_OFFSET; ++i) {
             if (i < pl_array.length) {
                 my_sum += pl_array[i];
@@ -39,59 +71,63 @@ public class PreSpectrum {
             if (i >= offset_range) {
                 my_sum -= pl_array[i - offset_range];
             }
-            float temp = (pl_array[i - XCORR_OFFSET] - (my_sum - pl_array[i - XCORR_OFFSET]) * factor);
+            tempArray[i - XCORR_OFFSET] = (my_sum - pl_array[i - XCORR_OFFSET]) * factor;
+        }
+
+        for (int i = 1; i < pl_array.length; ++i) {
+            double temp = pl_array[i] - tempArray[i];
             if (Math.abs(temp) > 1e-6) {
-                xcorr_pl.put(i - XCORR_OFFSET, temp);
+                xcorr_pl.put(i, (float) temp);
             }
         }
 
         return xcorr_pl;
     }
 
-    TreeMap<Float, Float> normalizeSpec(Map<Double, Double> pl_map, float precursor_mass) {
-        // sqrt the intensity and find the highest intensity.
-        TreeMap<Float, Float> sqrt_pl_map = new TreeMap<>();
-        for (double mz : pl_map.keySet()) {
-            if ((pl_map.get(mz) > 1e-6) && (mz < precursor_mass)) {
-                float sqrt_intensity = (float) Math.sqrt(pl_map.get(mz));
-                sqrt_pl_map.put((float) mz, sqrt_intensity);
+    private double[] normalizeSpec(double[] plArray) {
+        double maxIntensity = 0;
+        for (double intensity : plArray) {
+            if (intensity > maxIntensity) {
+                maxIntensity = intensity;
             }
         }
 
-        // divide the spectrum into 10 windows and normalize each windows to DEFAULT_INTENSITY
-        TreeMap<Float, Float> windowed_pl_map = new TreeMap<>();
-        float min_mz = sqrt_pl_map.firstKey();
-        float max_mz = sqrt_pl_map.lastKey();
-        float window_size = (max_mz - min_mz) / 10 + 1;
+        double[] normalizedPlArray = new double[plArray.length];
+        int windowSize = (plArray.length / 10) + 1;
         for (int i = 0; i < 10; ++i) {
             // find the max intensity in each window
-            float left_mz = Math.min(min_mz + i * window_size, max_mz);
-            float right_mz = Math.min(left_mz + window_size, max_mz);
-            NavigableMap<Float, Float> sub_map;
-            if (right_mz < max_mz) {
-                sub_map = sqrt_pl_map.subMap(left_mz, true, right_mz, false);
-            } else {
-                sub_map = sqrt_pl_map.subMap(left_mz, true, right_mz, true);
+            double maxWindowIntensity = 0;
+            for (int j = 0; j < windowSize; ++j) {
+                int idx = i * windowSize + j;
+                if (idx < plArray.length) {
+                    if (plArray[idx] > maxWindowIntensity) {
+                        maxWindowIntensity = plArray[idx];
+                    }
+                }
             }
-            if (!sub_map.isEmpty()) {
-                Float[] intensity_array = sub_map.values().toArray(new Float[sub_map.size()]);
-                Arrays.sort(intensity_array);
-                float temp_1 = DEFAULT_INTENSITY / intensity_array[intensity_array.length - 1];
-                float temp_2 = (float) 0.05 * intensity_array[intensity_array.length - 1];
-                for (float mz : sub_map.keySet()) {
-                    if (sub_map.get(mz) > temp_2) {
-                        windowed_pl_map.put(mz, sub_map.get(mz) * temp_1);
+
+            if (maxWindowIntensity > 0) {
+                double temp1 = 50 / maxWindowIntensity;
+                double temp2 = 0.05f * maxIntensity;
+                for (int j = 0; j < windowSize; ++j) {
+                    int idx = i * windowSize + j;
+                    if (idx < plArray.length) {
+                        if (plArray[idx] > temp2) {
+                            normalizedPlArray[idx] = plArray[idx] * temp1;
+                        }
                     }
                 }
             }
         }
 
-        return windowed_pl_map;
+        return normalizedPlArray;
     }
 
-    float[] digitizeSpec(TreeMap<Float, Float> pl, float precursor_mass) {
-        float[] digitized_pl = new float[mass_tool_obj.mzToBin(precursor_mass) + 1];
-        for (float mz : pl.keySet()) {
+    private double[] digitizeSpec(Map<Double, Double> pl) {
+        Double[] mzArray = pl.keySet().toArray(new Double[pl.size()]);
+        Arrays.sort(mzArray);
+        double[] digitized_pl = new double[mass_tool_obj.mzToBin(mzArray[mzArray.length - 1]) + 1];
+        for (double mz : pl.keySet()) {
             int idx = mass_tool_obj.mzToBin(mz);
             digitized_pl[idx] = Math.max(pl.get(mz), digitized_pl[idx]);
         }

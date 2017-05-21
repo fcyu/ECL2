@@ -102,31 +102,12 @@ public class PreSpectra {
                     continue;
                 }
 
-                TreeMap<Float, Float> originalPlMap = pre_spectrum_obj.preSpectrum(raw_mz_intensity_map, precursor_mass);
-
-                if (ECL2.debug) {
-                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".normalized.spectrum.csv"))) {
-                        writer.write("mz,intensity\n");
-                        for (float mz : originalPlMap.keySet()) {
-                            writer.write(mz + "," + originalPlMap.get(mz) + "\n");
-                        }
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                        logger.error(ex.getMessage());
-                        System.exit(1);
-                    }
-                }
-
-                if (originalPlMap.size() <= min_peak_num) {
-                    continue;
-                }
-
                 int scan_num = Integer.valueOf(spectrum.getId());
 
                 Scan scan = spectra_parser.getScanByNum((long) scan_num);
                 float rt = scan.getRetentionTime().getSeconds();
 
-                SpectrumEntry spectrum_entry = new SpectrumEntry(scan_num, spectrum.getId(), precursor_mz, precursor_mass, precursor_charge, rt, originalPlMap, build_index_obj.linker_mass);
+                SpectrumEntry spectrum_entry = new SpectrumEntry(scan_num, spectrum.getId(), precursor_mz, precursor_mass, precursor_charge, rt, raw_mz_intensity_map, build_index_obj.linker_mass);
                 num_spectrum_map.put(scan_num, spectrum_entry);
             }
         } catch (MzXMLParsingException ex) {
