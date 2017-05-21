@@ -290,7 +290,7 @@ public class Search {
             SparseBooleanVector theo_mz = mass_tool_obj.buildTheoVector(chainEntry.aaArray, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, precursor_charge, max_common_ion_charge, xcorrPL.getMaxIdx());
 
             // Calculate dot produce
-            double dot_product = theo_mz.dot(xcorrPL) * 0.25;
+            double dot_product = theo_mz.dot(xcorrPL) * 0.005;
 
             if (ECL2.debug) {
                 debugEntryList.add(new DebugEntry(chainEntry.seq, link_site_1, chainEntry.chain_mass, dot_product));
