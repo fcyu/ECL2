@@ -58,11 +58,11 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                 SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(MassTool.seqToAAList(resultEntry.getChain1()), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - mass_tool_obj.calResidueMass(MassTool.seqToAAList(resultEntry.getChain1())), spectrumEntry.precursor_charge, max_common_ion_charge);
                 SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(MassTool.seqToAAList(resultEntry.getChain2()), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - mass_tool_obj.calResidueMass(MassTool.seqToAAList(resultEntry.getChain2())), spectrumEntry.precursor_charge, max_common_ion_charge);
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".chain.spectrum.csv"))) {
-                    writer.write("chain1 bin idx\n");
+                    writer.write(resultEntry.getChain1() + " bin idx\n");
                     for (int idx : chainVector1.getIdxSet()) {
                         writer.write(idx + "\n");
                     }
-                    writer.write("chain2 bin idx\n");
+                    writer.write(resultEntry.getChain2() + " bin idx\n");
                     for (int idx : chainVector2.getIdxSet()) {
                         writer.write(idx + "\n");
                     }
