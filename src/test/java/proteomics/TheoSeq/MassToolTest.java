@@ -45,7 +45,7 @@ public class MassToolTest {
     @Test
     public void calResidueMass() throws Exception {
         MassTool mass_tool_obj = new MassTool(1, fix_mod_map, "KR", "P", 1.0005f, 0.6f);
-        assertEquals(2503.1357421875, mass_tool_obj.calResidueMass(MassTool.seqToAAList("nGASPVTCILNDQKEMHFRYWc")), 0.001);
+        assertEquals(2503.1357421875, mass_tool_obj.calResidueMass("nGASPVTCILNDQKEMHFRYWc"), 0.001);
     }
 
     @Test

@@ -88,4 +88,14 @@ public class SparseVector {
     public int getNonzeroNum() {
         return sparse_vector.size();
     }
+
+    public int getMaxIdx() {
+        int maxIdx = 0;
+        for (int idx : sparse_vector.keySet()) {
+            if (idx > maxIdx) {
+                maxIdx = idx;
+            }
+        }
+        return(maxIdx);
+    }
 }
