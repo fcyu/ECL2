@@ -56,8 +56,8 @@ public class MassTool {
         return (int) (mz / mz_bin_size + one_minus_bin_offset);
     }
 
-        double total_mass = 0;
     public float calResidueMass(AA[] aa_array) { // n and c are also AA.
+        double total_mass = 0;
         for (AA aa : aa_array) {
             total_mass += mass_table.get(aa.aa) + aa.delta_mass;
         }
@@ -99,7 +99,7 @@ public class MassTool {
         SparseBooleanVector outputVector = new SparseBooleanVector();
 
         // traverse the sequence to get b-ion
-        float bIonMass = seq[0].delta_mass; // add N-term modification
+        double bIonMass = seq[0].delta_mass; // add N-term modification
         for (int i = 1; i < seq.length - 2; ++i) {
             bIonMass += mass_table.get(seq[i].aa) + seq[i].delta_mass;
             if (i < linkSite) {
