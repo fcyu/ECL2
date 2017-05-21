@@ -125,7 +125,7 @@ public class BuildIndex {
             // mod free
             Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm);
             if (!linkSiteSet.isEmpty()) {
-                float totalMass = mass_tool_obj.calResidueMass(seq) + MassTool.H2O;
+                float totalMass = (float) (mass_tool_obj.calResidueMass(seq) + MassTool.H2O);
                 if (totalMass < max_precursor_mass - linker_mass) {
                     int bin = massToBin(totalMass);
                     if (bin_seq_map.containsKey(bin)) {
@@ -145,7 +145,7 @@ public class BuildIndex {
             for (String varSeq : varSeqSet) {
                 linkSiteSet = getLinkSiteSet(varSeq, proteinNTerm);
                 if (!linkSiteSet.isEmpty()) {
-                    float totalMass = mass_tool_obj.calResidueMass(varSeq) + MassTool.H2O;
+                    float totalMass = (float) (mass_tool_obj.calResidueMass(varSeq) + MassTool.H2O);
                     if (totalMass < max_precursor_mass - linker_mass) {
                         int bin = massToBin(totalMass);
                         if (bin_seq_map.containsKey(bin)) {
@@ -186,7 +186,7 @@ public class BuildIndex {
                                 int temp_int = mod_free_seq.indexOf('K'); // only use the first K
                                 if ((temp_int != -1) && (temp_int != mod_free_seq.length() - 2)) { // only consider chains whose link site is in the middle.
                                     // consider PTM free
-                                    float mass = mass_tool_obj.calResidueMass(mod_free_seq) + MassTool.H2O;
+                                    float mass = (float) (mass_tool_obj.calResidueMass(mod_free_seq) + MassTool.H2O);
                                     if (mass < max_precursor_mass - linker_mass) {
                                         if (uniprot_decoy_mass_seq_map.containsKey(mass)) {
                                             if (uniprot_decoy_mass_seq_map.get(mass).size() < ECL2.random_score_point_t) { // limit the size of set for the sake of memory.
