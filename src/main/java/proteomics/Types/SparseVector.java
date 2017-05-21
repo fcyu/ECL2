@@ -44,7 +44,7 @@ public class SparseVector {
 
     float getMaxValue() {
         List<Float> intensity_list = new LinkedList<>(sparse_vector.values());
-        Collections.sort(intensity_list, Collections.reverseOrder());
+        intensity_list.sort(Collections.reverseOrder());
         return intensity_list.get(0);
     }
 

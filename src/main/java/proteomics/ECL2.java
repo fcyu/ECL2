@@ -177,10 +177,10 @@ public class ECL2 {
             List<List<FinalResultEntry>> picked_result = pickResult(final_search_results);
             CalFDR cal_fdr_obj = new CalFDR(picked_result.get(0));
             List<FinalResultEntry> intra_result = cal_fdr_obj.includeStats();
-            Collections.sort(intra_result, Collections.<FinalResultEntry>reverseOrder());
+            intra_result.sort(Collections.reverseOrder());
             cal_fdr_obj = new CalFDR(picked_result.get(1));
             List<FinalResultEntry> inter_result = cal_fdr_obj.includeStats();
-            Collections.sort(inter_result, Collections.<FinalResultEntry>reverseOrder());
+            inter_result.sort(Collections.reverseOrder());
             logger.info("Saving results...");
             saveTargetResult(intra_result, build_index_obj.getProAnnotateMap(), spectra_path, true);
             saveTargetResult(inter_result, build_index_obj.getProAnnotateMap(), spectra_path, false);
