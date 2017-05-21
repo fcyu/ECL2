@@ -125,7 +125,8 @@ public class BuildIndex {
             // mod free
             Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm);
             if (!linkSiteSet.isEmpty()) {
-                float totalMass = mass_tool_obj.calResidueMass(seq) + MassTool.H2O;
+                AA[] aaArray = MassTool.seqToAAList(seq);
+                float totalMass = mass_tool_obj.calResidueMass(aaArray) + MassTool.H2O;
                 if (totalMass < max_precursor_mass - linker_mass) {
                     int bin = massToBin(totalMass);
                     if (bin_seq_map.containsKey(bin)) {
@@ -135,7 +136,7 @@ public class BuildIndex {
                         temp.add(seq);
                         bin_seq_map.put(bin, temp);
                     }
-                    ChainEntry chainEntry = new ChainEntry(seq, totalMass, linkSiteSet, proteinNTerm, proteinCTerm);
+                    ChainEntry chainEntry = new ChainEntry(seq, aaArray, totalMass, linkSiteSet, proteinNTerm, proteinCTerm);
                     seq_entry_map.put(seq, chainEntry);
                 }
             }
@@ -145,7 +146,8 @@ public class BuildIndex {
             for (String varSeq : varSeqSet) {
                 linkSiteSet = getLinkSiteSet(varSeq, proteinNTerm);
                 if (!linkSiteSet.isEmpty()) {
-                    float totalMass = mass_tool_obj.calResidueMass(varSeq) + MassTool.H2O;
+                    AA[] aaArray = MassTool.seqToAAList(varSeq);
+                    float totalMass = mass_tool_obj.calResidueMass(aaArray) + MassTool.H2O;
                     if (totalMass < max_precursor_mass - linker_mass) {
                         int bin = massToBin(totalMass);
                         if (bin_seq_map.containsKey(bin)) {
@@ -155,7 +157,7 @@ public class BuildIndex {
                             temp.add(varSeq);
                             bin_seq_map.put(bin, temp);
                         }
-                        ChainEntry chainEntry = new ChainEntry(varSeq, totalMass, linkSiteSet, proteinNTerm, proteinCTerm);
+                        ChainEntry chainEntry = new ChainEntry(varSeq, aaArray, totalMass, linkSiteSet, proteinNTerm, proteinCTerm);
                         seq_entry_map.put(varSeq, chainEntry);
                     }
                 }
@@ -186,7 +188,7 @@ public class BuildIndex {
                                 int temp_int = mod_free_seq.indexOf('K'); // only use the first K
                                 if ((temp_int != -1) && (temp_int != mod_free_seq.length() - 2)) { // only consider chains whose link site is in the middle.
                                     // consider PTM free
-                                    float mass = mass_tool_obj.calResidueMass(mod_free_seq) + MassTool.H2O;
+                                    float mass = mass_tool_obj.calResidueMass(MassTool.seqToAAList(mod_free_seq)) + MassTool.H2O;
                                     if (mass < max_precursor_mass - linker_mass) {
                                         if (uniprot_decoy_mass_seq_map.containsKey(mass)) {
                                             if (uniprot_decoy_mass_seq_map.get(mass).size() < ECL2.random_score_point_t) { // limit the size of set for the sake of memory.

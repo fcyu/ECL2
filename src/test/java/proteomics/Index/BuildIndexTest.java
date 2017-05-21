@@ -260,25 +260,25 @@ public class BuildIndexTest {
         link_site_set = new HashSet<>();
         link_site_set.add((short) 0);
         link_site_set.add((short) 12);
-        ChainEntry chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(seq) + MassTool.H2O, link_site_set, true, false);
+        ChainEntry chain_entry = new ChainEntry(seq, MassTool.seqToAAList(seq), mass_tool_obj.calResidueMass(MassTool.seqToAAList(seq)) + MassTool.H2O, link_site_set, true, false);
         group_truth.put(seq, chain_entry);
 
         seq = "nIATAAAASKPSLNK[28.03]c";
         link_site_set = new HashSet<>();
         link_site_set.add((short) 9);
-        chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(seq) + MassTool.H2O, link_site_set, false, false);
+        chain_entry = new ChainEntry(seq, MassTool.seqToAAList(seq), mass_tool_obj.calResidueMass(MassTool.seqToAAList(seq)) + MassTool.H2O, link_site_set, false, false);
         group_truth.put(seq, chain_entry);
 
         seq = "nNLSPK[34.06]SAAAATAIRSAK[34.06]c";
         link_site_set = new HashSet<>();
         link_site_set.add((short) 0);
-        chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(seq) + MassTool.H2O, link_site_set, true, false);
+        chain_entry = new ChainEntry(seq, MassTool.seqToAAList(seq), mass_tool_obj.calResidueMass(MassTool.seqToAAList(seq)) + MassTool.H2O, link_site_set, true, false);
         group_truth.put(seq, chain_entry);
 
         seq = "n[28.03]KNLSPK[28.03]SAAAATAIRSAFc";
         link_site_set = new HashSet<>();
         link_site_set.add((short) 1);
-        chain_entry = new ChainEntry(seq, mass_tool_obj.calResidueMass(seq) + MassTool.H2O, link_site_set, true, true);
+        chain_entry = new ChainEntry(seq, MassTool.seqToAAList(seq), mass_tool_obj.calResidueMass(MassTool.seqToAAList(seq)) + MassTool.H2O, link_site_set, true, true);
         group_truth.put(seq, chain_entry);
 
         for (String temp : group_truth.keySet()) {
