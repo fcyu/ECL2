@@ -226,8 +226,8 @@ public class CalEValue {
                         String[] temp = seq_1_link_site.split("-");
                         String seq_1 = temp[0];
                         short link_site = Short.valueOf(temp[1]);
-                        double score1 = theo_mz_1.dot(pl_map_xcorr) * 0.25;
                         SparseBooleanVector theo_mz_1 = mass_tool_obj.buildTheoVector(seq_1, link_site, precursor_mass - mass_1, result_entry.charge, max_common_ion_charge, pl_map_xcorr.getMaxIdx());
+                        double score1 = theo_mz_1.dot(pl_map_xcorr) * 0.005;
                         if (score1 > Search.single_chain_t) {
                             gap_num = generateMoreScoresSub(sub_map, seq_1, score1, precursor_mass, gap_num);
                             if (gap_num < 0) {
@@ -248,8 +248,8 @@ public class CalEValue {
                 String seq_2 = temp[0];
                 short link_site = Short.valueOf(temp[1]);
                 if (!seq_1.contentEquals(seq_2)) {
-                    double score2 = theo_mz_2.dot(pl_map_xcorr) * 0.25;
                     SparseBooleanVector theo_mz_2 = mass_tool_obj.buildTheoVector(seq_2, link_site, precursor_mass - mass_2, result_entry.charge, max_common_ion_charge, pl_map_xcorr.getMaxIdx());
+                    double score2 = theo_mz_2.dot(pl_map_xcorr) * 0.005;
                     if (score2 > Search.single_chain_t) {
                         double score = score1 + score2;
                         result_entry.addToScoreHistogram(score);
