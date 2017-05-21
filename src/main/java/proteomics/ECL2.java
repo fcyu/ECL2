@@ -24,6 +24,7 @@ public class ECL2 {
     public static final double delta_c_t = 0;
     public static final int score_point_t = 15000;
     public static final int random_score_point_t = 2;
+    public static final boolean flankingPeaks = true;
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
     private static final String version = "2.1.3";
