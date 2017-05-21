@@ -76,6 +76,14 @@ public class PreSpectrum {
 
         for (int i = 1; i < pl_array.length; ++i) {
             double temp = pl_array[i] - tempArray[i];
+
+            if (ECL2.flankingPeaks) {
+                temp += (pl_array[i - 1] - tempArray[i - 1]) * 0.5;
+                if (i + 1 < pl_array.length) {
+                    temp += (pl_array[i + 1] - tempArray[i + 1]) * 0.5;
+                }
+            }
+
             if (Math.abs(temp) > 1e-6) {
                 xcorr_pl.put(i, (float) temp);
             }
