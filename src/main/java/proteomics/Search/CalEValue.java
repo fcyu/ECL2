@@ -246,7 +246,7 @@ public class CalEValue {
                                         ChainEntry chainEntry2 = seq_entry_map.get(seq2);
                                         for (short linkSite2 : chainEntry2.link_site_set) {
                                             SparseBooleanVector theoMz2 = mass_tool_obj.buildTheoVector(seq2, linkSite2, result_entry.spectrum_mass - chainEntry2.chain_mass, result_entry.charge, max_common_ion_charge, specMaxBinIdx);
-                                            double score2 = theoMz2.dot(pl_map_xcorr) * 0.0005;
+                                            double score2 = theoMz2.dot(pl_map_xcorr) * 0.005;
                                             if (score2 > Search.single_chain_t) {
                                                 result_entry.addToScoreHistogram(score1 + score2);
                                                 --gap_num;
