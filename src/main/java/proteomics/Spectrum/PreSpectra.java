@@ -73,8 +73,8 @@ public class PreSpectra {
                     continue;
                 }
 
-                float precursor_mz = spectrum.getPrecursorMZ().floatValue();
-                float precursor_mass = precursor_mz * precursor_charge - precursor_charge * 1.00727646688f;
+                double precursor_mz = spectrum.getPrecursorMZ();
+                float precursor_mass = (float) (precursor_mz * precursor_charge - precursor_charge * 1.00727646688);
 
                 if ((precursor_mass > max_precursor_mass) || (precursor_mass < min_precursor_mass)) {
                     continue;
@@ -107,7 +107,7 @@ public class PreSpectra {
                 Scan scan = spectra_parser.getScanByNum((long) scan_num);
                 float rt = scan.getRetentionTime().getSeconds();
 
-                SpectrumEntry spectrum_entry = new SpectrumEntry(scan_num, spectrum.getId(), precursor_mz, precursor_mass, precursor_charge, rt, raw_mz_intensity_map, build_index_obj.linker_mass);
+                SpectrumEntry spectrum_entry = new SpectrumEntry(scan_num, spectrum.getId(), (float) precursor_mz, precursor_mass, precursor_charge, rt, raw_mz_intensity_map, build_index_obj.linker_mass);
                 num_spectrum_map.put(scan_num, spectrum_entry);
             }
         } catch (MzXMLParsingException ex) {
