@@ -123,7 +123,7 @@ public class CalEValue {
         int start_idx = min_nonzero_idx;
         if (null_end_idx > 3 / ResultEntry.histogram_bin_size) {
             start_idx = Math.max(min_nonzero_idx, (int) (0.75 * null_end_idx));
-        } else if (null_end_idx > 1.5 / ResultEntry.histogram_bin_size) {
+        } else {
             start_idx = Math.max(min_nonzero_idx, (int) ( 0.5 * null_end_idx));
         }
 
