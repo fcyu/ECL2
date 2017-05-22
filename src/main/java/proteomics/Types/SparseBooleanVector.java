@@ -22,13 +22,11 @@ public class SparseBooleanVector {
         return sparse_vector.size();
     }
 
-    public double dot(SparseVector other) {
+    public double dot(SparseVector other) { // caution: it will change the original Sparse Boolean Vector.
         double output = 0;
-        Map<Integer, Float> other_vector = other.getVectorMap();
-        Set<Integer> intersectedKeys = new HashSet<>(sparse_vector);
-        intersectedKeys.retainAll(other_vector.keySet());
-        for (int i : intersectedKeys) {
-            output += other_vector.get(i);
+        sparse_vector.retainAll(other.getIdxSet());
+        for (int i : sparse_vector) {
+            output += other.get(i);
         }
         return output;
     }
