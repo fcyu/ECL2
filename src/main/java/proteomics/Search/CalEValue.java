@@ -207,7 +207,7 @@ public class CalEValue {
         if (ECL2.debug) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"))) {
                 writer.write(String.format("histogram,survival,ln(survival),slope=%.4f,intercept=%.4f,rsquare=%.4f,start=%d,end=%d\n", optimal_slope, optimal_intercept, max_r_square, optimal_start_idx, null_end_idx));
-                for (int i = 0; i < max_nonzero_idx; ++i) {
+                for (int i = 0; i <= max_nonzero_idx; ++i) {
                     if (i < ln_survival_count_array.length) {
                         writer.write(String.format("%d,%d,%.4f\n", score_histogram[i], survival_count_array[i], ln_survival_count_array[i]));
                     } else {
