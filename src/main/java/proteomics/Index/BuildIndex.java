@@ -243,40 +243,44 @@ public class BuildIndex {
             }
         }
 
-        Map<String, Set<String>> temp_map = new HashMap<>();
-        for (String target_seq : seq_pro_map.keySet()) {
-            String decoy_seq = "n" + (new StringBuilder(target_seq.substring(1, target_seq.length() - 2))).reverse().toString() + target_seq.substring(target_seq.length() - 2);
+        // generate decoy seq
+        for (String pro_id : pro_seq_map.keySet()) {
+            String pro_seq = pro_seq_map.get(pro_id);
+            String decoy_pro_seq = (new StringBuilder(pro_seq)).reverse().toString();
+            Set<String> decoy_seq_set = mass_tool_obj.buildChainSet(decoy_pro_seq);
+            for (String decoy_seq : decoy_seq_set) {
+                if ((decoy_seq.length() < min_chain_length) || (decoy_seq.length() > max_chain_length) || decoy_seq.contains("B") || decoy_seq.contains("J") || decoy_seq.contains("X") || decoy_seq.contains("Z")) {
+                    continue;
+                }
 
-            // Check duplicate
-            String new_decoy_seq = decoy_seq.replace("L", "!").replace("I", "!").replace("K", "#").replace("Q", "#");
-            if (for_check_duplicate.contains(new_decoy_seq)) {
-                // the decoy sequence is the same as the target sequence
-                continue;
-            }
+                // Check duplicate
+                String new_decoy_seq = decoy_seq.replace("L", "!").replace("I", "!").replace("K", "#").replace("Q", "#");
+                if (for_check_duplicate.contains(new_decoy_seq)) {
+                    // the decoy sequence is the same as the target sequence
+                    continue;
+                }
 
-            for_check_duplicate.add(new_decoy_seq);
+                for_check_duplicate.add(new_decoy_seq);
 
-            Set<String> target_id_set = seq_pro_map.get(target_seq);
-            String target_pro_seq = pro_seq_map.get(target_id_set.iterator().next());
-            boolean n_term = false;
-            boolean c_term = false;
-            if (target_pro_seq.startsWith(getNCFreeSeq(target_seq))) {
-                n_term = true;
-            }
-            if (target_pro_seq.endsWith(getNCFreeSeq(target_seq))) {
-                c_term = true;
-            }
-            seq_term_map.put(decoy_seq, new boolean[]{n_term, c_term});
+                boolean n_term = false;
+                boolean c_term = false;
+                if (decoy_pro_seq.startsWith(getNCFreeSeq(decoy_seq))) {
+                    n_term = true;
+                }
+                if (decoy_pro_seq.endsWith(getNCFreeSeq(decoy_seq))) {
+                    c_term = true;
+                }
+                seq_term_map.put(decoy_seq, new boolean[]{n_term, c_term});
 
-            Set<String> decoy_id_set = new HashSet<>();
-            for (String target_id : target_id_set)
-            {
-                decoy_id_set.add("DECOY_" + target_id);
+                if (seq_pro_map.containsKey(decoy_seq)) {
+                    seq_pro_map.get(decoy_seq).add("DECOY_" + pro_id);
+                } else {
+                    Set<String> pro_list = new HashSet<>();
+                    pro_list.add("DECOY_" + pro_id);
+                    seq_pro_map.put(decoy_seq, pro_list);
+                }
             }
-            temp_map.put(decoy_seq, decoy_id_set);
         }
-
-        seq_pro_map.putAll(temp_map);
 
         return seq_pro_map;
     }
