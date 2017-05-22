@@ -49,7 +49,7 @@ public class Search {
         Arrays.sort(C13_correction_range);
     }
 
-    ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int maxBinIdx) {
+    ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx) {
         int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.precursor_mass + C13_correction_range[C13_correction_range.length - 1] * 1.00335483f - build_index_obj.linker_mass) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
@@ -78,7 +78,7 @@ public class Search {
                 if (spectrumEntry.precursor_mass >= build_index_obj.binToLeftMass(binIdx - 1) + min_additional_mass + C13_correction_range[0] * 1.00335483f - leftMs1Tol) {
                     for (String seq : bin_seq_map.get(binIdx)) {
                         ChainEntry chainEntry = chain_entry_map.get(seq);
-                        linearScan(spectrumEntry, xcorrPL, maxBinIdx, chainEntry, binIdx, binChainMap, debugEntryList, devChainScoreMap);
+                        linearScan(spectrumEntry, xcorrPL, specMaxBinIdx, chainEntry, binIdx, binChainMap, debugEntryList, devChainScoreMap);
                     }
                 } else {
                     break;
@@ -284,10 +284,10 @@ public class Search {
         return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), pro_1, final_seq_2, result_entry.getLinkSite2(), pro_2, cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum());
     }
 
-    private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int maxBinIdx, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
+    private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
         for (short link_site_1 : chainEntry.link_site_set) {
             int precursor_charge = spectrumEntry.precursor_charge;
-            SparseBooleanVector theo_mz = mass_tool_obj.buildTheoVector(chainEntry.seq, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, precursor_charge, max_common_ion_charge, maxBinIdx);
+            SparseBooleanVector theo_mz = mass_tool_obj.buildTheoVector(chainEntry.seq, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, precursor_charge, max_common_ion_charge, specMaxBinIdx);
 
             // Calculate dot produce
             double dot_product = theo_mz.dot(xcorrPL) * 0.005;
