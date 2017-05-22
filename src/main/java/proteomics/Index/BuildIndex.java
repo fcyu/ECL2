@@ -3,7 +3,6 @@ package proteomics.Index;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import proteomics.ECL2;
 import proteomics.TheoSeq.DbTool;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.AA;
@@ -31,7 +30,6 @@ public class BuildIndex {
     private Map<Integer, Long> bin_candidate_num_map = new HashMap<>();
     private Map<String, ChainEntry> seq_entry_map = new HashMap<>();
     private Map<String, boolean[]> seq_term_map = new HashMap<>();
-    private TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map = new TreeMap<>();
     private Set<String> for_check_duplicate = new HashSet<>();
     private Map<String, Set<String>> seqProMap;
 
@@ -170,41 +168,6 @@ public class BuildIndex {
             }
             bin_candidate_num_map.put(bin_index, candidate_num);
         }
-
-        // read and index large decoy uniprot database
-        if (ECL2.cal_evalue) {
-            db_tool_obj = new DbTool(uniprot_decoy_db);
-            Map<String, String> uniprot_decoy_pro_seq_map = db_tool_obj.getProSeqMap();
-            for (String pro_seq : uniprot_decoy_pro_seq_map.values()) {
-                Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq);
-                for (String mod_free_seq : seq_set) {
-                    if ((mod_free_seq.length() >= min_chain_length) && (mod_free_seq.length() <= max_chain_length)) {
-                        if (!mod_free_seq.contains("B") && !mod_free_seq.contains("J") && !mod_free_seq.contains("X") && !mod_free_seq.contains("Z")) {
-                            String temp_str = mod_free_seq.replace("L", "!").replace("I", "!").replace("K", "#").replace("Q", "#");
-                            if (!for_check_duplicate.contains(temp_str)) {
-                                for_check_duplicate.add(temp_str);
-                                int temp_int = mod_free_seq.indexOf('K'); // only use the first K
-                                if ((temp_int != -1) && (temp_int != mod_free_seq.length() - 2)) { // only consider chains whose link site is in the middle.
-                                    // consider PTM free
-                                    float mass = (float) (mass_tool_obj.calResidueMass(mod_free_seq) + MassTool.H2O);
-                                    if (mass < max_precursor_mass - linker_mass) {
-                                        if (uniprot_decoy_mass_seq_map.containsKey(mass)) {
-                                            if (uniprot_decoy_mass_seq_map.get(mass).size() < ECL2.random_score_point_t) { // limit the size of set for the sake of memory.
-                                                uniprot_decoy_mass_seq_map.get(mass).add(mod_free_seq + "-" + temp_int);
-                                            }
-                                        } else {
-                                            Set<String> temp = new HashSet<>();
-                                            temp.add(mod_free_seq + "-" + temp_int);
-                                            uniprot_decoy_mass_seq_map.put(mass, temp);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     public Map<String, Set<String>> getSeqProMap() {
@@ -241,10 +204,6 @@ public class BuildIndex {
 
     public int massToBin(float mass) {
         return (int) Math.floor(mass / ms1_bin_size);
-    }
-
-    public TreeMap<Float, Set<String>> getUniprotDecoyMassSeqMap() {
-        return uniprot_decoy_mass_seq_map;
     }
 
     public Map<Integer, Long> getBinCandidateNumMap() {

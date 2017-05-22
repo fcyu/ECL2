@@ -3,7 +3,9 @@ package proteomics.Search;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
+import proteomics.Index.BuildIndex;
 import proteomics.TheoSeq.MassTool;
+import proteomics.Types.ChainEntry;
 import proteomics.Types.ResultEntry;
 import proteomics.Types.SparseBooleanVector;
 import proteomics.Types.SparseVector;
@@ -11,36 +13,41 @@ import proteomics.Types.SparseVector;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.NavigableMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
 public class CalEValue {
 
     private static final Logger logger = LoggerFactory.getLogger(CalEValue.class);
+    private static final float maxTolerance = 20;
 
     private ResultEntry result_entry;
-    private TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map;
+    private TreeMap<Integer, Set<String>> bin_seq_map;
+    private Map<String, ChainEntry> seq_entry_map;
+    private BuildIndex buildIndexObj;
     private float linker_mass;
     private MassTool mass_tool_obj;
     private int max_common_ion_charge;
     private SparseVector pl_map_xcorr;
-    private int maxBinIdx;
-    private float e_value_precursor_mass_tol;
+    private int specMaxBinIdx;
 
-    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, int maxBinIdx, TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, float e_value_precursor_mass_tol) {
+    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, int specMaxBinIdx, BuildIndex buildIndexObj, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, float originalTolerance) {
         this.result_entry = result_entry;
-        this.uniprot_decoy_mass_seq_map = uniprot_decoy_mass_seq_map;
+        this.bin_seq_map = buildIndexObj.getMassBinSeqMap();
+        this.seq_entry_map = buildIndexObj.getSeqEntryMap();
+        this.buildIndexObj = buildIndexObj;
         this.linker_mass = linker_mass;
         this.mass_tool_obj = mass_tool_obj;
         this.max_common_ion_charge = max_common_ion_charge;
         this.pl_map_xcorr = pl_map_xcorr;
-        this.maxBinIdx = maxBinIdx;
-        this.e_value_precursor_mass_tol = e_value_precursor_mass_tol;
+        this.specMaxBinIdx = specMaxBinIdx;
 
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
-        if (gap_num >= 0) {
-            generateRandomRandomScores(gap_num);
+        float tolerance = originalTolerance;
+        while (gap_num > 0 && tolerance <= maxTolerance) {
+            gap_num = generateRandomRandomScores(gap_num, tolerance, tolerance + 1);
+            tolerance += 1;
         }
 
         if (gap_num > 0) {
@@ -215,49 +222,41 @@ public class CalEValue {
         }
     }
 
-    private int generateRandomRandomScores(int gap_num) {
-        float precursor_mass = result_entry.spectrum_mass;
-        float max_mass = (precursor_mass - linker_mass) / 2;
-        for (float mass_1 : uniprot_decoy_mass_seq_map.keySet()) {
-            if (mass_1 <= max_mass) {
-                float left_mass = precursor_mass - linker_mass - mass_1 - e_value_precursor_mass_tol;
-                float right_mass = precursor_mass - linker_mass - mass_1 + e_value_precursor_mass_tol;
-                NavigableMap<Float, Set<String>> sub_map = uniprot_decoy_mass_seq_map.subMap(left_mass, true, right_mass, true);
+    private int generateRandomRandomScores(int gap_num, float previousTolerance, float tolerance) {
+        int maxBinIdx = buildIndexObj.massToBin((result_entry.spectrum_mass - linker_mass) / 2);
+        for (int binIdx1 : bin_seq_map.keySet()) {
+            if (binIdx1 < maxBinIdx) {
+                int leftBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - previousTolerance - tolerance) - maxBinIdx;
+                int rightBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - previousTolerance) - maxBinIdx - 1;
+                int leftBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + previousTolerance) - maxBinIdx + 1;
+                int rightBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + previousTolerance + tolerance) - maxBinIdx;
+                TreeMap<Integer, Set<String>> sub_map = new TreeMap<>();
+                sub_map.putAll(bin_seq_map.subMap(leftBinIdx1, true, rightBinIdx1, false));
+                sub_map.putAll(bin_seq_map.subMap(leftBinIdx2, false, rightBinIdx2, true));
                 if (!sub_map.isEmpty()) {
-                    for (String seq_1_link_site : uniprot_decoy_mass_seq_map.get(mass_1)) {
-                        String[] temp = seq_1_link_site.split("-");
-                        String seq_1 = temp[0];
-                        short link_site = Short.valueOf(temp[1]);
-                        SparseBooleanVector theo_mz_1 = mass_tool_obj.buildTheoVector(seq_1, link_site, precursor_mass - mass_1, result_entry.charge, max_common_ion_charge, maxBinIdx);
-                        double score1 = theo_mz_1.dot(pl_map_xcorr) * 0.005;
-                        if (score1 > Search.single_chain_t) {
-                            gap_num = generateMoreScoresSub(sub_map, seq_1, score1, precursor_mass, gap_num);
-                            if (gap_num < 0) {
-                                return gap_num;
+                    for (String seq1 : bin_seq_map.get(binIdx1)) {
+                        ChainEntry chainEntry1 = seq_entry_map.get(seq1);
+                        for (short linkSite1 : chainEntry1.link_site_set) {
+                            SparseBooleanVector theoMz1 = mass_tool_obj.buildTheoVector(seq1, linkSite1, result_entry.spectrum_mass - chainEntry1.chain_mass, result_entry.charge, max_common_ion_charge, specMaxBinIdx);
+                            double score1 = theoMz1.dot(pl_map_xcorr) * 0.005;
+                            if (score1 > Search.single_chain_t) {
+                                for (int binIdx2 : sub_map.keySet()) {
+                                    for (String seq2 : sub_map.get(binIdx2)) {
+                                        ChainEntry chainEntry2 = seq_entry_map.get(seq2);
+                                        for (short linkSite2 : chainEntry2.link_site_set) {
+                                            SparseBooleanVector theoMz2 = mass_tool_obj.buildTheoVector(seq2, linkSite2, result_entry.spectrum_mass - chainEntry2.chain_mass, result_entry.charge, max_common_ion_charge, specMaxBinIdx);
+                                            double score2 = theoMz2.dot(pl_map_xcorr) * 0.0005;
+                                            if (score2 > Search.single_chain_t) {
+                                                result_entry.addToScoreHistogram(score1 + score2);
+                                                --gap_num;
+                                                if (gap_num <= 0) {
+                                                    return gap_num;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }
-                }
-            }
-        }
-        return gap_num;
-    }
-
-    private int generateMoreScoresSub(NavigableMap<Float, Set<String>> sub_map, String seq_1, double score1, float precursor_mass, int gap_num) {
-        for (float mass_2 : sub_map.keySet()) {
-            for (String seq_2_link_site : sub_map.get(mass_2)) {
-                String[] temp = seq_2_link_site.split("-");
-                String seq_2 = temp[0];
-                short link_site = Short.valueOf(temp[1]);
-                if (!seq_1.contentEquals(seq_2)) {
-                    SparseBooleanVector theo_mz_2 = mass_tool_obj.buildTheoVector(seq_2, link_site, precursor_mass - mass_2, result_entry.charge, max_common_ion_charge, maxBinIdx);
-                    double score2 = theo_mz_2.dot(pl_map_xcorr) * 0.005;
-                    if (score2 > Search.single_chain_t) {
-                        double score = score1 + score2;
-                        result_entry.addToScoreHistogram(score);
-                        --gap_num;
-                        if (gap_num < 0) {
-                            return gap_num;
                         }
                     }
                 }

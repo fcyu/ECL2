@@ -75,13 +75,13 @@ public class SearchWrap implements Callable<FinalResultEntry> {
             }
             if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) > ECL2.delta_c_t) {
                 if (ECL2.cal_evalue) {
-                    float e_value_precursor_mass_tol;
+                    float originalTolerance;
                     if (search_obj.ms1_tolerance_unit == 1) {
-                        e_value_precursor_mass_tol = resultEntry.spectrum_mass * search_obj.ms1_tolerance * 1e-6f;
+                        originalTolerance = resultEntry.spectrum_mass * search_obj.ms1_tolerance * 1e-6f;
                     } else {
-                        e_value_precursor_mass_tol = search_obj.ms1_tolerance;
+                        originalTolerance = search_obj.ms1_tolerance;
                     }
-                    new CalEValue(spectrumEntry.scan_num, resultEntry, xcorrPL, maxBinIdx, build_index_obj.getUniprotDecoyMassSeqMap(), mass_tool_obj, build_index_obj.linker_mass, max_common_ion_charge, e_value_precursor_mass_tol);
+                    new CalEValue(spectrumEntry.scan_num, resultEntry, xcorrPL, specMaxBinIdx, build_index_obj, mass_tool_obj, build_index_obj.linker_mass, max_common_ion_charge, originalTolerance);
                     if (resultEntry.getEValue() != 9999) {
                         return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap);
                     } else {
