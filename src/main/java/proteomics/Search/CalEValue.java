@@ -21,6 +21,7 @@ public class CalEValue {
 
     private static final Logger logger = LoggerFactory.getLogger(CalEValue.class);
     private static final float maxTolerance = 20;
+    private static final float toleranceStep = 1;
 
     private ResultEntry result_entry;
     private TreeMap<Integer, Set<String>> bin_seq_map;
@@ -46,8 +47,8 @@ public class CalEValue {
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
         float tolerance = originalTolerance;
         while (gap_num > 0 && tolerance <= maxTolerance) {
-            gap_num = generateRandomRandomScores(gap_num, tolerance, tolerance + 1);
-            tolerance += 1;
+            gap_num = generateRandomRandomScores(gap_num, tolerance, toleranceStep);
+            tolerance += toleranceStep;
         }
 
         if (gap_num > 0) {
@@ -222,14 +223,14 @@ public class CalEValue {
         }
     }
 
-    private int generateRandomRandomScores(int gap_num, float previousTolerance, float tolerance) {
+    private int generateRandomRandomScores(int gap_num, float tolerance, float toleranceStep) {
         int maxBinIdx = buildIndexObj.massToBin((result_entry.spectrum_mass - linker_mass) / 2);
         for (int binIdx1 : bin_seq_map.keySet()) {
             if (binIdx1 < maxBinIdx) {
-                int leftBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - previousTolerance - tolerance) - maxBinIdx;
-                int rightBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - previousTolerance) - maxBinIdx - 1;
-                int leftBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + previousTolerance) - maxBinIdx + 1;
-                int rightBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + previousTolerance + tolerance) - maxBinIdx;
+                int leftBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - tolerance - toleranceStep) - maxBinIdx;
+                int rightBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - tolerance) - maxBinIdx - 1;
+                int leftBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + tolerance) - maxBinIdx + 1;
+                int rightBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + tolerance + toleranceStep) - maxBinIdx;
                 TreeMap<Integer, Set<String>> sub_map = new TreeMap<>();
                 sub_map.putAll(bin_seq_map.subMap(leftBinIdx1, true, rightBinIdx1, false));
                 sub_map.putAll(bin_seq_map.subMap(leftBinIdx2, false, rightBinIdx2, true));
