@@ -25,15 +25,17 @@ public class CalEValue {
     private MassTool mass_tool_obj;
     private int max_common_ion_charge;
     private SparseVector pl_map_xcorr;
+    private int maxBinIdx;
     private float e_value_precursor_mass_tol;
 
-    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, float e_value_precursor_mass_tol) {
+    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, int maxBinIdx, TreeMap<Float, Set<String>> uniprot_decoy_mass_seq_map, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, float e_value_precursor_mass_tol) {
         this.result_entry = result_entry;
         this.uniprot_decoy_mass_seq_map = uniprot_decoy_mass_seq_map;
         this.linker_mass = linker_mass;
         this.mass_tool_obj = mass_tool_obj;
         this.max_common_ion_charge = max_common_ion_charge;
         this.pl_map_xcorr = pl_map_xcorr;
+        this.maxBinIdx = maxBinIdx;
         this.e_value_precursor_mass_tol = e_value_precursor_mass_tol;
 
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
@@ -226,7 +228,7 @@ public class CalEValue {
                         String[] temp = seq_1_link_site.split("-");
                         String seq_1 = temp[0];
                         short link_site = Short.valueOf(temp[1]);
-                        SparseBooleanVector theo_mz_1 = mass_tool_obj.buildTheoVector(seq_1, link_site, precursor_mass - mass_1, result_entry.charge, max_common_ion_charge, pl_map_xcorr.getMaxIdx());
+                        SparseBooleanVector theo_mz_1 = mass_tool_obj.buildTheoVector(seq_1, link_site, precursor_mass - mass_1, result_entry.charge, max_common_ion_charge, maxBinIdx);
                         double score1 = theo_mz_1.dot(pl_map_xcorr) * 0.005;
                         if (score1 > Search.single_chain_t) {
                             gap_num = generateMoreScoresSub(sub_map, seq_1, score1, precursor_mass, gap_num);
@@ -248,7 +250,7 @@ public class CalEValue {
                 String seq_2 = temp[0];
                 short link_site = Short.valueOf(temp[1]);
                 if (!seq_1.contentEquals(seq_2)) {
-                    SparseBooleanVector theo_mz_2 = mass_tool_obj.buildTheoVector(seq_2, link_site, precursor_mass - mass_2, result_entry.charge, max_common_ion_charge, pl_map_xcorr.getMaxIdx());
+                    SparseBooleanVector theo_mz_2 = mass_tool_obj.buildTheoVector(seq_2, link_site, precursor_mass - mass_2, result_entry.charge, max_common_ion_charge, maxBinIdx);
                     double score2 = theo_mz_2.dot(pl_map_xcorr) * 0.005;
                     if (score2 > Search.single_chain_t) {
                         double score = score1 + score2;

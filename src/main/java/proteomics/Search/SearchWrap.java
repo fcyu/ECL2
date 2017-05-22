@@ -40,6 +40,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     @Override
     public FinalResultEntry call() {
         SparseVector xcorrPL = preSpectrumObj.preSpectrum(spectrumEntry.originalPlMap, spectrumEntry.precursor_mass, spectrumEntry.scan_num);
+        int maxBinIdx = xcorrPL.getMaxIdx();
         if (ECL2.debug) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".xcorr.spectrum.csv"))) {
                 writer.write("bin_idx,intensity\n");
@@ -52,11 +53,11 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                 System.exit(1);
             }
         }
-        ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL);
+        ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL, maxBinIdx);
         if (resultEntry != null) {
             if (ECL2.debug) {
-                SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(resultEntry.getChain1(), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain1()) + MassTool.H2O), spectrumEntry.precursor_charge, max_common_ion_charge, xcorrPL.getMaxIdx());
-                SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(resultEntry.getChain2(), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain2()) + MassTool.H2O), spectrumEntry.precursor_charge, max_common_ion_charge, xcorrPL.getMaxIdx());
+                SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(resultEntry.getChain1(), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain1()) + MassTool.H2O), spectrumEntry.precursor_charge, max_common_ion_charge, maxBinIdx);
+                SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(resultEntry.getChain2(), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain2()) + MassTool.H2O), spectrumEntry.precursor_charge, max_common_ion_charge, maxBinIdx);
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".chain.spectrum.csv"))) {
                     writer.write(resultEntry.getChain1() + " bin idx\n");
                     for (int idx : chainVector1.getIdxSet()) {
@@ -80,7 +81,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                     } else {
                         e_value_precursor_mass_tol = search_obj.ms1_tolerance;
                     }
-                    new CalEValue(spectrumEntry.scan_num, resultEntry, xcorrPL, build_index_obj.getUniprotDecoyMassSeqMap(), mass_tool_obj, build_index_obj.linker_mass, max_common_ion_charge, e_value_precursor_mass_tol);
+                    new CalEValue(spectrumEntry.scan_num, resultEntry, xcorrPL, maxBinIdx, build_index_obj.getUniprotDecoyMassSeqMap(), mass_tool_obj, build_index_obj.linker_mass, max_common_ion_charge, e_value_precursor_mass_tol);
                     if (resultEntry.getEValue() != 9999) {
                         return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap);
                     } else {
