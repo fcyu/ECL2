@@ -1,7 +1,5 @@
 package proteomics.Types;
 
-import proteomics.ECL2;
-
 import java.util.LinkedList;
 import java.util.List;
 
@@ -28,8 +26,8 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
         secondPtmFreeSeq = second_seq.replaceAll("[^A-Znc]", "");
     }
 
-    public void addToScoreList(double score) {
-        if (ECL2.cal_evalue) {
+    public void addToScoreList(double score, boolean cal_evalue) {
+        if (cal_evalue) {
             score_list.add(score);
         }
     }

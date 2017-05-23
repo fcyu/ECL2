@@ -20,7 +20,6 @@ import java.util.concurrent.*;
 
 public class ECL2 {
 
-    public static final boolean cal_evalue = true;
     public static final double delta_c_t = 0;
     public static final int score_point_t = 15000;
     public static final boolean flankingPeaks = true;
@@ -50,6 +49,10 @@ public class ECL2 {
         Parameter parameter = new Parameter(parameter_path);
         Map<String, String> parameter_map = parameter.returnParameterMap();
         int max_common_ion_charge = Integer.valueOf(parameter_map.get("max_common_ion_charge"));
+        boolean cal_evalue = true;
+        if (parameter_map.containsKey("cal_evalue") && parameter_map.get("cal_evalue").trim().contentEquals("0")) {
+            cal_evalue = false;
+        }
 
         debug = parameter_map.get("debug").contentEquals("1");
         dev = parameter_map.get("dev").contentEquals("1");
@@ -109,7 +112,7 @@ public class ECL2 {
         Search search_obj = new Search(build_index_obj, parameter_map);
         List<Future<FinalResultEntry>> temp_result_list = new LinkedList<>();
         for (int scanNum : scanNumArray) {
-            temp_result_list.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge, build_index_obj.getSeqProMap())));
+            temp_result_list.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge, build_index_obj.getSeqProMap(), cal_evalue)));
         }
 
         // check progress every minute
@@ -175,22 +178,22 @@ public class ECL2 {
             // save result
             logger.info("Estimating q-value...");
             List<List<FinalResultEntry>> picked_result = pickResult(final_search_results);
-            CalFDR cal_fdr_obj = new CalFDR(picked_result.get(0));
-            List<FinalResultEntry> intra_result = cal_fdr_obj.includeStats();
+            CalFDR cal_fdr_obj = new CalFDR(picked_result.get(0), cal_evalue);
+            List<FinalResultEntry> intra_result = cal_fdr_obj.includeStats(cal_evalue);
             intra_result.sort(Collections.reverseOrder());
-            cal_fdr_obj = new CalFDR(picked_result.get(1));
-            List<FinalResultEntry> inter_result = cal_fdr_obj.includeStats();
+            cal_fdr_obj = new CalFDR(picked_result.get(1), cal_evalue);
+            List<FinalResultEntry> inter_result = cal_fdr_obj.includeStats(cal_evalue);
             inter_result.sort(Collections.reverseOrder());
             logger.info("Saving results...");
-            saveTargetResult(intra_result, build_index_obj.getProAnnotateMap(), spectra_path, true);
-            saveTargetResult(inter_result, build_index_obj.getProAnnotateMap(), spectra_path, false);
-            saveDecoyResult(intra_result, build_index_obj.getProAnnotateMap(), spectra_path, true);
-            saveDecoyResult(inter_result, build_index_obj.getProAnnotateMap(), spectra_path, false);
+            saveTargetResult(intra_result, build_index_obj.getProAnnotateMap(), spectra_path, true, cal_evalue);
+            saveTargetResult(inter_result, build_index_obj.getProAnnotateMap(), spectra_path, false, cal_evalue);
+            saveDecoyResult(intra_result, build_index_obj.getProAnnotateMap(), spectra_path, true, cal_evalue);
+            saveDecoyResult(inter_result, build_index_obj.getProAnnotateMap(), spectra_path, false, cal_evalue);
         }
         logger.info("Done.");
     }
 
-    private static void saveTargetResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra) {
+    private static void saveTargetResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra, boolean cal_evalue) {
         try {
             BufferedWriter writer;
             if (is_intra) {
@@ -234,7 +237,7 @@ public class ECL2 {
         }
     }
 
-    private static void saveDecoyResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra) {
+    private static void saveDecoyResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra, boolean cal_evalue) {
         try {
             BufferedWriter writer;
             if (is_intra) {

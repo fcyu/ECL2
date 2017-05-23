@@ -1,7 +1,6 @@
 package proteomics.Validation;
 
 
-import proteomics.ECL2;
 import proteomics.Types.FinalResultEntry;
 
 import java.util.List;
@@ -15,9 +14,9 @@ public class CalFDR {
     private float[] qvalue_array = null;
     private List<FinalResultEntry> results;
 
-    public CalFDR(List<FinalResultEntry> results) {
+    public CalFDR(List<FinalResultEntry> results, boolean cal_evalue) {
         this.results = results;
-        if (ECL2.cal_evalue) {
+        if (cal_evalue) {
             precision = 0.1f;
         } else {
             precision = 0.001f;
@@ -25,7 +24,7 @@ public class CalFDR {
 
         // find the max score
         for (FinalResultEntry entry : results) {
-            if (ECL2.cal_evalue) {
+            if (cal_evalue) {
                 if (entry.negative_log10_evalue > max_score) {
                     max_score = entry.negative_log10_evalue;
                 }
@@ -52,7 +51,7 @@ public class CalFDR {
         for (FinalResultEntry re : results) {
             if (re.hit_type == 1) {
                 int idx;
-                if (ECL2.cal_evalue) {
+                if (cal_evalue) {
                     idx = (int) Math.floor((re.negative_log10_evalue - min_score) / precision);
                 } else {
                     idx = (int) Math.floor((re.score - min_score) / precision);
@@ -60,7 +59,7 @@ public class CalFDR {
                 ++decoy_count_vector[idx];
             } else if (re.hit_type == 0) {
                 int idx;
-                if (ECL2.cal_evalue) {
+                if (cal_evalue) {
                     idx = (int) Math.floor((re.negative_log10_evalue - min_score) / precision);
                 } else {
                     idx = (int) Math.floor((re.score - min_score) / precision);
@@ -68,7 +67,7 @@ public class CalFDR {
                 ++target_count_vector[idx];
             } else {
                 int idx;
-                if (ECL2.cal_evalue) {
+                if (cal_evalue) {
                     idx = (int) Math.floor((re.negative_log10_evalue - min_score) / precision);
                 } else {
                     idx = (int) Math.floor((re.score - min_score) / precision);
@@ -116,10 +115,10 @@ public class CalFDR {
         }
     }
 
-    public List<FinalResultEntry> includeStats() {
+    public List<FinalResultEntry> includeStats(boolean cal_evalue) {
         for (FinalResultEntry re : results) {
             if (re.hit_type == 0) {
-                if (ECL2.cal_evalue) {
+                if (cal_evalue) {
                     int idx = (int) Math.floor((re.negative_log10_evalue - min_score) / precision);
                     re.qvalue = qvalue_array[idx];
                 } else {

@@ -2,7 +2,7 @@ package proteomics.Types;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import proteomics.ECL2;
+
 
 public class ResultEntry{
 
@@ -38,8 +38,8 @@ public class ResultEntry{
     private double chain_score_2;
     private int chain_rank_2;
 
-    public ResultEntry(String spectrum_id, float spectrum_mz, float spectrum_mass, float rt, int charge) {
-        if (ECL2.cal_evalue) {
+    public ResultEntry(String spectrum_id, float spectrum_mz, float spectrum_mass, float rt, int charge, boolean cal_evalue) {
+        if (cal_evalue) {
             score_histogram = new int[(int) Math.round(max_score / histogram_bin_size) + 1]; // start from zero score.
         }
         this.spectrum_id = spectrum_id;

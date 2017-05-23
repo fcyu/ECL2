@@ -26,8 +26,9 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     private final int max_common_ion_charge;
     private final PreSpectrum preSpectrumObj;
     private final Map<String, Set<String>> seqProMap;
+    private final boolean cal_evalue;
 
-    public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, int max_common_ion_charge, Map<String, Set<String>> seqProMap) {
+    public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, int max_common_ion_charge, Map<String, Set<String>> seqProMap, boolean cal_evalue) {
         this.search_obj = search_obj;
         this.spectrumEntry = spectrumEntry;
         this.build_index_obj = build_index_obj;
@@ -35,6 +36,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
         this.max_common_ion_charge = max_common_ion_charge;
         preSpectrumObj = new PreSpectrum(mass_tool_obj);
         this.seqProMap = seqProMap;
+        this.cal_evalue = cal_evalue;
     }
 
     @Override
@@ -74,7 +76,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                 }
             }
             if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) > ECL2.delta_c_t) {
-                if (ECL2.cal_evalue) {
+                if (cal_evalue) {
                     float originalTolerance;
                     if (search_obj.ms1_tolerance_unit == 1) {
                         originalTolerance = resultEntry.spectrum_mass * search_obj.ms1_tolerance * 1e-6f;

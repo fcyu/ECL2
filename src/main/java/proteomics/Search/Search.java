@@ -27,6 +27,7 @@ public class Search {
     private int[] C13_correction_range;
     private Map<Integer, Long> bin_candidate_num_map;
     final float single_chain_t;
+    private final boolean cal_evalue;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
     public Search(BuildIndex build_index_obj, Map<String, String> parameter_map) {
@@ -39,10 +40,17 @@ public class Search {
         ms1_tolerance = Float.valueOf(parameter_map.get("ms1_tolerance"));
         bin_seq_map = build_index_obj.getMassBinSeqMap();
         bin_candidate_num_map = build_index_obj.getBinCandidateNumMap();
+
         if (parameter_map.containsKey("single_chain_t")) {
             single_chain_t = Float.valueOf(parameter_map.get("single_chain_t"));
         } else {
             single_chain_t = 0.1f;
+        }
+
+        if (parameter_map.containsKey("cal_evalue") && parameter_map.get("cal_evalue").trim().contentEquals("0")) {
+            cal_evalue = false;
+        } else {
+            cal_evalue = true;
         }
 
         String[] temp = parameter_map.get("C13_correction_range").split(",");
@@ -112,7 +120,7 @@ public class Search {
         int max_v = build_index_obj.massToBin(max_mass) + 1;
 
         long candidate_num = 0;
-        ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge);
+        ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge, cal_evalue);
         for (int idx_1 : binChainMap.keySet()) {
             if (idx_1 > max_v) {
                 break;
@@ -181,7 +189,7 @@ public class Search {
                         }
                     }
 
-                    if (ECL2.cal_evalue && (resultEntry.getScoreCount() < ECL2.score_point_t)) {
+                    if (cal_evalue && (resultEntry.getScoreCount() < ECL2.score_point_t)) {
                         for (double s1 : chain_score_entry_1.getScoreList()) {
                             for (double s2 : chain_score_entry_2.getScoreList()) {
                                 resultEntry.addToScoreHistogram(s1 + s2);
@@ -285,7 +293,7 @@ public class Search {
         String final_seq_1 = addFixMod(chain_seq_1, result_entry.getLinkSite1());
         String final_seq_2 = addFixMod(chain_seq_2, result_entry.getLinkSite2());
 
-        return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), pro_1, final_seq_2, result_entry.getLinkSite2(), pro_2, cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum());
+        return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), pro_1, final_seq_2, result_entry.getLinkSite2(), pro_2, cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum(), cal_evalue);
     }
 
     private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
@@ -308,7 +316,7 @@ public class Search {
             if (dot_product > single_chain_t) {
                 if (binChainMap.containsKey(binInx)) {
                     ChainResultEntry chain_result_entry = binChainMap.get(binInx);
-                    chain_result_entry.addToScoreList(dot_product);
+                    chain_result_entry.addToScoreList(dot_product, cal_evalue);
                     if (dot_product > chain_result_entry.getScore()) {
                         chain_result_entry.setSecondScore(chain_result_entry.getScore());
                         chain_result_entry.setSecondSeq(chain_result_entry.getSeq());
@@ -321,7 +329,7 @@ public class Search {
                     }
                 } else {
                     ChainResultEntry chain_result_entry = new ChainResultEntry();
-                    chain_result_entry.addToScoreList(dot_product);
+                    chain_result_entry.addToScoreList(dot_product, cal_evalue);
                     chain_result_entry.setSeq(chainEntry.seq);
                     chain_result_entry.setLinkSite(link_site_1);
                     chain_result_entry.setScore(dot_product);

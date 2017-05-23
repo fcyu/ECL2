@@ -1,6 +1,5 @@
 package proteomics.Types;
 
-import proteomics.ECL2;
 
 public class FinalResultEntry implements Comparable<FinalResultEntry> {
 
@@ -44,7 +43,9 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
     public double chain_score_2;
     public int chain_rank_2;
 
-    public FinalResultEntry(int scan_num, String spectrum_id, int rank, int charge, float spectrum_mz, float spectrum_mass, float peptide_mass, float rt, float ppm, double score, double delta_c, String seq_1, int link_site_1, String pro_id_1, String seq_2, int link_site_2, String pro_id_2, String cl_type, int hit_type, int C13_correction, double e_value, int point_count, float r_square, float slope, float intercept, int start_idx, int end_idx, double chain_score_1, int chain_rank_1, double chain_score_2, int chain_rank_2, long candidate_num) {
+    private final boolean cal_evalue;
+
+    public FinalResultEntry(int scan_num, String spectrum_id, int rank, int charge, float spectrum_mz, float spectrum_mass, float peptide_mass, float rt, float ppm, double score, double delta_c, String seq_1, int link_site_1, String pro_id_1, String seq_2, int link_site_2, String pro_id_2, String cl_type, int hit_type, int C13_correction, double e_value, int point_count, float r_square, float slope, float intercept, int start_idx, int end_idx, double chain_score_1, int chain_rank_1, double chain_score_2, int chain_rank_2, long candidate_num, boolean cal_evalue) {
         this.scan_num = scan_num;
         this.spectrum_id = spectrum_id;
         this.rank = rank;
@@ -92,10 +93,12 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
         this.candidate_num = candidate_num;
 
         toString = scan_num + "-" + seq_1 + "-" + link_site_1 + "-" + seq_2 + link_site_2;
+
+        this.cal_evalue = cal_evalue;
     }
 
     public int compareTo(FinalResultEntry other) {
-        if (ECL2.cal_evalue) {
+        if (cal_evalue) {
             if (this.negative_log10_evalue > other.negative_log10_evalue) {
                 return 1;
             } else if (this.negative_log10_evalue < other.negative_log10_evalue) {
