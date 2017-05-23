@@ -120,7 +120,7 @@ public class BuildIndex {
             boolean proteinCTerm = seq_term_map.get(seq)[1];
 
             // mod free
-            Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm);
+            Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm, proteinCTerm);
             if (!linkSiteSet.isEmpty()) {
                 float totalMass = (float) (mass_tool_obj.calResidueMass(seq) + MassTool.H2O);
                 if (totalMass < max_precursor_mass - linker_mass) {
@@ -140,7 +140,7 @@ public class BuildIndex {
             // mod containing
             Set<String> varSeqSet = generateModSeq(seq, linkSiteSet, varModParams, varModMaxNum);
             for (String varSeq : varSeqSet) {
-                linkSiteSet = getLinkSiteSet(varSeq, proteinNTerm);
+                linkSiteSet = getLinkSiteSet(varSeq, proteinNTerm, proteinCTerm);
                 if (!linkSiteSet.isEmpty()) {
                     float totalMass = (float) (mass_tool_obj.calResidueMass(varSeq) + MassTool.H2O);
                     if (totalMass < max_precursor_mass - linker_mass) {
@@ -224,10 +224,10 @@ public class BuildIndex {
 
                 boolean n_term = false;
                 boolean c_term = false;
-                if (pro_seq.startsWith(getNCFreeSeq(target_seq))) {
+                if (pro_seq.startsWith(target_seq.substring(1, target_seq.length() - 1))) {
                     n_term = true;
                 }
-                if (pro_seq.endsWith(getNCFreeSeq(target_seq))) {
+                if (pro_seq.endsWith(target_seq.substring(1, target_seq.length() - 1))) {
                     c_term = true;
                 }
                 seq_term_map.put(target_seq, new boolean[]{n_term, c_term});
@@ -263,10 +263,10 @@ public class BuildIndex {
 
                 boolean n_term = false;
                 boolean c_term = false;
-                if (decoy_pro_seq.startsWith(getNCFreeSeq(decoy_seq))) {
+                if (decoy_pro_seq.startsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
                     n_term = true;
                 }
-                if (decoy_pro_seq.endsWith(getNCFreeSeq(decoy_seq))) {
+                if (decoy_pro_seq.endsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
                     c_term = true;
                 }
                 seq_term_map.put(decoy_seq, new boolean[]{n_term, c_term});
@@ -307,11 +307,11 @@ public class BuildIndex {
         Integer[] allIdxArray = idxModMassMap.keySet().toArray(new Integer[idxModMassMap.size()]);
         Arrays.sort(allIdxArray);
         for (int i = 1; i <= Math.min(varModMaxNum, idxModMassMap.size()); ++i) {
-            List<int[]> idxArrays = selectIdxes(allIdxArray, i);
+            List<int[]> idxCombinationList = generateIdxCombinations(allIdxArray, i);
             Set<String> varSetSubSet = new HashSet<>();
-            for (int[] idxArray : idxArrays) {
-                if (checkIdxArray(idxArray, modFreeListSites)) {
-                    varSetSubSet.addAll(generateModSeqSub(seq, idxArray, idxModMassMap));
+            for (int[] idxCombination : idxCombinationList) {
+                if (stillHasLinkSite(idxCombination, modFreeListSites)) {
+                    varSetSubSet.addAll(generateModSeqSub(seq, idxCombination, idxModMassMap));
                 }
             }
             if (!varSetSubSet.isEmpty()) {
@@ -322,7 +322,7 @@ public class BuildIndex {
         return varSeqSet;
     }
 
-    private List<int[]> selectIdxes(Integer[] allIdxArray, int num) {
+    private List<int[]> generateIdxCombinations(Integer[] allIdxArray, int num) {
         List<int[]> outputList = new LinkedList<>();
         Iterator<int[]> tempIterator = CombinatoricsUtils.combinationsIterator(allIdxArray.length, num);
         while (tempIterator.hasNext()) {
@@ -338,17 +338,17 @@ public class BuildIndex {
         return outputList;
     }
 
-    private boolean checkIdxArray(int[] idxArray, Set<Short> modFreeLinkSites) {
+    private boolean stillHasLinkSite(int[] idxCombination, Set<Short> modFreeLinkSites) {
         for (int modFreeLinkSite : modFreeLinkSites) {
-            if (Arrays.binarySearch(idxArray, modFreeLinkSite) < 0) {
+            if (Arrays.binarySearch(idxCombination, modFreeLinkSite) < 0) {
                 return true;
             }
         }
         return false;
     }
 
-    private Set<String> generateModSeqSub(String seq, int[] idxArray, Map<Integer, List<Float>> idxModMassMap) {
-        List<Map<Integer, Float>> localIdxModMassMaps = generateLocalIdxModMassMap(idxArray, idxModMassMap);
+    private Set<String> generateModSeqSub(String seq, int[] idxCombination, Map<Integer, List<Float>> idxModMassMap) {
+        List<Map<Integer, Float>> localIdxModMassMaps = generateLocalIdxModMassMap(idxCombination, idxModMassMap);
 
         Set<String> outputSet = new HashSet<>();
         for (Map<Integer, Float> localIdxModMassMap : localIdxModMassMaps) {
@@ -470,7 +470,7 @@ public class BuildIndex {
         }
     }
 
-    private Set<Short> getLinkSiteSet(String seq, boolean n_term) {
+    private Set<Short> getLinkSiteSet(String seq, boolean n_term, boolean c_term) {
         AA[] aa_list = MassTool.seqToAAList(seq);
         Set<Short> output = new HashSet<>();
         for (int i = 1; i < aa_list.length - 2; ++i) {
@@ -481,11 +481,10 @@ public class BuildIndex {
         if (n_term && !output.contains((short) 1) && (Math.abs(aa_list[0].delta_mass) < varModMassResolution)) {
             output.add((short) 0);
         }
+        if (c_term && aa_list[aa_list.length - 2].aa == 'K' && (Math.abs(aa_list[aa_list.length - 2].delta_mass) < varModMassResolution)) {
+            output.add((short) (aa_list.length - 2));
+        }
         return output;
-    }
-
-    private String getNCFreeSeq(String seq) {
-        return seq.substring(1, seq.length() - 1);
     }
 
     private Set<VarModParam> getVarModParams(String v) {
