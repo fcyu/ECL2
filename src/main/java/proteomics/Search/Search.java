@@ -16,8 +16,6 @@ public class Search {
 
     private static final Logger logger = LoggerFactory.getLogger(Search.class);
 
-    public static final double single_chain_t = 0.1;
-
     private final int max_common_ion_charge;
     public final float ms1_tolerance;
     public final int ms1_tolerance_unit;
@@ -28,6 +26,7 @@ public class Search {
     private final BuildIndex build_index_obj;
     private int[] C13_correction_range;
     private Map<Integer, Long> bin_candidate_num_map;
+    final double single_chain_t;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
     public Search(BuildIndex build_index_obj, Map<String, String> parameter_map) {
@@ -40,6 +39,11 @@ public class Search {
         ms1_tolerance = Float.valueOf(parameter_map.get("ms1_tolerance"));
         bin_seq_map = build_index_obj.getMassBinSeqMap();
         bin_candidate_num_map = build_index_obj.getBinCandidateNumMap();
+        if (parameter_map.containsKey("single_chain_t")) {
+            single_chain_t = Float.valueOf(parameter_map.get("single_chain_t"));
+        } else {
+            single_chain_t = 0.1;
+        }
 
         String[] temp = parameter_map.get("C13_correction_range").split(",");
         C13_correction_range = new int[temp.length];

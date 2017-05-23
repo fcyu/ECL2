@@ -10,6 +10,7 @@ min_precursor_mass = 1000
 max_precursor_mass = 12000
 min_chain_length = 5 # minimum length of a peptide chain
 max_chain_length = 50
+single_chain_t = 0
 
 # Spectrum
 min_ms1_charge = 3
