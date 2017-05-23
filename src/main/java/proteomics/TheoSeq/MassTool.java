@@ -83,6 +83,7 @@ public class MassTool {
                     chain_seq_set.add("n" + sub_string + "c");
                 }
             }
+            // Add N-term peptide
             if (digest_range_map.get(i).size() > 0) {
                 int[] digest_range = digest_range_map.get(i).get(0);
                 String sub_string = pro_seq.substring(digest_range[0], digest_range[1]);
