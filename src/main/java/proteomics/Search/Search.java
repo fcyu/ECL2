@@ -26,7 +26,7 @@ public class Search {
     private final BuildIndex build_index_obj;
     private int[] C13_correction_range;
     private Map<Integer, Long> bin_candidate_num_map;
-    final double single_chain_t;
+    final float single_chain_t;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
     public Search(BuildIndex build_index_obj, Map<String, String> parameter_map) {
@@ -42,7 +42,7 @@ public class Search {
         if (parameter_map.containsKey("single_chain_t")) {
             single_chain_t = Float.valueOf(parameter_map.get("single_chain_t"));
         } else {
-            single_chain_t = 0.1;
+            single_chain_t = 0.1f;
         }
 
         String[] temp = parameter_map.get("C13_correction_range").split(",");

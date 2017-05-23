@@ -32,8 +32,9 @@ public class CalEValue {
     private int max_common_ion_charge;
     private SparseVector pl_map_xcorr;
     private int specMaxBinIdx;
+    private Search search_obj;
 
-    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, int specMaxBinIdx, BuildIndex buildIndexObj, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, float originalTolerance) {
+    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, int specMaxBinIdx, BuildIndex buildIndexObj, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, float originalTolerance, Search search_obj) {
         this.result_entry = result_entry;
         this.bin_seq_map = buildIndexObj.getMassBinSeqMap();
         this.seq_entry_map = buildIndexObj.getSeqEntryMap();
@@ -43,6 +44,7 @@ public class CalEValue {
         this.max_common_ion_charge = max_common_ion_charge;
         this.pl_map_xcorr = pl_map_xcorr;
         this.specMaxBinIdx = specMaxBinIdx;
+        this.search_obj = search_obj;
 
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
         float tolerance = originalTolerance;
@@ -240,14 +242,14 @@ public class CalEValue {
                         for (short linkSite1 : chainEntry1.link_site_set) {
                             SparseBooleanVector theoMz1 = mass_tool_obj.buildTheoVector(seq1, linkSite1, result_entry.spectrum_mass - chainEntry1.chain_mass, result_entry.charge, max_common_ion_charge, specMaxBinIdx);
                             double score1 = theoMz1.dot(pl_map_xcorr) * 0.005;
-                            if (score1 > Search.single_chain_t) {
+                            if (score1 > search_obj.single_chain_t) {
                                 for (int binIdx2 : sub_map.keySet()) {
                                     for (String seq2 : sub_map.get(binIdx2)) {
                                         ChainEntry chainEntry2 = seq_entry_map.get(seq2);
                                         for (short linkSite2 : chainEntry2.link_site_set) {
                                             SparseBooleanVector theoMz2 = mass_tool_obj.buildTheoVector(seq2, linkSite2, result_entry.spectrum_mass - chainEntry2.chain_mass, result_entry.charge, max_common_ion_charge, specMaxBinIdx);
                                             double score2 = theoMz2.dot(pl_map_xcorr) * 0.005;
-                                            if (score2 > Search.single_chain_t) {
+                                            if (score2 > search_obj.single_chain_t) {
                                                 result_entry.addToScoreHistogram(score1 + score2);
                                                 --gap_num;
                                                 if (gap_num <= 0) {

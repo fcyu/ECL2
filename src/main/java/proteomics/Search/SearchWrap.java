@@ -81,7 +81,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                     } else {
                         originalTolerance = search_obj.ms1_tolerance;
                     }
-                    new CalEValue(spectrumEntry.scan_num, resultEntry, xcorrPL, specMaxBinIdx, build_index_obj, mass_tool_obj, build_index_obj.linker_mass, max_common_ion_charge, originalTolerance);
+                    new CalEValue(spectrumEntry.scan_num, resultEntry, xcorrPL, specMaxBinIdx, build_index_obj, mass_tool_obj, build_index_obj.linker_mass, max_common_ion_charge, originalTolerance, search_obj);
                     if (resultEntry.getEValue() != 9999) {
                         return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap);
                     } else {
