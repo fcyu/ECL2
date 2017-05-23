@@ -82,6 +82,12 @@ public class MassTool {
                     // If there is a K in middle, this peptide is a chain.
                     chain_seq_set.add("n" + sub_string + "c");
                 }
+                if (digest_range_1[1] == pro_seq.length()) {
+                    // This is the end of the protein. No digestion site, so "K" in any position including C-term can be linked.
+                    if (sub_string.contains("K")) {
+                        chain_seq_set.add("n" + sub_string + "c");
+                    }
+                }
             }
             // Add N-term peptide
             if (digest_range_map.get(i).size() > 0) {
