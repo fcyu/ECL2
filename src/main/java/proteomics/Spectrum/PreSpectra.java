@@ -29,7 +29,6 @@ public class PreSpectra {
         int max_ms1_charge = Integer.valueOf(parameter_map.get("max_ms1_charge"));
         float min_precursor_mass =  Float.valueOf(parameter_map.get("min_precursor_mass"));
         float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
-        int min_peak_num = Integer.valueOf(parameter_map.get("min_peak_num"));
 
         //  In DEBUG mode, filter out unlisted scan num
         if (ECL2.debug) {
@@ -95,11 +94,6 @@ public class PreSpectra {
                         logger.error(ex.getMessage());
                         System.exit(1);
                     }
-                }
-
-                if (raw_mz_intensity_map.size() < min_peak_num) {
-                    logger.debug("Scan {} doesn't contain enough peak number ({}). Skip.", spectrum.getId(), min_peak_num);
-                    continue;
                 }
 
                 int scan_num = Integer.valueOf(spectrum.getId());

@@ -15,7 +15,6 @@ max_chain_length = 50
 min_ms1_charge = 3
 max_ms1_charge = 7
 max_common_ion_charge = 3
-min_peak_num = 20
 C13_correction_range = 0
 
 # Tolerance
