@@ -4,7 +4,6 @@ dev = 0
 
 # Database
 db = small+random50.fasta # The whole protein database
-decoy_pool_db = uniprot.decoy.fasta
 missed_cleavage = 2 # maximum number of missed cleavage
 min_precursor_mass = 1000
 max_precursor_mass = 12000
