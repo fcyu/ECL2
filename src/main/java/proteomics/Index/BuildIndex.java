@@ -38,7 +38,6 @@ public class BuildIndex {
         int min_chain_length = Integer.valueOf(parameter_map.get("min_chain_length")) + 2; // n and c are counted in the sequence
         int max_chain_length = Integer.valueOf(parameter_map.get("max_chain_length")) + 2; // n and c are counted in the sequence
         String db_path = parameter_map.get("db");
-        String uniprot_decoy_db = parameter_map.get("decoy_pool_db");
         int missed_cleavage = Integer.valueOf(parameter_map.get("missed_cleavage"));
         float mz_bin_size = Float.valueOf(parameter_map.get("mz_bin_size"));
         float one_minus_bin_offset = 1 - Float.valueOf(parameter_map.get("mz_bin_offset"));
