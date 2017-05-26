@@ -2,6 +2,7 @@ package proteomics.Parameter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import proteomics.ECL2;
 
 import java.io.*;
 import java.util.*;
@@ -19,7 +20,11 @@ public class Parameter {
 
     public Parameter(String parameterFile) {
         try (BufferedReader parameterReader = new BufferedReader(new FileReader(parameterFile))) {
-            String line;
+            String line = parameterReader.readLine().trim();
+            if (!line.contentEquals("# " + ECL2.version)) {
+                logger.error("The parameter file version ({}) is not compatible with current ECL2 version ({}).", line.substring(2), ECL2.version);
+                System.exit(1);
+            }
             while ((line = parameterReader.readLine()) != null) {
                 line = line.trim();
                 Matcher commentLineMatcher = commentLinePattern.matcher(line);
