@@ -16,7 +16,6 @@ import java.util.regex.Pattern;
 public class BuildIndex {
 
     private static final Logger logger = LoggerFactory.getLogger(BuildIndex.class);
-    private static final float ms1_bin_size = 0.001f;
     private static final Pattern varModParamPattern = Pattern.compile("([0-9.-]+)\\s+([A-Znc]+)");
     private static final int globalVarModMaxNum = 5; // Do not change this value. Otherwise, change generateLocalIdxModMassMap accordingly.
     private static final float varModMassResolution = 0.01f;
@@ -32,6 +31,7 @@ public class BuildIndex {
     private Map<String, boolean[]> seq_term_map = new HashMap<>();
     private Set<String> for_check_duplicate = new HashSet<>();
     private Map<String, Set<String>> seqProMap;
+    private final float ms1_bin_size ;
 
     public BuildIndex(Map<String, String> parameter_map) {
         // initialize parameters
@@ -42,6 +42,12 @@ public class BuildIndex {
         float mz_bin_size = Float.valueOf(parameter_map.get("mz_bin_size"));
         float one_minus_bin_offset = 1 - Float.valueOf(parameter_map.get("mz_bin_offset"));
         float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
+
+        if (parameter_map.containsKey("ms1_bin_size")) {
+            ms1_bin_size = Float.valueOf(parameter_map.get("ms1_bin_size"));
+        } else {
+            ms1_bin_size = 0.001f;
+        }
 
         // Read fix modification
         fix_mod_map.put('G', Float.valueOf(parameter_map.get("G")));
