@@ -4,7 +4,7 @@
 
     <groupId>hk.ust.bioinformatics</groupId>
     <artifactId>ECL2</artifactId>
-    <version>2.1.4-dev-1c9b46a</version>
+    <version>2.1.4-dev-201705262001</version>
     <packaging>jar</packaging>
 
     <name>ECL2</name>

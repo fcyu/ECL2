@@ -1,5 +1,5 @@
-# 2.1.4-dev
-# The first line is the parameter file version. Don't change it.
+# 2.1.4-dev-201705262001
+# The first line is the parameter file version. Do not change it.
 thread_num = 0
 debug = 0
 dev = 0
@@ -29,16 +29,18 @@ mz_bin_offset = 0
 cl_mass = 138.0680796
 
 # Var modification
-# format: <mass> <residues>
-var_mod1 = 0.0 X
-var_mod2 = 0.0 X
-var_mod3 = 0.0 X
-var_mod4 = 0.0 X
-var_mod5 = 0.0 X
-var_mod6 = 0.0 X
-var_mod7 = 0.0 X
-var_mod8 = 0.0 X
-var_mod9 = 0.0 X
+# format: <mass> <residues> <binary>
+# <binary> == 0/1
+# binary modification is mutual exclusion with each other
+var_mod1 = 15.99 M 0
+var_mod2 = 0.0 X 0
+var_mod3 = 0.0 X 0
+var_mod4 = 0.0 X 0
+var_mod5 = 0.0 X 0
+var_mod6 = 0.0 X 0
+var_mod7 = 0.0 X 0
+var_mod8 = 0.0 X 0
+var_mod9 = 0.0 X 0
 var_mod_max_num = 5 # max number of modified amino acids in a peptide. The max value is 5
 
 # Fix modification

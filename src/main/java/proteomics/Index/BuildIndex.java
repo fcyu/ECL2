@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import proteomics.TheoSeq.DbTool;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.AA;
+import proteomics.Types.BinaryModParam;
 import proteomics.Types.ChainEntry;
 import proteomics.Types.VarModParam;
 
@@ -16,7 +17,7 @@ import java.util.regex.Pattern;
 public class BuildIndex {
 
     private static final Logger logger = LoggerFactory.getLogger(BuildIndex.class);
-    private static final Pattern varModParamPattern = Pattern.compile("([0-9.-]+)\\s+([A-Znc]+)");
+    private static final Pattern varModParamPattern = Pattern.compile("([0-9.-]+)\\s+([A-Znc]+)\\s+([01])");
     private static final int globalVarModMaxNum = 5; // Do not change this value. Otherwise, change generateLocalIdxModMassMap accordingly.
     private static final float varModMassResolution = 0.01f;
 
@@ -94,26 +95,27 @@ public class BuildIndex {
         seqProMap = buildSeqProMap(pro_seq_map, min_chain_length, max_chain_length);
 
         // read var mods
-        Set<VarModParam> varModParams = new HashSet<>();
+        Set<VarModParam> varModParamSet = new HashSet<>();
+        Set<BinaryModParam> binaryModParamSet = new HashSet<>();
         for (String k : parameter_map.keySet()) {
             if (k.contentEquals("var_mod1")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             } else if (k.contentEquals("var_mod2")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             } else if (k.contentEquals("var_mod3")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             } else if (k.contentEquals("var_mod4")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             } else if (k.contentEquals("var_mod5")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             } else if (k.contentEquals("var_mod6")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             } else if (k.contentEquals("var_mod7")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             } else if (k.contentEquals("var_mod8")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             } else if (k.contentEquals("var_mod9")) {
-                varModParams.addAll(getVarModParams(parameter_map.get(k)));
+                getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
             }
         }
 
@@ -144,7 +146,7 @@ public class BuildIndex {
             }
 
             // mod containing
-            Set<String> varSeqSet = generateModSeq(seq, linkSiteSet, varModParams, varModMaxNum);
+            Set<String> varSeqSet = generateModSeq(seq, linkSiteSet, varModParamSet, binaryModParamSet, varModMaxNum);
             for (String varSeq : varSeqSet) {
                 linkSiteSet = getLinkSiteSet(varSeq, proteinNTerm, proteinCTerm);
                 if (!linkSiteSet.isEmpty()) {
@@ -290,38 +292,121 @@ public class BuildIndex {
         return seq_pro_map;
     }
 
-    private Set<String> generateModSeq(String seq, Set<Short> modFreeListSites, Set<VarModParam> varModParams, int varModMaxNum) { // todo: check
-        // get all locations' var lists
-        Map<Integer, List<Float>> idxModMassMap = new HashMap<>();
-        for (int i = 0; i < seq.length(); ++i) {
-            char aa = seq.charAt(i);
-            for (VarModParam varModParam : varModParams) {
-                if (varModParam.aa == aa) {
-                    if (idxModMassMap.containsKey(i)) {
-                        idxModMassMap.get(i).add(varModParam.modMass);
-                    } else {
-                        List<Float> temp = new LinkedList<>();
-                        temp.add(varModParam.modMass);
-                        idxModMassMap.put(i, temp);
+    private Set<String> generateModSeq(String seq, Set<Short> modFreeListSites, Set<VarModParam> varModParamSet, Set<BinaryModParam> binaryModParamSet, int varModMaxNum) { // todo: check
+        Set<String> varSeqSet = new HashSet<>();
+        for (short linkSite : modFreeListSites) {
+            // has binary mod
+            for (BinaryModParam binaryModParam : binaryModParamSet) {
+                // get all locations having binary mod
+                Map<Integer, List<Float>> idxBinaryModMassMap = new HashMap<>();
+                for (int i = 0; i < seq.length(); ++i) {
+                    if (i != linkSite) {
+                        String aa = seq.substring(i, i + 1);
+                        if (binaryModParam.aas.contains(aa)) {
+                            List<Float> tempList = new LinkedList<>();
+                            tempList.add(binaryModParam.modMass);
+                            idxBinaryModMassMap.put(i, tempList);
+                        }
+                    }
+                }
+                if (!idxBinaryModMassMap.isEmpty()) {
+                    // generate a sequence only containing the binary mod
+                    StringBuilder sb = new StringBuilder(seq.length() * 10);
+                    for (int i = 0; i < seq.length(); ++i) {
+                        sb.append(seq.substring(i, i + 1));
+                        if (idxBinaryModMassMap.containsKey(i)) {
+                            sb.append(String.format("[%.2f]", idxBinaryModMassMap.get(i).get(0)));
+                        }
+                    }
+                    varSeqSet.add(sb.toString());
+
+                    if (idxBinaryModMassMap.size() < varModMaxNum) {
+                        // generate sequences containing the binary mod and additional var mod
+                        // get all locations having var mods
+                        Map<Integer, List<Float>> idxVarModMassMap = new HashMap<>();
+                        for (int i = 0; i < seq.length(); ++i) {
+                            if (i != linkSite) {
+                                if (!idxBinaryModMassMap.containsKey(i)) {
+                                    char aa = seq.charAt(i);
+                                    for (VarModParam varModParam : varModParamSet) {
+                                        if (varModParam.aa == aa) {
+                                            if (idxVarModMassMap.containsKey(i)) {
+                                                idxVarModMassMap.get(i).add(varModParam.modMass);
+                                            } else {
+                                                List<Float> temp = new LinkedList<>();
+                                                temp.add(varModParam.modMass);
+                                                idxVarModMassMap.put(i, temp);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (!idxVarModMassMap.isEmpty()) {
+                            // generate var containing sequences
+                            Map<Integer, List<Float>> idxBinaryVarModMassMap = new HashMap<>();
+                            idxBinaryVarModMassMap.putAll(idxBinaryModMassMap);
+                            idxBinaryVarModMassMap.putAll(idxVarModMassMap);
+                            Integer[] allIdxArray = idxVarModMassMap.keySet().toArray(new Integer[idxVarModMassMap.size()]);
+                            Arrays.sort(allIdxArray);
+                            for (int i = 1; i <= Math.min(varModMaxNum - idxBinaryModMassMap.size(), idxVarModMassMap.size()); ++i) {
+                                List<int[]> idxCombinationList = generateIdxCombinations(allIdxArray, i);
+                                Set<String> varSetSubSet = new HashSet<>();
+                                for (int[] idxCombination : idxCombinationList) {
+                                    int[] allIdxCombination = new int[idxCombination.length + idxBinaryModMassMap.size()];
+                                    int j = 0;
+                                    for (int idx : idxBinaryModMassMap.keySet()) {
+                                        allIdxCombination[j] = idx;
+                                        ++j;
+                                    }
+                                    for (int k = 0; k < idxCombination.length; ++k) {
+                                        allIdxCombination[j + k] = idxCombination[k];
+                                    }
+                                    Arrays.sort(allIdxCombination);
+                                    varSetSubSet.addAll(generateModSeqSub(seq, allIdxCombination, idxBinaryVarModMassMap));
+                                }
+                                if (!varSetSubSet.isEmpty()) {
+                                    varSeqSet.addAll(checkKCTermMod(varSetSubSet)); // eliminate those sequence that the middle amino acids having the same mod mass and the n-term and the first amino acid or the c-term and the last amino acid have the same mod mass.
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
 
-        // generate var containing sequences
-        Set<String> varSeqSet = new HashSet<>();
-        Integer[] allIdxArray = idxModMassMap.keySet().toArray(new Integer[idxModMassMap.size()]);
-        Arrays.sort(allIdxArray);
-        for (int i = 1; i <= Math.min(varModMaxNum, idxModMassMap.size()); ++i) {
-            List<int[]> idxCombinationList = generateIdxCombinations(allIdxArray, i);
-            Set<String> varSetSubSet = new HashSet<>();
-            for (int[] idxCombination : idxCombinationList) {
-                if (stillHasLinkSite(idxCombination, modFreeListSites)) {
-                    varSetSubSet.addAll(generateModSeqSub(seq, idxCombination, idxModMassMap));
+            // does not have binary mod
+            // get all locations' var lists
+            Map<Integer, List<Float>> idxVarModMassMap = new HashMap<>();
+            for (int i = 0; i < seq.length(); ++i) {
+                if (i != linkSite) {
+                    char aa = seq.charAt(i);
+                    for (VarModParam varModParam : varModParamSet) {
+                        if (varModParam.aa == aa) {
+                            if (idxVarModMassMap.containsKey(i)) {
+                                idxVarModMassMap.get(i).add(varModParam.modMass);
+                            } else {
+                                List<Float> temp = new LinkedList<>();
+                                temp.add(varModParam.modMass);
+                                idxVarModMassMap.put(i, temp);
+                            }
+                        }
+                    }
                 }
             }
-            if (!varSetSubSet.isEmpty()) {
-                varSeqSet.addAll(checkKCTermMod(varSetSubSet)); // eliminate those sequence that the middle amino acids having the same mod mass and the n-term and the first amino acid or the c-term and the last amino acid have the same mod mass.
+            if (!idxVarModMassMap.isEmpty()) {
+                // generate var containing sequences
+                Integer[] allIdxArray = idxVarModMassMap.keySet().toArray(new Integer[idxVarModMassMap.size()]);
+                Arrays.sort(allIdxArray);
+                for (int i = 1; i <= Math.min(varModMaxNum, idxVarModMassMap.size()); ++i) {
+                    List<int[]> idxCombinationList = generateIdxCombinations(allIdxArray, i);
+                    Set<String> varSetSubSet = new HashSet<>();
+                    for (int[] idxCombination : idxCombinationList) {
+                        varSetSubSet.addAll(generateModSeqSub(seq, idxCombination, idxVarModMassMap));
+                    }
+                    if (!varSetSubSet.isEmpty()) {
+                        varSeqSet.addAll(checkKCTermMod(varSetSubSet)); // eliminate those sequence that the middle amino acids having the same mod mass and the n-term and the first amino acid or the c-term and the last amino acid have the same mod mass.
+                    }
+                }
             }
         }
 
@@ -342,15 +427,6 @@ public class BuildIndex {
         }
 
         return outputList;
-    }
-
-    private boolean stillHasLinkSite(int[] idxCombination, Set<Short> modFreeLinkSites) {
-        for (int modFreeLinkSite : modFreeLinkSites) {
-            if (Arrays.binarySearch(idxCombination, modFreeLinkSite) < 0) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private Set<String> generateModSeqSub(String seq, int[] idxCombination, Map<Integer, List<Float>> idxModMassMap) {
@@ -493,24 +569,24 @@ public class BuildIndex {
         return output;
     }
 
-    private Set<VarModParam> getVarModParams(String v) {
-        Set<VarModParam> varModParams = new HashSet<>();
-
+    private void getVarModParams(String v, Set<VarModParam> varModParamSet, Set<BinaryModParam> binaryModParamSet) {
         Matcher varModMatcher = varModParamPattern.matcher(v);
         if (varModMatcher.matches()) {
             float modMass = Float.valueOf(varModMatcher.group(1));
             String aas = varModMatcher.group(2);
-            if (Math.abs(modMass) < varModMassResolution) {
-                return  varModParams;
-            }
-            for (int i = 0; i < aas.length(); ++i) {
-                varModParams.add(new VarModParam(modMass, aas.charAt(i)));
+            boolean isBinary = varModMatcher.group(3).contentEquals("1");
+            if (Math.abs(modMass) > varModMassResolution) {
+                if (isBinary) {
+                    binaryModParamSet.add(new BinaryModParam(modMass, aas));
+                } else {
+                    for (int i = 0; i < aas.length(); ++i) {
+                        varModParamSet.add(new VarModParam(modMass, aas.charAt(i)));
+                    }
+                }
             }
         } else {
             logger.error("Cannot parse variable modification parameter from {}.", v);
             System.exit(1);
         }
-
-        return varModParams;
     }
 }
