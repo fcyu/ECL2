@@ -25,7 +25,7 @@ public class ECL2 {
     public static final boolean flankingPeaks = true;
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
-    private static final String version = "2.1.3";
+    public static final String version = "2.1.4-dev-1c9b46a";
 
     public static boolean debug;
     public static boolean dev;
