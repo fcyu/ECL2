@@ -580,7 +580,9 @@ public class BuildIndex {
                     binaryModParamSet.add(new BinaryModParam(modMass, aas));
                 } else {
                     for (int i = 0; i < aas.length(); ++i) {
-                        varModParamSet.add(new VarModParam(modMass, aas.charAt(i)));
+                        if (!fix_mod_map.containsKey(aas.charAt(i))) {
+                            varModParamSet.add(new VarModParam(modMass, aas.charAt(i)));
+                        }
                     }
                 }
             }
