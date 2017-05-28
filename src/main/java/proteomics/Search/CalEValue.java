@@ -202,8 +202,7 @@ public class CalEValue {
             result_entry.setEValue(9999);
             logger.debug("Estimating E-value failed. Scan: {}, mass: {}, slope: {}, intercept: {}, R square: {}, point num: {}.",scan_num, result_entry.spectrum_mass, optimal_slope, optimal_intercept, max_r_square, result_entry.getScoreCount());
         } else {
-            double p_value = Math.exp(optimal_slope * Math.round(result_entry.getScore() / histogram_bin_size) + optimal_intercept) / result_entry.getScoreCount();
-            result_entry.setEValue(p_value * result_entry.getCandidateNum());
+            result_entry.setEValue(Math.exp((optimal_slope * Math.round(result_entry.getScore() / histogram_bin_size) + optimal_intercept) + Math.log((double) result_entry.getCandidateNum() / (double) result_entry.getScoreCount()))); // double point precision limitation.
             result_entry.setEValueDetails((float) max_r_square, (float) optimal_slope, (float) optimal_intercept, optimal_start_idx, null_end_idx);
         }
 
