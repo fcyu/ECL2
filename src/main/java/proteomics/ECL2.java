@@ -20,12 +20,11 @@ import java.util.concurrent.*;
 
 public class ECL2 {
 
-    public static final double delta_c_t = 0;
     public static final int score_point_t = 15000;
     public static final boolean flankingPeaks = true;
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
-    public static final String version = "2.1.4-dev-201705271641";
+    public static final String version = "2.1.4-dev-201705281102";
 
     public static boolean debug;
     public static boolean dev;
@@ -49,9 +48,15 @@ public class ECL2 {
         Parameter parameter = new Parameter(parameter_path);
         Map<String, String> parameter_map = parameter.returnParameterMap();
         int max_common_ion_charge = Integer.valueOf(parameter_map.get("max_common_ion_charge"));
+
         boolean cal_evalue = true;
         if (parameter_map.containsKey("cal_evalue") && parameter_map.get("cal_evalue").trim().contentEquals("0")) {
             cal_evalue = false;
+        }
+
+        float delta_c_t = 0;
+        if (parameter_map.containsKey("delta_c_t")) {
+            delta_c_t = Float.valueOf(parameter_map.get("delta_c_t"));
         }
 
         debug = parameter_map.get("debug").contentEquals("1");
@@ -112,7 +117,7 @@ public class ECL2 {
         Search search_obj = new Search(build_index_obj, parameter_map);
         List<Future<FinalResultEntry>> temp_result_list = new LinkedList<>();
         for (int scanNum : scanNumArray) {
-            temp_result_list.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge, build_index_obj.getSeqProMap(), cal_evalue)));
+            temp_result_list.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge, build_index_obj.getSeqProMap(), cal_evalue, delta_c_t)));
         }
 
         // check progress every minute

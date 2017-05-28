@@ -1,4 +1,4 @@
-# 2.1.4-dev-201705271641
+# 2.1.4-dev-201705281102
 # The first line is the parameter file version. Do not change it.
 thread_num = 0
 debug = 0
@@ -70,9 +70,10 @@ n = 0
 c = 0
 
 # Advanced parameters
-single_chain_t = 0
+single_chain_t = 0.1
 cal_evalue = 1
 ms1_bin_size = 0.001
+delta_c_t = 0.00
 
 # for debug
 # put interested scan numbers below. One number each line
