@@ -17,9 +17,11 @@ public class PreSpectrum {
     private static final int XCORR_OFFSET = 75;
 
     private final MassTool mass_tool_obj;
+    private final boolean flankingPeaks;
 
-    public PreSpectrum(MassTool mass_tool_obj) {
+    public PreSpectrum(MassTool mass_tool_obj, boolean flankingPeaks) {
         this.mass_tool_obj = mass_tool_obj;
+        this.flankingPeaks =flankingPeaks;
     }
 
     public SparseVector preSpectrum (Map<Double, Double> peaks_map, float precursor_mass, int scanNum) {
@@ -76,7 +78,7 @@ public class PreSpectrum {
 
         for (int i = 1; i < pl_array.length; ++i) {
             double temp = pl_array[i] - tempArray[i];
-            if (ECL2.flankingPeaks) {
+            if (flankingPeaks) {
                 temp += (pl_array[i - 1] - tempArray[i - 1]) * 0.5;
                 if (i + 1 < pl_array.length) {
                     temp += (pl_array[i + 1] - tempArray[i + 1]) * 0.5;

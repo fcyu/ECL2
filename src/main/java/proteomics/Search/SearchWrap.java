@@ -29,13 +29,13 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     private final boolean cal_evalue;
     private final float delta_c_t;
 
-    public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, int max_common_ion_charge, Map<String, Set<String>> seqProMap, boolean cal_evalue, float delta_c_t) {
+    public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, int max_common_ion_charge, Map<String, Set<String>> seqProMap, boolean cal_evalue, float delta_c_t, boolean flankingPeaks) {
         this.search_obj = search_obj;
         this.spectrumEntry = spectrumEntry;
         this.build_index_obj = build_index_obj;
         this.mass_tool_obj = mass_tool_obj;
         this.max_common_ion_charge = max_common_ion_charge;
-        preSpectrumObj = new PreSpectrum(mass_tool_obj);
+        preSpectrumObj = new PreSpectrum(mass_tool_obj, flankingPeaks);
         this.seqProMap = seqProMap;
         this.cal_evalue = cal_evalue;
         this.delta_c_t = delta_c_t;

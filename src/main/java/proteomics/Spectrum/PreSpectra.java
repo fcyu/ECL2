@@ -40,8 +40,6 @@ public class PreSpectra {
             }
         }
 
-        PreSpectrum pre_spectrum_obj = new PreSpectrum(mass_tool_obj);
-
         PrintStream original_stream = System.out;
         PrintStream null_stream = new PrintStream(new OutputStream() {
             @Override
