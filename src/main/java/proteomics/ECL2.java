@@ -15,6 +15,8 @@ import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLFile;
 import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLParsingException;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -40,6 +42,14 @@ public class ECL2 {
 
         logger.info("ECL2 Version {}", version);
         logger.info("Author: Fengchao Yu. Email: fyuab@connect.ust.hk");
+
+        try {
+            String hostName = InetAddress.getLocalHost().getHostName();
+            logger.info("Computer: {}", hostName);
+        } catch (UnknownHostException ex) {
+            logger.warn("Cannot get the computer's name.");
+        }
+
         logger.info("Parameter file: {}.", parameter_path);
         logger.info("Spectra file: {}.", spectra_path);
 
