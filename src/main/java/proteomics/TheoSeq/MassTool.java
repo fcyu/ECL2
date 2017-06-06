@@ -124,7 +124,7 @@ public class MassTool {
         AA[] aaArray = temp.toArray(new AA[temp.size()]);
 
         // traverse the sequence to get b-ion
-        double bIonMass = aaArray[0].delta_mass; // add N-term modification
+        double bIonMass = mass_table.get(aaArray[0].aa) + aaArray[0].delta_mass; // add N-term modification
         for (int i = 1; i < aaArray.length - 2; ++i) {
             bIonMass += mass_table.get(aaArray[i].aa) + aaArray[i].delta_mass;
             if (i < linkSite) {
