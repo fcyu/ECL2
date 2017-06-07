@@ -25,7 +25,7 @@ public class ECL2 {
     public static final int score_point_t = 15000;
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
-    public static final String version = "2.1.4-dev-201705291100";
+    public static final String version = "2.1.4-dev-201706071104";
 
     public static boolean debug;
     public static boolean dev;
@@ -127,19 +127,32 @@ public class ECL2 {
             thread_num = 1 + Runtime.getRuntime().availableProcessors();
         }
         ExecutorService thread_pool = Executors.newFixedThreadPool(thread_num);
-        Set<FinalResultEntry> final_search_results = new HashSet<>();
         Search search_obj = new Search(build_index_obj, parameter_map);
-        List<Future<FinalResultEntry>> temp_result_list = new LinkedList<>();
+        List<Future<FinalResultEntry>> taskList = new LinkedList<>();
         for (int scanNum : scanNumArray) {
-            temp_result_list.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge, build_index_obj.getSeqProMap(), cal_evalue, delta_c_t, flankingPeaks)));
+            taskList.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge, build_index_obj.getSeqProMap(), cal_evalue, delta_c_t, flankingPeaks)));
         }
 
-        // check progress every minute
+        // check progress every minute, record results,and delete finished tasks.
         int lastProgress = 0;
+        Set<FinalResultEntry> final_search_results = new HashSet<>();
         try {
-            int count;
-            while (((count = finishedFutureNum(temp_result_list)) < scanNumArray.length) && hasUnfinishedFuture(temp_result_list)) {
-                int progress = count * 20 / scanNumArray.length;
+            while (!taskList.isEmpty()) {
+                // record search results and delete finished ones.
+                List<Future<FinalResultEntry>> toBeDeleteTaskList = new LinkedList<>();
+                for (Future<FinalResultEntry> task : taskList) {
+                    if (task.isDone()) {
+                        if (task.get() != null) {
+                            final_search_results.add(task.get());
+                        }
+                        toBeDeleteTaskList.add(task);
+                    } else if (task.isCancelled()) {
+                        toBeDeleteTaskList.add(task);
+                    }
+                }
+                taskList.removeAll(toBeDeleteTaskList);
+
+                int progress = (scanNumArray.length - taskList.size()) * 20 / scanNumArray.length;
                 if (progress != lastProgress) {
                     logger.info("Searching {}%...", progress * 5);
                     lastProgress = progress;
@@ -150,31 +163,13 @@ public class ECL2 {
                     Thread.sleep(60000);
                 }
             }
-        } catch (InterruptedException ex) {
+        } catch (InterruptedException | ExecutionException ex) {
             ex.printStackTrace();
             logger.error(ex.toString());
             System.exit(1);
         }
 
         logger.info("Searching 100%...");
-
-        // record search results.
-        try {
-            for (Future<FinalResultEntry> temp_result : temp_result_list) {
-                if (temp_result.isDone() && !temp_result.isCancelled()) {
-                    if (temp_result.get() != null) {
-                        final_search_results.add(temp_result.get());
-                    }
-                } else {
-                    logger.error("Threads were not finished normally.");
-                    System.exit(1);
-                }
-            }
-        } catch (Exception ex) {
-            logger.error(ex.getMessage());
-            ex.printStackTrace();
-            System.exit(1);
-        }
 
         // shutdown threads
         thread_pool.shutdown();
