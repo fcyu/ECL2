@@ -4,17 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
-import proteomics.TheoSeq.MassTool;
-import proteomics.Types.ChainEntry;
-import proteomics.Types.ResultEntry;
-import proteomics.Types.SparseBooleanVector;
-import proteomics.Types.SparseVector;
+import proteomics.Types.*;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 public class CalEValue {
@@ -24,32 +18,18 @@ public class CalEValue {
     private static final float toleranceStep = 1;
 
     private ResultEntry result_entry;
-    private TreeMap<Integer, Set<String>> bin_seq_map;
-    private Map<String, ChainEntry> seq_entry_map;
     private BuildIndex buildIndexObj;
     private float linker_mass;
-    private MassTool mass_tool_obj;
-    private int max_common_ion_charge;
-    private SparseVector pl_map_xcorr;
-    private int specMaxBinIdx;
-    private Search search_obj;
 
-    CalEValue(int scan_num, ResultEntry result_entry, SparseVector pl_map_xcorr, int specMaxBinIdx, BuildIndex buildIndexObj, MassTool mass_tool_obj, float linker_mass, int max_common_ion_charge, float originalTolerance, Search search_obj) {
+    CalEValue(int scan_num, ResultEntry result_entry, BuildIndex buildIndexObj, float linker_mass, float originalTolerance) {
         this.result_entry = result_entry;
-        this.bin_seq_map = buildIndexObj.getMassBinSeqMap();
-        this.seq_entry_map = buildIndexObj.getSeqEntryMap();
         this.buildIndexObj = buildIndexObj;
         this.linker_mass = linker_mass;
-        this.mass_tool_obj = mass_tool_obj;
-        this.max_common_ion_charge = max_common_ion_charge;
-        this.pl_map_xcorr = pl_map_xcorr;
-        this.specMaxBinIdx = specMaxBinIdx;
-        this.search_obj = search_obj;
 
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
         float tolerance = originalTolerance;
         while (gap_num > 0 && tolerance <= maxTolerance) {
-            gap_num = generateRandomRandomScores(gap_num, tolerance, toleranceStep);
+            gap_num = generateRandomRandomScores(gap_num, tolerance, toleranceStep, result_entry.getBinChainMap());
             tolerance += toleranceStep;
         }
 
@@ -224,39 +204,25 @@ public class CalEValue {
         }
     }
 
-    private int generateRandomRandomScores(int gap_num, float tolerance, float toleranceStep) {
+    private int generateRandomRandomScores(int gap_num, float tolerance, float toleranceStep, TreeMap<Integer, ChainResultEntry> binChainMap) {
         int maxBinIdx = buildIndexObj.massToBin((result_entry.spectrum_mass - linker_mass) / 2);
-        for (int binIdx1 : bin_seq_map.keySet()) {
+        for (int binIdx1 : binChainMap.keySet()) {
             if (binIdx1 < maxBinIdx) {
                 int leftBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - tolerance - toleranceStep) - maxBinIdx;
                 int rightBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - tolerance) - maxBinIdx - 1;
                 int leftBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + tolerance) - maxBinIdx + 1;
                 int rightBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + tolerance + toleranceStep) - maxBinIdx;
-                TreeMap<Integer, Set<String>> sub_map = new TreeMap<>();
-                sub_map.putAll(bin_seq_map.subMap(leftBinIdx1, true, rightBinIdx1, false));
-                sub_map.putAll(bin_seq_map.subMap(leftBinIdx2, false, rightBinIdx2, true));
+                TreeMap<Integer, ChainResultEntry> sub_map = new TreeMap<>();
+                sub_map.putAll(binChainMap.subMap(leftBinIdx1, true, rightBinIdx1, false));
+                sub_map.putAll(binChainMap.subMap(leftBinIdx2, false, rightBinIdx2, true));
                 if (!sub_map.isEmpty()) {
-                    for (String seq1 : bin_seq_map.get(binIdx1)) {
-                        ChainEntry chainEntry1 = seq_entry_map.get(seq1);
-                        for (short linkSite1 : chainEntry1.link_site_set) {
-                            SparseBooleanVector theoMz1 = mass_tool_obj.buildTheoVector(seq1, linkSite1, result_entry.spectrum_mass - chainEntry1.chain_mass, result_entry.charge, max_common_ion_charge, specMaxBinIdx);
-                            double score1 = theoMz1.dot(pl_map_xcorr) * 0.005;
-                            if (score1 > search_obj.single_chain_t) {
-                                for (int binIdx2 : sub_map.keySet()) {
-                                    for (String seq2 : sub_map.get(binIdx2)) {
-                                        ChainEntry chainEntry2 = seq_entry_map.get(seq2);
-                                        for (short linkSite2 : chainEntry2.link_site_set) {
-                                            SparseBooleanVector theoMz2 = mass_tool_obj.buildTheoVector(seq2, linkSite2, result_entry.spectrum_mass - chainEntry2.chain_mass, result_entry.charge, max_common_ion_charge, specMaxBinIdx);
-                                            double score2 = theoMz2.dot(pl_map_xcorr) * 0.005;
-                                            if (score2 > search_obj.single_chain_t) {
-                                                result_entry.addToScoreHistogram(score1 + score2);
-                                                --gap_num;
-                                                if (gap_num <= 0) {
-                                                    return gap_num;
-                                                }
-                                            }
-                                        }
-                                    }
+                    for (double score1 : binChainMap.get(binIdx1).getScoreList()) {
+                        for (int binIdx2 : sub_map.keySet()) {
+                            for (double score2 : binChainMap.get(binIdx2).getScoreList()) {
+                                result_entry.addToScoreHistogram(score1 + score2);
+                                --gap_num;
+                                if (gap_num <= 0) {
+                                    return gap_num;
                                 }
                             }
                         }

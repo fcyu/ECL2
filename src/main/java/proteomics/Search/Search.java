@@ -24,8 +24,8 @@ public class Search {
     private final MassTool mass_tool_obj;
     private final TreeMap<Integer, Set<String>> bin_seq_map;
     private final BuildIndex build_index_obj;
-    private int[] C13_correction_range;
-    private Map<Integer, Long> bin_candidate_num_map;
+    private final int[] C13_correction_range;
+    private final Map<Integer, Long> bin_candidate_num_map;
     final float single_chain_t;
     private final boolean cal_evalue;
 
@@ -120,7 +120,7 @@ public class Search {
         int max_v = build_index_obj.massToBin(max_mass) + 1;
 
         long candidate_num = 0;
-        ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge, cal_evalue);
+        ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge, cal_evalue, binChainMap);
         for (int idx_1 : binChainMap.keySet()) {
             if (idx_1 > max_v) {
                 break;

@@ -3,6 +3,8 @@ package proteomics.Types;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.TreeMap;
+
 
 public class ResultEntry{
 
@@ -15,6 +17,8 @@ public class ResultEntry{
     public final float spectrum_mz;
     public final float rt;
     public final int charge;
+
+    private final TreeMap<Integer, ChainResultEntry> binChainMap;
 
     private String chain_seq_1;
     private String chain_seq_2;
@@ -38,7 +42,7 @@ public class ResultEntry{
     private double chain_score_2;
     private int chain_rank_2;
 
-    public ResultEntry(String spectrum_id, float spectrum_mz, float spectrum_mass, float rt, int charge, boolean cal_evalue) {
+    public ResultEntry(String spectrum_id, float spectrum_mz, float spectrum_mass, float rt, int charge, boolean cal_evalue, TreeMap<Integer, ChainResultEntry> binChainMap) {
         if (cal_evalue) {
             score_histogram = new int[(int) Math.round(max_score / histogram_bin_size) + 1]; // start from zero score.
         }
@@ -47,6 +51,7 @@ public class ResultEntry{
         this.spectrum_mass = spectrum_mass;
         this.rt = rt;
         this.charge = charge;
+        this.binChainMap = binChainMap;
     }
 
     public void setChain1(String chain_seq_1) {
@@ -183,5 +188,9 @@ public class ResultEntry{
 
     public long getCandidateNum() {
         return candidate_num;
+    }
+
+    public TreeMap<Integer, ChainResultEntry> getBinChainMap() {
+        return binChainMap;
     }
 }

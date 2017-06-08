@@ -12,7 +12,7 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
     private int link_site;
     private double score;
     private double second_score;
-    private List<Double> score_list = new LinkedList<>();
+    private List<Double> score_list = new LinkedList<>(); // contains all chain score for generating the random histogram
 
     public ChainResultEntry() {}
 
