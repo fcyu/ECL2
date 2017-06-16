@@ -62,14 +62,12 @@ public class Search {
     }
 
     ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx) {
-        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.precursor_mass + C13_correction_range[C13_correction_range.length - 1] * 1.00335483f - build_index_obj.linker_mass) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
+        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.mass_without_linker_mass + C13_correction_range[C13_correction_range.length - 1] * 1.00335483f) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
         if (max_chain_bin_idx < min_chain_bin_idx) {
             return null;
         }
-
-        float min_additional_mass = build_index_obj.binToLeftMass(min_chain_bin_idx) + build_index_obj.linker_mass; // this is the minimum additional mass added to a peptide chain.
 
         // set MS1 tolerance for further usage.
         float leftMs1Tol = ms1_tolerance;
@@ -83,22 +81,127 @@ public class Search {
         List<DebugEntry> debugEntryList = new LinkedList<>();
         Map<String, Double> devChainScoreMap = new HashMap<>();
 
-        // Scan 1: linear scan
+        // start search
         TreeMap<Integer, ChainResultEntry> binChainMap = new TreeMap<>();
-        for (int binIdx : bin_seq_map.keySet()) {
-            if (binIdx <= max_chain_bin_idx) {
-                if (spectrumEntry.precursor_mass >= build_index_obj.binToLeftMass(binIdx - 1) + min_additional_mass + C13_correction_range[0] * 1.00335483f - leftMs1Tol) {
-                    for (String seq : bin_seq_map.get(binIdx)) {
-                        ChainEntry chainEntry = chain_entry_map.get(seq);
-                        linearScan(spectrumEntry, xcorrPL, specMaxBinIdx, chainEntry, binIdx, binChainMap, debugEntryList, devChainScoreMap);
-                    }
-                } else {
+        Set<Integer> checkedBinSet = new HashSet<>(bin_seq_map.size() + 1, 1);
+        long candidate_num = 0;
+        ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge, cal_evalue, binChainMap);
+        for (int idx_1 : bin_seq_map.keySet()) {
+            long bin1_candidate_num = bin_candidate_num_map.get(idx_1);
+
+            float left_mass_2;
+            float right_mass_2;
+            int left_idx_2;
+            int right_idx_2;
+            NavigableMap<Integer, Set<String>> sub_map = new TreeMap<>();
+
+            // consider C13 correction
+            for (int i : C13_correction_range) {
+                left_mass_2 = spectrumEntry.mass_without_linker_mass + i * 1.00335483f - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
+                right_mass_2 = spectrumEntry.mass_without_linker_mass + i * 1.00335483f - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
+                left_idx_2 = build_index_obj.massToBin(left_mass_2);
+                right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
+                sub_map.putAll(bin_seq_map.subMap(left_idx_2, true, right_idx_2, true));
+            }
+
+            if (!sub_map.isEmpty()) {
+                if (checkedBinSet.contains(idx_1)) {
+                    // The first bin has reach the middle point of the whole range. All pairs have been checked.
                     break;
                 }
-            } else {
-                break;
+
+                // this bin hasn't been visited. Linear scan first.
+                for (String seq : bin_seq_map.get(idx_1)) {
+                    ChainEntry chainEntry = chain_entry_map.get(seq);
+                    linearScan(spectrumEntry, xcorrPL, specMaxBinIdx, chainEntry, idx_1, binChainMap, debugEntryList, devChainScoreMap);
+                }
+                checkedBinSet.add(idx_1);
+
+                if (binChainMap.containsKey(idx_1)) { // There may be no chain with chain score > single_chain_t
+                    ChainResultEntry chain_score_entry_1 = binChainMap.get(idx_1);
+                    for (int idx_2 : sub_map.keySet()) {
+                        if (!checkedBinSet.contains(idx_2)) {
+                            // this bin hasn't been visited. Linear scan first.
+                            for (String seq : bin_seq_map.get(idx_2)) {
+                                ChainEntry chainEntry = chain_entry_map.get(seq);
+                                linearScan(spectrumEntry, xcorrPL, specMaxBinIdx, chainEntry, idx_2, binChainMap, debugEntryList, devChainScoreMap);
+                            }
+                            checkedBinSet.add(idx_2);
+                        }
+
+                        if (binChainMap.containsKey(idx_2)) { // There may be no chain with chain score > single_chain_t
+                            ChainResultEntry chain_score_entry_2 = binChainMap.get(idx_2);
+
+                            if (idx_1 == idx_2) {
+                                candidate_num += bin1_candidate_num * (bin1_candidate_num + 1) / 2;
+                            } else {
+                                candidate_num += bin1_candidate_num * bin_candidate_num_map.get(idx_2);
+                            }
+
+                            // only two sequences with the same binary mod type can be linked.
+                            if (chain_entry_map.get(chain_score_entry_1.getSeq()).binaryModType == chain_entry_map.get(chain_score_entry_2.getSeq()).binaryModType) {
+                                double score;
+                                if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
+                                    score = (chain_score_entry_1.getScore() + chain_score_entry_2.getScore()) / 2;
+                                } else {
+                                    score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
+                                }
+
+                                // calculate second score
+                                double second_score = 0;
+                                double temp_1 = -1;
+                                if (chain_score_entry_1.getSecondSeq() != null) {
+                                    if (chain_score_entry_1.getSecondPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
+                                        temp_1 = (chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore()) / 2;
+                                    } else {
+                                        temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
+                                    }
+                                }
+                                double temp_2 = -1;
+                                if (chain_score_entry_2.getSecondSeq() != null) {
+                                    if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getSecondPtmFreeSeq())) {
+                                        temp_2 = (chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore()) / 2;
+                                    } else {
+                                        temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
+                                    }
+                                }
+
+                                if (temp_1 > 0) {
+                                    if (temp_1 >= temp_2) {
+                                        second_score = temp_1;
+                                    }
+                                } else if (temp_2 > 0) {
+                                    if (temp_2 > temp_1) {
+                                        second_score = temp_2;
+                                    }
+                                }
+
+                                if (cal_evalue && (resultEntry.getScoreCount() < ECL2.score_point_t)) {
+                                    for (double s1 : chain_score_entry_1.getScoreList()) {
+                                        for (double s2 : chain_score_entry_2.getScoreList()) {
+                                            resultEntry.addToScoreHistogram(s1 + s2);
+                                        }
+                                    }
+                                }
+                                if (score > resultEntry.getScore()) {
+                                    resultEntry.setSecondScore(Math.max(resultEntry.getScore(), second_score));
+                                    resultEntry.setScore(score);
+                                    resultEntry.setChain1(chain_score_entry_1.getSeq());
+                                    resultEntry.setChain2(chain_score_entry_2.getSeq());
+                                    resultEntry.setLinkSite1(chain_score_entry_1.getLinkSite());
+                                    resultEntry.setLinkSite2(chain_score_entry_2.getLinkSite());
+                                } else if (Math.max(score, second_score) > resultEntry.getSecondScore()) {
+                                    resultEntry.setSecondScore(Math.max(score, second_score));
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
+
+        // set candidate number
+        resultEntry.setCandidateNum(candidate_num);
 
         // write debug file
         if (ECL2.debug) {
@@ -114,107 +217,6 @@ public class Search {
                 System.exit(1);
             }
         }
-
-        // Scan 2: pair peptide-peptide pairs
-        float max_mass = spectrumEntry.mass_without_linker_mass / 2 + rightMs1Tol;
-        int max_v = build_index_obj.massToBin(max_mass) + 1;
-
-        long candidate_num = 0;
-        ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge, cal_evalue, binChainMap);
-        for (int idx_1 : binChainMap.keySet()) {
-            if (idx_1 > max_v) {
-                break;
-            }
-
-            long bin1_candidate_num = bin_candidate_num_map.get(idx_1);
-
-            float left_mass_2;
-            float right_mass_2;
-            int left_idx_2;
-            int right_idx_2;
-            NavigableMap<Integer, ChainResultEntry> sub_map = new TreeMap<>();
-
-            // consider C13 correction from -2 to +1
-            for (int i : C13_correction_range) {
-                left_mass_2 = spectrumEntry.mass_without_linker_mass + i * 1.00335483f - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
-                right_mass_2 = spectrumEntry.mass_without_linker_mass + i * 1.00335483f - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
-                left_idx_2 = build_index_obj.massToBin(left_mass_2);
-                right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
-                sub_map.putAll(binChainMap.subMap(left_idx_2, true, right_idx_2, true));
-            }
-
-            if (!sub_map.isEmpty()) {
-                ChainResultEntry chain_score_entry_1 = binChainMap.get(idx_1);
-                for (int idx_2 : sub_map.keySet()) {
-                    if (idx_1 == idx_2) {
-                        candidate_num += bin1_candidate_num * (bin1_candidate_num + 1) / 2;
-                    } else {
-                        candidate_num += bin1_candidate_num * bin_candidate_num_map.get(idx_2);
-                    }
-
-                    ChainResultEntry chain_score_entry_2 = binChainMap.get(idx_2);
-                    // only two sequences with the same binary mod type can be linked.
-                    if (chain_entry_map.get(chain_score_entry_1.getSeq()).binaryModType == chain_entry_map.get(chain_score_entry_2.getSeq()).binaryModType) {
-                        double score;
-                        if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
-                            score = (chain_score_entry_1.getScore() + chain_score_entry_2.getScore()) / 2;
-                        } else {
-                            score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
-                        }
-
-                        // calculate second score
-                        double second_score = 0;
-                        double temp_1 = -1;
-                        if (chain_score_entry_1.getSecondSeq() != null) {
-                            if (chain_score_entry_1.getSecondPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
-                                temp_1 = (chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore()) / 2;
-                            } else {
-                                temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
-                            }
-                        }
-                        double temp_2 = -1;
-                        if (chain_score_entry_2.getSecondSeq() != null) {
-                            if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getSecondPtmFreeSeq())) {
-                                temp_2 = (chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore()) / 2;
-                            } else {
-                                temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
-                            }
-                        }
-
-                        if (temp_1 > 0) {
-                            if (temp_1 >= temp_2) {
-                                second_score = temp_1;
-                            }
-                        } else if (temp_2 > 0) {
-                            if (temp_2 > temp_1) {
-                                second_score = temp_2;
-                            }
-                        }
-
-                        if (cal_evalue && (resultEntry.getScoreCount() < ECL2.score_point_t)) {
-                            for (double s1 : chain_score_entry_1.getScoreList()) {
-                                for (double s2 : chain_score_entry_2.getScoreList()) {
-                                    resultEntry.addToScoreHistogram(s1 + s2);
-                                }
-                            }
-                        }
-                        if (score > resultEntry.getScore()) {
-                            resultEntry.setSecondScore(Math.max(resultEntry.getScore(), second_score));
-                            resultEntry.setScore(score);
-                            resultEntry.setChain1(chain_score_entry_1.getSeq());
-                            resultEntry.setChain2(chain_score_entry_2.getSeq());
-                            resultEntry.setLinkSite1(chain_score_entry_1.getLinkSite());
-                            resultEntry.setLinkSite2(chain_score_entry_2.getLinkSite());
-                        } else if (Math.max(score, second_score) > resultEntry.getSecondScore()) {
-                            resultEntry.setSecondScore(Math.max(score, second_score));
-                        }
-                    }
-                }
-            }
-        }
-
-        // set candidate number
-        resultEntry.setCandidateNum(candidate_num);
 
         if (ECL2.dev && (candidate_num > 0)) {
             try {

@@ -25,7 +25,7 @@ public class ECL2 {
     public static final int score_point_t = 15000;
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
-    public static final String version = "2.1.4-dev-201706071104";
+    public static final String version = "2.1.4-dev-201706160134";
 
     public static boolean debug;
     public static boolean dev;
