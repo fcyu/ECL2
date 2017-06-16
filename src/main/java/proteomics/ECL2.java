@@ -160,7 +160,7 @@ public class ECL2 {
                 if (debug) {
                     Thread.sleep(1000);
                 } else {
-                    Thread.sleep(60000);
+                    Thread.sleep(6000);
                 }
             }
         } catch (InterruptedException | ExecutionException ex) {
