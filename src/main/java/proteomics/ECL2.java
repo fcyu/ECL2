@@ -169,8 +169,6 @@ public class ECL2 {
             System.exit(1);
         }
 
-        logger.info("Searching 100%...");
-
         // shutdown threads
         thread_pool.shutdown();
         try {
