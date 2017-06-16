@@ -9,8 +9,8 @@ public class CalFDR {
 
     private final float precision;
 
-    private double min_score = 0;
-    private double max_score = 0;
+    private double min_score = 999;
+    private double max_score = -999;
     private float[] qvalue_array = null;
     private List<FinalResultEntry> results;
 

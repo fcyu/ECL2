@@ -234,7 +234,11 @@ public class Search {
             }
         }
 
-        return resultEntry;
+        if ((resultEntry.getChain1() != null) && (resultEntry.getChain2() != null)) {
+            return resultEntry;
+        } else {
+            return null;
+        }
     }
 
     public FinalResultEntry convertResultEntry(int scanNum, ResultEntry result_entry, Map<String, Set<String>> seqProMap) {
