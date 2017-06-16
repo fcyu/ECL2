@@ -135,7 +135,7 @@ public class ECL2 {
 
         // check progress every minute, record results,and delete finished tasks.
         int lastProgress = 0;
-        Set<FinalResultEntry> final_search_results = new HashSet<>();
+        Set<FinalResultEntry> final_search_results = new HashSet<>(scanNumArray.length + 1, 1);
         try {
             while (!taskList.isEmpty()) {
                 // record search results and delete finished ones.

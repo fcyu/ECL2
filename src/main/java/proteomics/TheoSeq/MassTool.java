@@ -13,7 +13,7 @@ public class MassTool {
 
     public static final double H2O = 18.010564684;
 
-    private final Map<Character, Float> mass_table = new HashMap<>();
+    private final Map<Character, Float> mass_table = new HashMap<>(25, 1);
     private final int missed_cleavage;
     private final String cut_site;
     private final String protect_site;
@@ -237,7 +237,7 @@ public class MassTool {
         Collections.sort(cut_point_list);
 
         // Deal with missed cleavage
-        Map<Integer, List<int[]>> digest_range_map = new HashMap<>();
+        Map<Integer, List<int[]>> digest_range_map = new HashMap<>(5, 1);
         for (int time = 0; time <= missed_cleavage; ++time) {
             List<int[]> temp = new LinkedList<>();
             int left_point;

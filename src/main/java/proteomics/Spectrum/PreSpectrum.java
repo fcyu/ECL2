@@ -26,7 +26,7 @@ public class PreSpectrum {
 
     public SparseVector preSpectrum (Map<Double, Double> peaks_map, float precursor_mass, int scanNum) {
         // sqrt the intensity
-        Map<Double, Double> sqrt_pl_map = new HashMap<>();
+        Map<Double, Double> sqrt_pl_map = new HashMap<>(peaks_map.size() + 1, 1);
         for (double mz : peaks_map.keySet()) {
             if ((peaks_map.get(mz) > 1e-6) && (mz < precursor_mass)) {
                 sqrt_pl_map.put(mz, Math.sqrt(peaks_map.get(mz)));

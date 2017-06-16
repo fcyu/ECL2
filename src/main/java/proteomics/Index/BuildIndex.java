@@ -22,7 +22,7 @@ public class BuildIndex {
 
     private final MassTool mass_tool_obj;
     private final Map<String, String> pro_annotate_map;
-    private Map<Character, Float> fix_mod_map = new HashMap<>();
+    private Map<Character, Float> fix_mod_map = new HashMap<>(25, 1);
     private TreeMap<Integer, Set<String>> bin_seq_map = new TreeMap<>();
     private Map<Integer, Long> bin_candidate_num_map = new HashMap<>();
     private Map<String, ChainEntry> seq_entry_map = new HashMap<>();
@@ -92,8 +92,8 @@ public class BuildIndex {
         seqProMap = buildSeqProMap(pro_seq_map, min_chain_length, max_chain_length);
 
         // read var mods
-        Set<VarModParam> varModParamSet = new HashSet<>();
-        Set<BinaryModParam> binaryModParamSet = new HashSet<>();
+        Set<VarModParam> varModParamSet = new HashSet<>(30, 1);
+        Set<BinaryModParam> binaryModParamSet = new HashSet<>(10, 1);
         for (String k : parameter_map.keySet()) {
             if (k.contentEquals("var_mod1")) {
                 getVarModParams(parameter_map.get(k), varModParamSet, binaryModParamSet);
@@ -145,7 +145,7 @@ public class BuildIndex {
             // mod containing
             Set<VarSequence> varSeqSet = generateModSeq(seq, linkSiteSet, varModParamSet, binaryModParamSet, varModMaxNum);
             for (VarSequence varSeq : varSeqSet) {
-                linkSiteSet = new HashSet<>();
+                linkSiteSet = new HashSet<>(5, 1);
                 linkSiteSet.add(varSeq.linkSite);
                 if (!linkSiteSet.isEmpty()) {
                     float totalMass = (float) (mass_tool_obj.calResidueMass(varSeq.seq) + MassTool.H2O);
@@ -223,7 +223,7 @@ public class BuildIndex {
     }
 
     private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, int min_chain_length, int max_chain_length) {
-        Map<String, Set<String>> seq_pro_map = new HashMap<>();
+        Map<String, Set<String>> seq_pro_map = new HashMap<>(pro_seq_map.size() * 150, 1);
         for (String pro_id : pro_seq_map.keySet()) {
             String pro_seq = pro_seq_map.get(pro_id);
             Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq);
@@ -248,7 +248,7 @@ public class BuildIndex {
                 if (seq_pro_map.containsKey(target_seq)) {
                     seq_pro_map.get(target_seq).add(pro_id);
                 } else {
-                    Set<String> pro_list = new HashSet<>();
+                    Set<String> pro_list = new HashSet<>(5, 1);
                     pro_list.add(pro_id);
                     seq_pro_map.put(target_seq, pro_list);
                 }
@@ -287,7 +287,7 @@ public class BuildIndex {
                 if (seq_pro_map.containsKey(decoy_seq)) {
                     seq_pro_map.get(decoy_seq).add("DECOY_" + pro_id);
                 } else {
-                    Set<String> pro_list = new HashSet<>();
+                    Set<String> pro_list = new HashSet<>(5, 1);
                     pro_list.add("DECOY_" + pro_id);
                     seq_pro_map.put(decoy_seq, pro_list);
                 }
@@ -303,7 +303,7 @@ public class BuildIndex {
             // has binary mod
             for (BinaryModParam binaryModParam : binaryModParamSet) {
                 // get all locations having binary mod
-                Map<Integer, List<Float>> idxBinaryModMassMap = new HashMap<>();
+                Map<Integer, List<Float>> idxBinaryModMassMap = new HashMap<>(seq.length(), 1);
                 for (int i = 0; i < seq.length(); ++i) {
                     if (i != linkSite) {
                         String aa = seq.substring(i, i + 1);
@@ -328,7 +328,7 @@ public class BuildIndex {
                     if (idxBinaryModMassMap.size() < varModMaxNum) {
                         // generate sequences containing the binary mod and additional var mod
                         // get all locations having var mods
-                        Map<Integer, List<Float>> idxVarModMassMap = new HashMap<>();
+                        Map<Integer, List<Float>> idxVarModMassMap = new HashMap<>(seq.length(), 1);
                         for (int i = 0; i < seq.length(); ++i) {
                             if (i != linkSite) {
                                 if (!idxBinaryModMassMap.containsKey(i)) {
@@ -349,14 +349,14 @@ public class BuildIndex {
                         }
                         if (!idxVarModMassMap.isEmpty()) {
                             // generate var containing sequences
-                            Map<Integer, List<Float>> idxBinaryVarModMassMap = new HashMap<>();
+                            Map<Integer, List<Float>> idxBinaryVarModMassMap = new HashMap<>(seq.length(), 1);
                             idxBinaryVarModMassMap.putAll(idxBinaryModMassMap);
                             idxBinaryVarModMassMap.putAll(idxVarModMassMap);
                             Integer[] allIdxArray = idxVarModMassMap.keySet().toArray(new Integer[idxVarModMassMap.size()]);
                             Arrays.sort(allIdxArray);
                             for (int i = 1; i <= Math.min(varModMaxNum - idxBinaryModMassMap.size(), idxVarModMassMap.size()); ++i) {
                                 List<int[]> idxCombinationList = generateIdxCombinations(allIdxArray, i);
-                                Set<VarSequence> varSetSubSet = new HashSet<>();
+                                Set<VarSequence> varSetSubSet = new HashSet<>(seq.length(), 1);
                                 for (int[] idxCombination : idxCombinationList) {
                                     int[] allIdxCombination = new int[idxCombination.length + idxBinaryModMassMap.size()];
                                     int j = 0;
@@ -381,7 +381,7 @@ public class BuildIndex {
 
             // does not have binary mod
             // get all locations' var lists
-            Map<Integer, List<Float>> idxVarModMassMap = new HashMap<>();
+            Map<Integer, List<Float>> idxVarModMassMap = new HashMap<>(seq.length(), 1);
             for (int i = 0; i < seq.length(); ++i) {
                 if (i != linkSite) {
                     char aa = seq.charAt(i);
@@ -456,7 +456,7 @@ public class BuildIndex {
                     for (int i2 = 0; i2 < idxModMassMap.get(idxArray[2]).size(); ++i2) {
                         for (int i3 = 0; i3 < idxModMassMap.get(idxArray[3]).size(); ++i3) {
                             for (int i4 = 0; i4 < idxModMassMap.get(idxArray[4]).size(); ++i4) {
-                                Map<Integer, Float> localIdxModMassMap = new HashMap<>();
+                                Map<Integer, Float> localIdxModMassMap = new HashMap<>(6, 1);
                                 localIdxModMassMap.put(idxArray[0], idxModMassMap.get(idxArray[0]).get(i0));
                                 localIdxModMassMap.put(idxArray[1], idxModMassMap.get(idxArray[1]).get(i1));
                                 localIdxModMassMap.put(idxArray[2], idxModMassMap.get(idxArray[2]).get(i2));
@@ -473,7 +473,7 @@ public class BuildIndex {
                 for (int i1 = 0; i1 < idxModMassMap.get(idxArray[1]).size(); ++i1) {
                     for (int i2 = 0; i2 < idxModMassMap.get(idxArray[2]).size(); ++i2) {
                         for (int i3 = 0; i3 < idxModMassMap.get(idxArray[3]).size(); ++i3) {
-                            Map<Integer, Float> localIdxModMassMap = new HashMap<>();
+                            Map<Integer, Float> localIdxModMassMap = new HashMap<>(5, 1);
                             localIdxModMassMap.put(idxArray[0], idxModMassMap.get(idxArray[0]).get(i0));
                             localIdxModMassMap.put(idxArray[1], idxModMassMap.get(idxArray[1]).get(i1));
                             localIdxModMassMap.put(idxArray[2], idxModMassMap.get(idxArray[2]).get(i2));
@@ -487,7 +487,7 @@ public class BuildIndex {
             for (int i0 = 0; i0 < idxModMassMap.get(idxArray[0]).size(); ++i0) {
                 for (int i1 = 0; i1 < idxModMassMap.get(idxArray[1]).size(); ++i1) {
                     for (int i2 = 0; i2 < idxModMassMap.get(idxArray[2]).size(); ++i2) {
-                        Map<Integer, Float> localIdxModMassMap = new HashMap<>();
+                        Map<Integer, Float> localIdxModMassMap = new HashMap<>(4, 1);
                         localIdxModMassMap.put(idxArray[0], idxModMassMap.get(idxArray[0]).get(i0));
                         localIdxModMassMap.put(idxArray[1], idxModMassMap.get(idxArray[1]).get(i1));
                         localIdxModMassMap.put(idxArray[2], idxModMassMap.get(idxArray[2]).get(i2));
@@ -498,7 +498,7 @@ public class BuildIndex {
         } else if (idxArray.length == 2) {
             for (int i0 = 0; i0 < idxModMassMap.get(idxArray[0]).size(); ++i0) {
                 for (int i1 = 0; i1 < idxModMassMap.get(idxArray[1]).size(); ++i1) {
-                    Map<Integer, Float> localIdxModMassMap = new HashMap<>();
+                    Map<Integer, Float> localIdxModMassMap = new HashMap<>(3, 1);
                     localIdxModMassMap.put(idxArray[0], idxModMassMap.get(idxArray[0]).get(i0));
                     localIdxModMassMap.put(idxArray[1], idxModMassMap.get(idxArray[1]).get(i1));
                     outputList.add(localIdxModMassMap);
@@ -506,7 +506,7 @@ public class BuildIndex {
             }
         } else if (idxArray.length == 1) {
             for (int i0 = 0; i0 < idxModMassMap.get(idxArray[0]).size(); ++i0) {
-                Map<Integer, Float> localIdxModMassMap = new HashMap<>();
+                Map<Integer, Float> localIdxModMassMap = new HashMap<>(2, 1);
                 localIdxModMassMap.put(idxArray[0], idxModMassMap.get(idxArray[0]).get(i0));
                 outputList.add(localIdxModMassMap);
             }
@@ -555,7 +555,7 @@ public class BuildIndex {
 
     private Set<Short> getLinkSiteSet(String seq, boolean n_term, boolean c_term) {
         AA[] aa_list = MassTool.seqToAAList(seq);
-        Set<Short> output = new HashSet<>();
+        Set<Short> output = new HashSet<>(5, 1);
         for (int i = 1; i < aa_list.length - 2; ++i) {
             if (aa_list[i].aa == 'K' && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
                 output.add((short) i);
