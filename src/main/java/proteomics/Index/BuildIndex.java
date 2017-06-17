@@ -26,10 +26,8 @@ public class BuildIndex {
     private TreeMap<Integer, Set<String>> bin_seq_map = new TreeMap<>();
     private Map<Integer, Long> bin_candidate_num_map = new HashMap<>();
     private Map<String, ChainEntry> seq_entry_map = new HashMap<>();
-    private Map<String, boolean[]> seq_term_map = new HashMap<>();
-    private Set<String> for_check_duplicate = new HashSet<>();
     private Map<String, Set<String>> seqProMap;
-    private final float ms1_bin_size ;
+    private final float ms1_bin_size;
 
     public BuildIndex(Map<String, String> parameter_map) {
         // initialize parameters
@@ -89,7 +87,8 @@ public class BuildIndex {
         mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, "KR", "P", mz_bin_size, one_minus_bin_offset);
 
         // generate seq_pro_map
-        seqProMap = buildSeqProMap(pro_seq_map, min_chain_length, max_chain_length);
+        Map<String, boolean[]> seq_term_map = new HashMap<>();
+        seqProMap = buildSeqProMap(pro_seq_map, seq_term_map, min_chain_length, max_chain_length);
 
         // read var mods
         Set<VarModParam> varModParamSet = new HashSet<>(30, 1);
@@ -222,8 +221,9 @@ public class BuildIndex {
         return bin_candidate_num_map;
     }
 
-    private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, int min_chain_length, int max_chain_length) {
+    private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, Map<String, boolean[]> seq_term_map, int min_chain_length, int max_chain_length) {
         Map<String, Set<String>> seq_pro_map = new HashMap<>(pro_seq_map.size() * 150, 1);
+        Set<String> for_check_duplicate = new HashSet<>();
         for (String pro_id : pro_seq_map.keySet()) {
             String pro_seq = pro_seq_map.get(pro_id);
             Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq);
