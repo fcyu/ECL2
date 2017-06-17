@@ -228,29 +228,29 @@ public class BuildIndex {
             String pro_seq = pro_seq_map.get(pro_id);
             Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq);
             for (String target_seq : seq_set) {
-                if ((target_seq.length() < min_chain_length) || (target_seq.length() > max_chain_length) || target_seq.contains("B") || target_seq.contains("J") || target_seq.contains("X") || target_seq.contains("Z")) {
-                    continue;
-                }
+                if ((target_seq.length() >= min_chain_length) && (target_seq.length() <= max_chain_length) && !target_seq.contains("B") && !target_seq.contains("J") && !target_seq.contains("X") && !target_seq.contains("Z")) {
+                    if (!for_check_duplicate.contains(target_seq.replace("L", "I"))) {
+                        // Add the sequence to the check set for duplicate check
+                        for_check_duplicate.add(target_seq.replace("L", "I")); // "L" and "I" have the same mass
 
-                // Add the sequence to the check set for decoy duplicate check
-                for_check_duplicate.add(target_seq.replace("L", "!").replace("I", "!").replace("K", "#").replace("Q", "#")); // "L" and "I"; "K"and "Q" have the same mass
+                        boolean n_term = false;
+                        boolean c_term = false;
+                        if (pro_seq.startsWith(target_seq.substring(1, target_seq.length() - 1))) {
+                            n_term = true;
+                        }
+                        if (pro_seq.endsWith(target_seq.substring(1, target_seq.length() - 1))) {
+                            c_term = true;
+                        }
+                        seq_term_map.put(target_seq, new boolean[]{n_term, c_term});
 
-                boolean n_term = false;
-                boolean c_term = false;
-                if (pro_seq.startsWith(target_seq.substring(1, target_seq.length() - 1))) {
-                    n_term = true;
-                }
-                if (pro_seq.endsWith(target_seq.substring(1, target_seq.length() - 1))) {
-                    c_term = true;
-                }
-                seq_term_map.put(target_seq, new boolean[]{n_term, c_term});
-
-                if (seq_pro_map.containsKey(target_seq)) {
-                    seq_pro_map.get(target_seq).add(pro_id);
-                } else {
-                    Set<String> pro_list = new HashSet<>(5, 1);
-                    pro_list.add(pro_id);
-                    seq_pro_map.put(target_seq, pro_list);
+                        if (seq_pro_map.containsKey(target_seq)) {
+                            seq_pro_map.get(target_seq).add(pro_id);
+                        } else {
+                            Set<String> pro_list = new HashSet<>(5, 1);
+                            pro_list.add(pro_id);
+                            seq_pro_map.put(target_seq, pro_list);
+                        }
+                    }
                 }
             }
         }
@@ -261,35 +261,28 @@ public class BuildIndex {
             String decoy_pro_seq = (new StringBuilder(pro_seq)).reverse().toString();
             Set<String> decoy_seq_set = mass_tool_obj.buildChainSet(decoy_pro_seq);
             for (String decoy_seq : decoy_seq_set) {
-                if ((decoy_seq.length() < min_chain_length) || (decoy_seq.length() > max_chain_length) || decoy_seq.contains("B") || decoy_seq.contains("J") || decoy_seq.contains("X") || decoy_seq.contains("Z")) {
-                    continue;
-                }
+                if ((decoy_seq.length() >= min_chain_length) && (decoy_seq.length() <= max_chain_length) && !decoy_seq.contains("B") && !decoy_seq.contains("J") && !decoy_seq.contains("X") && !decoy_seq.contains("Z")) {
+                    if (!for_check_duplicate.contains(decoy_seq.replace("L", "I"))) {
+                        for_check_duplicate.add(decoy_seq.replace("L", "I"));
 
-                // Check duplicate
-                String new_decoy_seq = decoy_seq.replace("L", "!").replace("I", "!").replace("K", "#").replace("Q", "#");
-                if (for_check_duplicate.contains(new_decoy_seq)) {
-                    // the decoy sequence is the same as the target sequence
-                    continue;
-                }
+                        boolean n_term = false;
+                        boolean c_term = false;
+                        if (decoy_pro_seq.startsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
+                            n_term = true;
+                        }
+                        if (decoy_pro_seq.endsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
+                            c_term = true;
+                        }
+                        seq_term_map.put(decoy_seq, new boolean[]{n_term, c_term});
 
-                for_check_duplicate.add(new_decoy_seq);
-
-                boolean n_term = false;
-                boolean c_term = false;
-                if (decoy_pro_seq.startsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
-                    n_term = true;
-                }
-                if (decoy_pro_seq.endsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
-                    c_term = true;
-                }
-                seq_term_map.put(decoy_seq, new boolean[]{n_term, c_term});
-
-                if (seq_pro_map.containsKey(decoy_seq)) {
-                    seq_pro_map.get(decoy_seq).add("DECOY_" + pro_id);
-                } else {
-                    Set<String> pro_list = new HashSet<>(5, 1);
-                    pro_list.add("DECOY_" + pro_id);
-                    seq_pro_map.put(decoy_seq, pro_list);
+                        if (seq_pro_map.containsKey(decoy_seq)) {
+                            seq_pro_map.get(decoy_seq).add("DECOY_" + pro_id);
+                        } else {
+                            Set<String> pro_list = new HashSet<>(5, 1);
+                            pro_list.add("DECOY_" + pro_id);
+                            seq_pro_map.put(decoy_seq, pro_list);
+                        }
+                    }
                 }
             }
         }
