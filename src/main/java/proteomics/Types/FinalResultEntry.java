@@ -26,6 +26,7 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
     public final double e_value;
     public final double negative_log10_evalue;
     public float qvalue = -1;
+    public final String mgfTitle;
 
     private final String toString;
 
@@ -45,7 +46,7 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
 
     private final boolean cal_evalue;
 
-    public FinalResultEntry(int scan_num, String spectrum_id, int rank, int charge, float spectrum_mz, float spectrum_mass, float peptide_mass, float rt, float ppm, double score, double delta_c, String seq_1, int link_site_1, String pro_id_1, String seq_2, int link_site_2, String pro_id_2, String cl_type, int hit_type, int C13_correction, double e_value, int point_count, float r_square, float slope, float intercept, int start_idx, int end_idx, double chain_score_1, int chain_rank_1, double chain_score_2, int chain_rank_2, long candidate_num, boolean cal_evalue) {
+    public FinalResultEntry(int scan_num, String spectrum_id, int rank, int charge, float spectrum_mz, float spectrum_mass, float peptide_mass, float rt, float ppm, double score, double delta_c, String seq_1, int link_site_1, String pro_id_1, String seq_2, int link_site_2, String pro_id_2, String cl_type, int hit_type, int C13_correction, double e_value, int point_count, float r_square, float slope, float intercept, int start_idx, int end_idx, double chain_score_1, int chain_rank_1, double chain_score_2, int chain_rank_2, long candidate_num, boolean cal_evalue, String mgfTitle) {
         this.scan_num = scan_num;
         this.spectrum_id = spectrum_id;
         this.rank = rank;
@@ -95,6 +96,8 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
         toString = scan_num + "-" + seq_1 + "-" + link_site_1 + "-" + seq_2 + link_site_2;
 
         this.cal_evalue = cal_evalue;
+
+        this.mgfTitle = mgfTitle;
     }
 
     public int compareTo(FinalResultEntry other) {

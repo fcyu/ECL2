@@ -11,8 +11,9 @@ import proteomics.Spectrum.PreSpectra;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.SpectrumEntry;
 import proteomics.Validation.CalFDR;
+import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
+import uk.ac.ebi.pride.tools.mgf_parser.MgfFile;
 import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLFile;
-import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLParsingException;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -93,27 +94,30 @@ public class ECL2 {
         logger.info("Peptide chains number: {}", build_index_obj.getSeqEntryMap().size());
 
         logger.info("Reading spectra...");
-        MzXMLFile spectra_parser = null;
+        JMzReader spectra_parser = null;
+        String ext = "";
         try {
             File spectra_file = new File(spectra_path);
             if ((!spectra_file.exists() || (spectra_file.isDirectory()))) {
                 throw new FileNotFoundException("The spectra file not found.");
             }
             String[] temp = spectra_path.split("\\.");
-            String ext = temp[temp.length - 1];
+            ext = temp[temp.length - 1];
             if (ext.contentEquals("mzXML")) {
                 spectra_parser = new MzXMLFile(spectra_file);
+            } else if (ext.toLowerCase().contentEquals("mgf")) {
+                spectra_parser = new MgfFile(spectra_file);
             } else {
-                logger.error("Unsupported data format {}. ECL2 only support mzXML.", ext);
+                logger.error("Unsupported data format {}. ECL2 only support mzXML and MGF.", ext);
                 System.exit(1);
             }
-        } catch (FileNotFoundException | MzXMLParsingException | NullPointerException ex) {
+        } catch (Exception ex) {
             logger.error(ex.getMessage());
             ex.printStackTrace();
             System.exit(1);
         }
 
-        PreSpectra pre_spectra_obj = new PreSpectra(spectra_parser, build_index_obj, parameter_map, mass_tool_obj);
+        PreSpectra pre_spectra_obj = new PreSpectra(spectra_parser, build_index_obj, parameter_map, ext);
         Map<Integer, SpectrumEntry> num_spectrum_map = pre_spectra_obj.getNumSpectrumMap();
         Integer[] scanNumArray = num_spectrum_map.keySet().toArray(new Integer[num_spectrum_map.size()]);
         Arrays.sort(scanNumArray);
@@ -215,9 +219,9 @@ public class ECL2 {
             }
 
             if (dev) {
-                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
+                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
             } else {
-                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value\n");
+                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
             }
             for (FinalResultEntry re : result) {
                 if (re.hit_type == 0) {
@@ -236,9 +240,9 @@ public class ECL2 {
                     String annotate_2 = pro_annotate_map.get(pro_2).replace(",", ";");
 
                     if (dev) {
-                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format("%.4f", re.score) + "," + re.delta_c + "," + String.format("%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ',' + annotate_1 + "," + annotate_2 + "," + (cal_evalue ? String.format("%E", re.e_value) : "-") + "," + String.format("%.4f", re.qvalue) + ",," + re.candidate_num + "," + re.point_count + "," + String.format("%.4f", re.r_square) + "," + String.format("%.4f", re.slope) + "," + String.format("%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format("%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format("%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
+                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format("%.4f", re.score) + "," + re.delta_c + "," + String.format("%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ',' + annotate_1 + "," + annotate_2 + "," + (cal_evalue ? String.format("%E", re.e_value) : "-") + "," + String.format("%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format("%.4f", re.r_square) + "," + String.format("%.4f", re.slope) + "," + String.format("%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format("%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format("%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
                     } else {
-                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," +  re.C13_correction + "," + re.charge + "," + String.format("%.4f", re.score) + "," + re.delta_c + "," + String.format("%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ',' + annotate_1 + "," + annotate_2 + "," + (cal_evalue ? String.format("%E", re.e_value) : "-") + "," + String.format("%.4f", re.qvalue) + "\n");
+                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," +  re.C13_correction + "," + re.charge + "," + String.format("%.4f", re.score) + "," + re.delta_c + "," + String.format("%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ',' + annotate_1 + "," + annotate_2 + "," + (cal_evalue ? String.format("%E", re.e_value) : "-") + "," + String.format("%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\"\n");
                     }
                 }
             }
@@ -259,9 +263,9 @@ public class ECL2 {
             }
 
             if (dev) {
-                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
+                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,mgf_title,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
             } else {
-                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value\n");
+                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,mgf_title\n");
             }
             for (FinalResultEntry re : result) {
                 if ((re.hit_type == 1) || (re.hit_type == 2)) {
@@ -282,9 +286,9 @@ public class ECL2 {
                     }
 
                     if (dev) {
-                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format("%.4f", re.score) + "," + re.delta_c + "," + String.format("%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ',' + annotate_1 + "," + annotate_2 + "," + (cal_evalue ? String.format("%E", re.e_value) : "-") + ",," + re.candidate_num + "," + re.point_count + "," + String.format("%.4f", re.r_square) + "," + String.format("%.4f", re.slope) + "," + String.format("%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format("%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format("%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
+                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format("%.4f", re.score) + "," + re.delta_c + "," + String.format("%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ',' + annotate_1 + "," + annotate_2 + "," + (cal_evalue ? String.format("%E", re.e_value) : "-") + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format("%.4f", re.r_square) + "," + String.format("%.4f", re.slope) + "," + String.format("%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format("%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format("%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
                     } else {
-                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format("%.4f", re.score) + "," + re.delta_c + "," + String.format("%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ',' + annotate_1 + "," + annotate_2 + "," +  (cal_evalue ? String.format("%E", re.e_value) : "-") + "," + String.format("%.4f", re.qvalue) + "\n");
+                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format("%.4f", re.score) + "," + re.delta_c + "," + String.format("%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ',' + annotate_1 + "," + annotate_2 + "," +  (cal_evalue ? String.format("%E", re.e_value) : "-") + ",\"" + re.mgfTitle + "\"\n");
                     }
                 }
             }

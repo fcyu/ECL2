@@ -87,12 +87,12 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                     }
                     new CalEValue(spectrumEntry.scan_num, resultEntry, build_index_obj, build_index_obj.linker_mass, originalTolerance);
                     if (resultEntry.getEValue() != 9999) {
-                        return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap);
+                        return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap, spectrumEntry);
                     } else {
                         return null;
                     }
                 } else {
-                    return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap);
+                    return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap, spectrumEntry);
                 }
             } else {
                 return null;

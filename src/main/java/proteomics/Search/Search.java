@@ -243,7 +243,7 @@ public class Search {
         }
     }
 
-    public FinalResultEntry convertResultEntry(int scanNum, ResultEntry result_entry, Map<String, Set<String>> seqProMap) {
+    public FinalResultEntry convertResultEntry(int scanNum, ResultEntry result_entry, Map<String, Set<String>> seqProMap, SpectrumEntry spectrumEntry) {
         int rank = 1;
         String chain_seq_1 = result_entry.getChain1();
         String chain_seq_2 = result_entry.getChain2();
@@ -302,7 +302,7 @@ public class Search {
         String final_seq_1 = addFixMod(chain_seq_1, result_entry.getLinkSite1());
         String final_seq_2 = addFixMod(chain_seq_2, result_entry.getLinkSite2());
 
-        return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), pro_1, final_seq_2, result_entry.getLinkSite2(), pro_2, cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum(), cal_evalue);
+        return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), pro_1, final_seq_2, result_entry.getLinkSite2(), pro_2, cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum(), cal_evalue, spectrumEntry.mgfTitle);
     }
 
     private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {

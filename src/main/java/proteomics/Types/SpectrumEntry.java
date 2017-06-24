@@ -10,10 +10,11 @@ public class SpectrumEntry {
     public final float rt;
     public final float mass_without_linker_mass;
     public final int precursor_charge;
+    public final String mgfTitle;
     public Map<Double, Double> originalPlMap;
     private final String to_string;
 
-    public SpectrumEntry(int scan_num, String spectrum_id, float precursor_mz, float precursor_mass, int precursor_charge, float rt, Map<Double, Double> originalPlMap, float linker_mass) {
+    public SpectrumEntry(int scan_num, String spectrum_id, float precursor_mz, float precursor_mass, int precursor_charge, float rt, Map<Double, Double> originalPlMap, float linker_mass, String mgfTitle) {
         this.scan_num = scan_num;
         this.spectrum_id = spectrum_id;
         this.precursor_mz = precursor_mz;
@@ -21,6 +22,7 @@ public class SpectrumEntry {
         mass_without_linker_mass = precursor_mass - linker_mass;
         this.precursor_charge = precursor_charge;
         this.rt = rt;
+        this.mgfTitle = mgfTitle;
         this.originalPlMap = originalPlMap;
         to_string = this.scan_num + "(charge=" + precursor_charge + ",mass=" + precursor_mass + ",peakNum=" + originalPlMap.size() + ")";
     }
