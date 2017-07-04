@@ -80,6 +80,16 @@ public class PreSpectra {
 
                 Map<Double, Double> raw_mz_intensity_map = spectrum.getPeakList();
 
+                int peakCount = 0;
+                for (double intensity : raw_mz_intensity_map.values()) {
+                    if (intensity > 1e-6) {
+                        ++peakCount;
+                    }
+                }
+                if (peakCount < 10) {
+                    continue;
+                }
+
                 if (ECL2.debug) {
                     try (BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".raw.spectrum.csv"))) {
                         writer.write("mz,intensity\n");
