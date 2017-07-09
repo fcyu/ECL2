@@ -26,7 +26,7 @@ public class Search {
     private final BuildIndex build_index_obj;
     private final int[] C13_correction_range;
     private final Map<Integer, Long> bin_candidate_num_map;
-    final float single_chain_t;
+    private final float single_chain_t;
     private final boolean cal_evalue;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
