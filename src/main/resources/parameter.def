@@ -25,8 +25,8 @@ mz_bin_size = 0.02
 mz_bin_offset = 0
 
 # Cross-linking parameter.
-# Cross-linking site can not be modified.
 cl_mass = 138.0680796
+cl_type = 1 # 1 = Kn-Kn; 2 = C-C
 
 # Var modification
 # format: <mass> <residues> <binary>

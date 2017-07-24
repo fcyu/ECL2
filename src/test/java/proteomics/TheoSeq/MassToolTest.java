@@ -60,7 +60,7 @@ public class MassToolTest {
     public void buildChainSet() throws Exception {
         // 1 missed-cleavage, N-term linkable
         MassTool mass_tool_obj = new MassTool(1, fix_mod_map, "KR", "P", 1.0005f, 0.6f);
-        Set<String> result = mass_tool_obj.buildChainSet("MRGFASSASRIATAAAASKPSLNASTSVNPKLSKTMDYMRIFSVFVVTLWIIRVDARVFKTY");
+        Set<String> result = mass_tool_obj.buildChainSet("MRGFASSASRIATAAAASKPSLNASTSVNPKLSKTMDYMRIFSVFVVTLWIIRVDARVFKTY", (short) 1);
         Set<String> ground_truth = new HashSet<>();
         ground_truth.add("nMRc");
         ground_truth.add("nMRGFASSASRc");
@@ -73,7 +73,7 @@ public class MassToolTest {
 
         // 2 missed-cleavage, N-term linkable
         mass_tool_obj = new MassTool(2, fix_mod_map, "KR", "P", 1.0005f, 0.6f);
-        result = mass_tool_obj.buildChainSet("MRGFASSASRIATAAAASKPSLNASTSVNPKLSKTMDYMRIFSVFVVTLWIIRVDARVFKTY");
+        result = mass_tool_obj.buildChainSet("MRGFASSASRIATAAAASKPSLNASTSVNPKLSKTMDYMRIFSVFVVTLWIIRVDARVFKTY", (short) 1);
         ground_truth = new HashSet<>();
         ground_truth.add("nMRc");
         ground_truth.add("nIATAAAASKPSLNASTSVNPKc");

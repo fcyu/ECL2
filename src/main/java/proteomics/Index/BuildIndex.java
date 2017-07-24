@@ -19,6 +19,7 @@ public class BuildIndex {
     private static final float varModMassResolution = 0.01f;
 
     public final float linker_mass;
+    public final short linker_type;
 
     private final MassTool mass_tool_obj;
     private final Map<String, String> pro_annotate_map;
@@ -71,12 +72,24 @@ public class BuildIndex {
         fix_mod_map.put('n', Float.valueOf(parameter_map.get("n")));
         fix_mod_map.put('c', Float.valueOf(parameter_map.get("c")));
 
-        if (Math.abs(fix_mod_map.get('K') - fix_mod_map.get('n')) > 1e-6) { // todo improve
-            logger.error("K and N-term have different fixed modification. Exit.");
+        linker_type = Short.valueOf(parameter_map.get("cl_type"));
+
+        // check the cross-linker and the fix modification
+        if (linker_type == 1) {
+            if (Math.abs(fix_mod_map.get('K') - fix_mod_map.get('n')) > 1e-6) {
+                linker_mass = 0;
+                logger.error("The link sites have different fix modifications.");
+                System.exit(1);
+            } else {
+                linker_mass = Float.valueOf(parameter_map.get("cl_mass")) - fix_mod_map.get('K');
+            }
+        } else if (linker_type == 2) {
+            linker_mass = Float.valueOf(parameter_map.get("cl_mass")) - fix_mod_map.get('C');
+        } else {
+            linker_mass = 0;
+            logger.error("The cross-linker type cannot be recognized.");
             System.exit(1);
         }
-
-        linker_mass = Float.valueOf(parameter_map.get("cl_mass")) - 2 * fix_mod_map.get('K'); // todo improve
 
         // read protein database
         DbTool db_tool_obj = new DbTool(db_path);
@@ -124,7 +137,7 @@ public class BuildIndex {
             boolean proteinCTerm = seq_term_map.get(seq)[1];
 
             // mod free
-            Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm, proteinCTerm);
+            Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm, proteinCTerm, linker_type);
             if (!linkSiteSet.isEmpty()) {
                 float totalMass = (float) (mass_tool_obj.calResidueMass(seq) + MassTool.H2O);
                 if (totalMass < max_precursor_mass - linker_mass) {
@@ -226,7 +239,7 @@ public class BuildIndex {
         Set<String> for_check_duplicate = new HashSet<>();
         for (String pro_id : pro_seq_map.keySet()) {
             String pro_seq = pro_seq_map.get(pro_id);
-            Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq);
+            Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq, linker_type);
             for (String target_seq : seq_set) {
                 if ((target_seq.length() >= min_chain_length) && (target_seq.length() <= max_chain_length) && !target_seq.contains("B") && !target_seq.contains("J") && !target_seq.contains("X") && !target_seq.contains("Z")) {
                     if (!for_check_duplicate.contains(target_seq.replace("L", "I"))) {
@@ -259,7 +272,7 @@ public class BuildIndex {
         for (String pro_id : pro_seq_map.keySet()) {
             String pro_seq = pro_seq_map.get(pro_id);
             String decoy_pro_seq = (new StringBuilder(pro_seq)).reverse().toString();
-            Set<String> decoy_seq_set = mass_tool_obj.buildChainSet(decoy_pro_seq);
+            Set<String> decoy_seq_set = mass_tool_obj.buildChainSet(decoy_pro_seq, linker_type);
             for (String decoy_seq : decoy_seq_set) {
                 if ((decoy_seq.length() >= min_chain_length) && (decoy_seq.length() <= max_chain_length) && !decoy_seq.contains("B") && !decoy_seq.contains("J") && !decoy_seq.contains("X") && !decoy_seq.contains("Z")) {
                     if (!for_check_duplicate.contains(decoy_seq.replace("L", "I"))) {
@@ -546,18 +559,20 @@ public class BuildIndex {
         }
     }
 
-    private Set<Short> getLinkSiteSet(String seq, boolean n_term, boolean c_term) {
+    private Set<Short> getLinkSiteSet(String seq, boolean n_term, boolean c_term, short linker_type) {
         AA[] aa_list = MassTool.seqToAAList(seq);
         Set<Short> output = new HashSet<>(5, 1);
         for (int i = 1; i < aa_list.length - 2; ++i) {
-            if (aa_list[i].aa == 'K' && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
+            if (linker_type == 1 && aa_list[i].aa == 'K' && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
+                output.add((short) i);
+            } else if (linker_type == 2 && aa_list[i].aa == 'C' && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
                 output.add((short) i);
             }
         }
-        if (n_term && !output.contains((short) 1) && (Math.abs(aa_list[0].delta_mass) < varModMassResolution)) {
+        if (linker_type == 1 && n_term && !output.contains((short) 1) && (Math.abs(aa_list[0].delta_mass) < varModMassResolution)) {
             output.add((short) 0);
         }
-        if (c_term && aa_list[aa_list.length - 2].aa == 'K' && (Math.abs(aa_list[aa_list.length - 2].delta_mass) < varModMassResolution)) {
+        if (linker_type == 1 && c_term && aa_list[aa_list.length - 2].aa == 'K' && (Math.abs(aa_list[aa_list.length - 2].delta_mass) < varModMassResolution)) {
             output.add((short) (aa_list.length - 2));
         }
         return output;
