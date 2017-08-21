@@ -70,7 +70,7 @@ n = 0
 c = 0
 
 # Advanced parameters
-single_chain_t = 0.1
+single_chain_t = 0
 cal_evalue = 1
 ms1_bin_size = 0.001
 delta_c_t = 0.00
