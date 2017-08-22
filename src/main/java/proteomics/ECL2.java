@@ -236,8 +236,8 @@ public class ECL2 {
                         pro_2 = re.pro_id_2.split(";")[0];
                     }
 
-                    String annotate_1 = pro_annotate_map.get(pro_1).replace(",", ";");
-                    String annotate_2 = pro_annotate_map.get(pro_2).replace(",", ";");
+                    String annotate_1 = pro_annotate_map.get(pro_1).replace(',', ';');
+                    String annotate_2 = pro_annotate_map.get(pro_2).replace(',', ';');
 
                     if (dev) {
                         writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + annotate_1 + "\",\"" + annotate_2 + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + "," + String.format(Locale.US, "%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format(Locale.US, "%.4f", re.r_square) + "," + String.format(Locale.US, "%.4f", re.slope) + "," + String.format(Locale.US, "%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format(Locale.US, "%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format(Locale.US, "%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
@@ -277,12 +277,12 @@ public class ECL2 {
 
                     if (!re.pro_id_1.startsWith("DECOY")) {
                         String pro_1 = re.pro_id_1.split(";")[0];
-                        annotate_1 = pro_annotate_map.get(pro_1).replace(",", ";");
+                        annotate_1 = pro_annotate_map.get(pro_1).replace(',', ';');
                     }
 
                     if (!re.pro_id_2.startsWith("DECOY")) {
                         String pro_2 = re.pro_id_2.split(";")[0];
-                        annotate_2 = pro_annotate_map.get(pro_2).replace(",", ";");
+                        annotate_2 = pro_annotate_map.get(pro_2).replace(',', ';');
                     }
 
                     if (dev) {

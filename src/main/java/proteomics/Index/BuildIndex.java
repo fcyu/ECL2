@@ -242,9 +242,9 @@ public class BuildIndex {
             Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq, linker_type);
             for (String target_seq : seq_set) {
                 if ((target_seq.length() >= min_chain_length) && (target_seq.length() <= max_chain_length) && !target_seq.contains("B") && !target_seq.contains("J") && !target_seq.contains("X") && !target_seq.contains("Z")) {
-                    if (!for_check_duplicate.contains(target_seq.replace("L", "I"))) {
+                    if (!for_check_duplicate.contains(target_seq.replace('L', 'I'))) {
                         // Add the sequence to the check set for duplicate check
-                        for_check_duplicate.add(target_seq.replace("L", "I")); // "L" and "I" have the same mass
+                        for_check_duplicate.add(target_seq.replace('L', 'I')); // "L" and "I" have the same mass
 
                         boolean n_term = false;
                         boolean c_term = false;
@@ -276,8 +276,8 @@ public class BuildIndex {
             Set<String> decoy_seq_set = mass_tool_obj.buildChainSet(decoy_pro_seq, linker_type);
             for (String decoy_seq : decoy_seq_set) {
                 if ((decoy_seq.length() >= min_chain_length) && (decoy_seq.length() <= max_chain_length) && !decoy_seq.contains("B") && !decoy_seq.contains("J") && !decoy_seq.contains("X") && !decoy_seq.contains("Z")) {
-                    if (!for_check_duplicate.contains(decoy_seq.replace("L", "I"))) {
-                        for_check_duplicate.add(decoy_seq.replace("L", "I"));
+                    if (!for_check_duplicate.contains(decoy_seq.replace('L', 'I'))) {
+                        for_check_duplicate.add(decoy_seq.replace('L', 'I'));
 
                         boolean n_term = false;
                         boolean c_term = false;

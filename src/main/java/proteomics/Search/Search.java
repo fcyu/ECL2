@@ -285,10 +285,13 @@ public class Search {
                 if (temp_2.startsWith("DECOY_")) {
                     temp_2 = temp_2.substring(6);
                 }
-                if (temp_1.contentEquals(temp_2)) {
+                if (temp_1.contentEquals(temp_2)) { // bias to intra protein cross-linking
                     keep = true;
                     break;
                 }
+            }
+            if (keep) {
+                break;
             }
         }
 
