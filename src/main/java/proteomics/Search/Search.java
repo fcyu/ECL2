@@ -209,7 +209,7 @@ public class Search {
                 debugEntryList.sort(Comparator.reverseOrder());
                 writer.write("chain,link_site,mass,score\n");
                 for (DebugEntry t : debugEntryList) {
-                    writer.write(String.format("%s,%d,%f,%f\n", addFixMod(t.chain, t.link_site), t.link_site, t.mass, t.score));
+                    writer.write(String.format(Locale.US, "%s,%d,%f,%f\n", addFixMod(t.chain, t.link_site), t.link_site, t.mass, t.score));
                 }
             } catch (IOException ex) {
                 logger.error(ex.getMessage());
@@ -372,10 +372,10 @@ public class Search {
             if (i == linkSite) { // priority order: linkSite > fixMod > varMod
                 sb.append(aa.aa);
             } else if (Math.abs(fix_mod_map.get(aa.aa)) > 1e-6) {
-                sb.append(String.format("%c[%.2f]", aa.aa, fix_mod_map.get(aa.aa)));
+                sb.append(String.format(Locale.US, "%c[%.2f]", aa.aa, fix_mod_map.get(aa.aa)));
             } else {
                 if (Math.abs(aa.delta_mass) > 1e-6) {
-                    sb.append(String.format("%c[%.2f]", aa.aa, aa.delta_mass));
+                    sb.append(String.format(Locale.US, "%c[%.2f]", aa.aa, aa.delta_mass));
                 } else {
                     sb.append(aa.aa);
                 }

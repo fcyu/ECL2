@@ -1,5 +1,7 @@
 package proteomics.Types;
 
+import java.util.Locale;
+
 public class AA {
 
     public final char aa;
@@ -11,7 +13,7 @@ public class AA {
         this.aa = aa;
         this.delta_mass = delta_mass;
         if (Math.abs(delta_mass) > 1e-6) {
-            toString = String.format("%c[%.2f]", aa, delta_mass);
+            toString = String.format(Locale.US, "%c[%.2f]", aa, delta_mass);
         } else {
             toString = String.valueOf(aa);
         }

@@ -9,6 +9,7 @@ import proteomics.Types.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.TreeMap;
 
 public class CalEValue {
@@ -67,7 +68,7 @@ public class CalEValue {
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"))) {
                     writer.write("histogram\n");
                     for (int i = 0; i < max_nonzero_idx; ++i) {
-                        writer.write(String.format("%d\n", score_histogram[i]));
+                        writer.write(String.format(Locale.US, "%d\n", score_histogram[i]));
                     }
                 } catch (IOException ex) {
                     logger.error(ex.getMessage());
@@ -188,12 +189,12 @@ public class CalEValue {
 
         if (ECL2.debug) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"))) {
-                writer.write(String.format("histogram,survival,ln(survival),slope=%.4f,intercept=%.4f,rsquare=%.4f,start=%d,end=%d\n", optimal_slope, optimal_intercept, max_r_square, optimal_start_idx, null_end_idx));
+                writer.write(String.format(Locale.US, "histogram,survival,ln(survival),slope=%.4f,intercept=%.4f,rsquare=%.4f,start=%d,end=%d\n", optimal_slope, optimal_intercept, max_r_square, optimal_start_idx, null_end_idx));
                 for (int i = 0; i <= max_nonzero_idx; ++i) {
                     if (i < ln_survival_count_array.length) {
-                        writer.write(String.format("%d,%d,%.4f\n", score_histogram[i], survival_count_array[i], ln_survival_count_array[i]));
+                        writer.write(String.format(Locale.US, "%d,%d,%.4f\n", score_histogram[i], survival_count_array[i], ln_survival_count_array[i]));
                     } else {
-                        writer.write(String.format("%d,%d\n", score_histogram[i], survival_count_array[i]));
+                        writer.write(String.format(Locale.US, "%d,%d\n", score_histogram[i], survival_count_array[i]));
                     }
                 }
             } catch (IOException ex) {
