@@ -256,13 +256,14 @@ public class BuildIndex {
                         }
                         seq_term_map.put(target_seq, new boolean[]{n_term, c_term});
 
-                        if (seq_pro_map.containsKey(target_seq)) {
-                            seq_pro_map.get(target_seq).add(pro_id);
-                        } else {
-                            Set<String> pro_list = new HashSet<>(5, 1);
-                            pro_list.add(pro_id);
-                            seq_pro_map.put(target_seq, pro_list);
-                        }
+                        Set<String> pro_set = new HashSet<>(5, 1);
+                        pro_set.add(pro_id);
+                        seq_pro_map.put(target_seq, pro_set);
+                    }
+
+                    // considering the case that the sequence has multiple proteins. In the above if clock, such a protein wasn't recorded.
+                    if (seq_pro_map.containsKey(target_seq)) {
+                        seq_pro_map.get(target_seq).add(pro_id);
                     }
                 }
             }
@@ -288,13 +289,12 @@ public class BuildIndex {
                         }
                         seq_term_map.put(decoy_seq, new boolean[]{n_term, c_term});
 
-                        if (seq_pro_map.containsKey(decoy_seq)) {
-                            seq_pro_map.get(decoy_seq).add("DECOY_" + pro_id);
-                        } else {
-                            Set<String> pro_list = new HashSet<>(5, 1);
-                            pro_list.add("DECOY_" + pro_id);
-                            seq_pro_map.put(decoy_seq, pro_list);
-                        }
+                        Set<String> pro_set = new HashSet<>(5, 1);
+                        pro_set.add("DECOY_" + pro_id);
+                        seq_pro_map.put(decoy_seq, pro_set);
+                    }
+                    if (seq_pro_map.containsKey(decoy_seq)) {
+                        seq_pro_map.get(decoy_seq).add("DECOY_" + pro_id);
                     }
                 }
             }
