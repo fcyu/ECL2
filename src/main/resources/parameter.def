@@ -1,37 +1,38 @@
 # 2.1.5
 # The first line is the parameter file version. Do not change it.
-thread_num = 0
-debug = 0
-dev = 0
+thread_num = 0 # The thread number. Set to 0 to use all the CPU resources of the computer.
+debug = 0 # For debug.
+dev = 0 # Output development information.
 
 # Database
-db = small+random50.fasta # The whole protein database
-missed_cleavage = 2 # maximum number of missed cleavage
+db = small+random50.fasta # The protein database.
+missed_cleavage = 2 # Maximum number of allowed missed cleavage.
 min_precursor_mass = 1000
 max_precursor_mass = 12000
-min_chain_length = 5 # minimum length of a peptide chain
+min_chain_length = 5 # Minimum length of a peptide chain.
 max_chain_length = 50
 
 # Spectrum
 min_ms1_charge = 3
 max_ms1_charge = 7
 max_common_ion_charge = 3
-C13_correction_range = 0
+C13_correction_range = 0 # Precursor mass correction range. Normally set to -1,0 to consider one C13 error.
 
 # Tolerance
 ms1_tolerance_unit = 1 # 0: Da; 1: ppm
 ms1_tolerance = 10
-mz_bin_size = 0.02
-mz_bin_offset = 0
+mz_bin_size = 0.02 # Bin size in digitizing a MS/MS spectrum.
+mz_bin_offset = 0 # Offset in digitizing a MS/MS spectrum.
 
 # Cross-linking parameter.
-cl_mass = 138.0680796
-cl_type = 1 # 1 = Kn-Kn; 2 = C-C
+cl_mass = 138.0680796 # Cross-linker mass.
+cl_type = 1 # Cross-linker type. 1 = Kn-Kn; 2 = C-C
 
-# Var modification
-# format: <mass> <residues> <binary>
+# Varibale modification.
+# Format: <mass> <residues> <binary>
 # <binary> == 0/1
-# binary modification is mutual exclusion with each other
+# If <binary> = 1, all the specified amino acids in a peptide are either modified or not. Normally used for chemical labelling.
+# Binary modification is mutual exclusion with each other
 var_mod1 = 15.99 M 0
 var_mod2 = 0.0 X 0
 var_mod3 = 0.0 X 0
@@ -69,12 +70,13 @@ O = 0
 n = 0
 c = 0
 
-# Advanced parameters
-single_chain_t = 0
-cal_evalue = 1
+# Advanced parameters.
+# Don't change them unless necessary.
+single_chain_t = 0 # Single chain score threshold.
+cal_evalue = 1 # 1 = calculate e-value; 0 = not.
 ms1_bin_size = 0.001
-delta_c_t = 0.00
-flanking_peaks = 0
+delta_c_t = 0.00 # DeltaC threshold.
+flanking_peaks = 0 # 1 = use flanking peaks; 0 = not.
 
-# for debug
-# put interested scan numbers below. One number each line
+# For debug.
+# Put interested scan numbers below. One number each line.
