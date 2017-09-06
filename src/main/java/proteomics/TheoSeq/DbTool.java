@@ -17,7 +17,7 @@ public class DbTool {
     public DbTool(String db_name) {
         String id = "";
         String annotate;
-        String seq = "";
+        StringBuilder seq = new StringBuilder(99999);
 
         boolean new_pro = true;
 
@@ -32,7 +32,7 @@ public class DbTool {
                     // This line is a header
                     if (!new_pro) {
                         // This isn't the first protein
-                        pro_seq_map.put(id, seq);
+                        pro_seq_map.put(id, seq.toString());
                     }
                     id = head_matcher.group(1).trim();
                     annotate = head_matcher.group(2).trim();
@@ -41,15 +41,16 @@ public class DbTool {
                 } else if (!line.isEmpty()) {
                     // This line is a body
                     if (new_pro) {
-                        seq = line;
+                        seq = new StringBuilder(99999);
+                        seq.append(line);
                         new_pro = false;
                     } else {
-                        seq += line;
+                        seq.append(line);
                     }
                 }
             }
             // Last protein
-            pro_seq_map.put(id, seq);
+            pro_seq_map.put(id, seq.toString());
         } catch (IOException | PatternSyntaxException ex) {
             logger.error(ex.getMessage());
             ex.printStackTrace();
