@@ -13,7 +13,7 @@ public class AA {
         this.aa = aa;
         this.delta_mass = delta_mass;
         if (Math.abs(delta_mass) > 1e-6) {
-            toString = String.format(Locale.US, "%c[%.2f]", aa, delta_mass);
+            toString = String.format(Locale.US, "%c[%.3f]", aa, delta_mass);
         } else {
             toString = String.valueOf(aa);
         }

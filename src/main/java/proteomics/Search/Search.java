@@ -375,10 +375,10 @@ public class Search {
             if (i == linkSite) { // priority order: linkSite > fixMod > varMod
                 sb.append(aa.aa);
             } else if (Math.abs(fix_mod_map.get(aa.aa)) > 1e-6) {
-                sb.append(String.format(Locale.US, "%c[%.2f]", aa.aa, fix_mod_map.get(aa.aa)));
+                sb.append(String.format(Locale.US, "%c[%.3f]", aa.aa, fix_mod_map.get(aa.aa)));
             } else {
                 if (Math.abs(aa.delta_mass) > 1e-6) {
-                    sb.append(String.format(Locale.US, "%c[%.2f]", aa.aa, aa.delta_mass));
+                    sb.append(String.format(Locale.US, "%c[%.3f]", aa.aa, aa.delta_mass));
                 } else {
                     sb.append(aa.aa);
                 }

@@ -326,7 +326,7 @@ public class BuildIndex {
                     for (int i = 0; i < seq.length(); ++i) {
                         sb.append(seq.substring(i, i + 1));
                         if (idxBinaryModMassMap.containsKey(i)) {
-                            sb.append(String.format(Locale.US, "[%.2f]", idxBinaryModMassMap.get(i).get(0)));
+                            sb.append(String.format(Locale.US, "[%.3f]", idxBinaryModMassMap.get(i).get(0)));
                         }
                     }
                     varSeqSet.add(new VarSequence(sb.toString(), linkSite, binaryModParam.hashCode()));
@@ -445,7 +445,7 @@ public class BuildIndex {
             for (int i = 0; i < seq.length(); ++i) {
                 sb.append(seq.charAt(i));
                 if (localIdxModMassMap.containsKey(i)) {
-                    sb.append(String.format(Locale.US, "[%.2f]", localIdxModMassMap.get(i)));
+                    sb.append(String.format(Locale.US, "[%.3f]", localIdxModMassMap.get(i)));
                 }
             }
             outputSet.add(new VarSequence(sb.toString(), linkSite, binaryModType));
