@@ -194,12 +194,19 @@ public class ECL2 {
             // save result
             logger.info("Estimating q-value...");
             List<List<FinalResultEntry>> picked_result = pickResult(final_search_results);
-            CalFDR cal_fdr_obj = new CalFDR(picked_result.get(0), cal_evalue);
-            List<FinalResultEntry> intra_result = cal_fdr_obj.includeStats(cal_evalue);
-            intra_result.sort(Collections.reverseOrder());
-            cal_fdr_obj = new CalFDR(picked_result.get(1), cal_evalue);
-            List<FinalResultEntry> inter_result = cal_fdr_obj.includeStats(cal_evalue);
-            inter_result.sort(Collections.reverseOrder());
+            List<FinalResultEntry> intra_result = new LinkedList<>();
+            List<FinalResultEntry> inter_result = new LinkedList<>();
+            if (!picked_result.get(0).isEmpty()) {
+                CalFDR cal_fdr_obj = new CalFDR(picked_result.get(0), cal_evalue);
+                intra_result = cal_fdr_obj.includeStats(cal_evalue);
+                intra_result.sort(Collections.reverseOrder());
+            }
+            if (!picked_result.get(1).isEmpty()) {
+                CalFDR cal_fdr_obj = new CalFDR(picked_result.get(1), cal_evalue);
+                inter_result = cal_fdr_obj.includeStats(cal_evalue);
+                inter_result.sort(Collections.reverseOrder());
+            }
+
             logger.info("Saving results...");
             saveTargetResult(intra_result, build_index_obj.getProAnnotateMap(), spectra_path, true, cal_evalue);
             saveTargetResult(inter_result, build_index_obj.getProAnnotateMap(), spectra_path, false, cal_evalue);
