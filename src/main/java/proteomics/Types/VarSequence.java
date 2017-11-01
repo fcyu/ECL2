@@ -7,12 +7,14 @@ public class VarSequence {
     public final short linkSite;
     public final int binaryModType;
     private final String toString;
+    private final int hashCode;
 
     public VarSequence(String seq, short linkSite, int binaryModType) {
         this.seq = seq;
         this.linkSite = linkSite;
         this.binaryModType = binaryModType;
         toString = seq + "-" + linkSite + "-" + binaryModType;
+        hashCode = toString.hashCode();
     }
 
     public boolean equals(Object other) {
@@ -29,6 +31,6 @@ public class VarSequence {
     }
 
     public int hashCode() {
-        return toString.hashCode();
+        return hashCode;
     }
 }
