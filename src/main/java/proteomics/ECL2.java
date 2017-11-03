@@ -41,12 +41,12 @@ public class ECL2 {
         String parameter_path = args[0].trim();
         String spectra_path = args[1].trim();
 
-        logger.info("ECL2 Version {}", version);
+        logger.info("ECL2 Version {}.", version);
         logger.info("Author: Fengchao Yu. Email: fyuab@connect.ust.hk");
 
         try {
             String hostName = InetAddress.getLocalHost().getHostName();
-            logger.info("Computer: {}", hostName);
+            logger.info("Computer: {}.", hostName);
         } catch (UnknownHostException ex) {
             logger.warn("Cannot get the computer's name.");
         }
@@ -86,12 +86,12 @@ public class ECL2 {
         }
 
         // Prepare search
-        logger.info("Protein database: {}", parameter_map.get("db"));
+        logger.info("Protein database: {}.", parameter_map.get("db"));
         logger.info("Indexing protein database...");
         BuildIndex build_index_obj = new BuildIndex(parameter_map);
         MassTool mass_tool_obj = build_index_obj.returnMassTool();
 
-        logger.info("Peptide chains number: {}", build_index_obj.getSeqEntryMap().size());
+        logger.info("Peptide chains number: {}.", build_index_obj.getSeqEntryMap().size());
 
         logger.info("Reading spectra...");
         JMzReader spectra_parser = null;
@@ -122,7 +122,7 @@ public class ECL2 {
         Integer[] scanNumArray = num_spectrum_map.keySet().toArray(new Integer[num_spectrum_map.size()]);
         Arrays.sort(scanNumArray);
 
-        logger.info("Useful MS/MS spectra number: {}", num_spectrum_map.size());
+        logger.info("Useful MS/MS spectra number: {}.", num_spectrum_map.size());
 
         logger.info("Start searching...");
 
