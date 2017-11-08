@@ -29,6 +29,7 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
     public final String mgfTitle;
 
     private final String toString;
+    private final int hashCode;
 
     public final long candidate_num;
 
@@ -94,6 +95,7 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
         this.candidate_num = candidate_num;
 
         toString = scan_num + "-" + seq_1 + "-" + link_site_1 + "-" + seq_2 + link_site_2;
+        hashCode = toString.hashCode();
 
         this.cal_evalue = cal_evalue;
 
@@ -121,6 +123,14 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
     }
 
     public int hashCode() {
-        return toString.hashCode();
+        return hashCode;
+    }
+
+    public boolean equals(Object other) {
+        if (other instanceof FinalResultEntry) {
+            return ((FinalResultEntry) other).hashCode == hashCode;
+        } else {
+            return false;
+        }
     }
 }
