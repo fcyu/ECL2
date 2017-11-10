@@ -52,7 +52,7 @@ public class DbTool {
             // Last protein
             pro_seq_map.put(id, seq.toString());
         } catch (IOException | PatternSyntaxException ex) {
-            logger.error(ex.getMessage());
+            logger.error(ex.toString());
             ex.printStackTrace();
             System.exit(1);
         }

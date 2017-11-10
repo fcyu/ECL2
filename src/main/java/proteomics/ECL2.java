@@ -112,7 +112,7 @@ public class ECL2 {
                 System.exit(1);
             }
         } catch (Exception ex) {
-            logger.error(ex.getMessage());
+            logger.error(ex.toString());
             ex.printStackTrace();
             System.exit(1);
         }
@@ -255,7 +255,7 @@ public class ECL2 {
             }
             writer.close();
         } catch (IOException ex) {
-            logger.error(ex.getMessage());
+            logger.error(ex.toString());
             System.exit(1);
         }
     }
@@ -301,7 +301,7 @@ public class ECL2 {
             }
             writer.close();
         } catch (IOException ex) {
-            logger.error(ex.getMessage());
+            logger.error(ex.toString());
             System.exit(1);
         }
     }

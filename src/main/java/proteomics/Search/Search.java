@@ -212,7 +212,7 @@ public class Search {
                     writer.write(String.format(Locale.US, "%s,%d,%f,%f\n", addFixMod(t.chain, t.link_site), t.link_site, t.mass, t.score));
                 }
             } catch (IOException ex) {
-                logger.error(ex.getMessage());
+                logger.error(ex.toString());
                 ex.printStackTrace();
                 System.exit(1);
             }

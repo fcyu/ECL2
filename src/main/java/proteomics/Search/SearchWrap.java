@@ -53,7 +53,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                 }
             } catch (IOException ex) {
                 ex.printStackTrace();
-                logger.error(ex.getMessage());
+                logger.error(ex.toString());
                 System.exit(1);
             }
         }
@@ -73,7 +73,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                     }
                 } catch (IOException ex) {
                     ex.printStackTrace();
-                    logger.error(ex.getMessage());
+                    logger.error(ex.toString());
                     System.exit(1);
                 }
             }

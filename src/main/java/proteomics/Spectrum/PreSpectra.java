@@ -102,7 +102,7 @@ public class PreSpectra {
                         }
                     } catch (IOException ex) {
                         ex.printStackTrace();
-                        logger.error(ex.getMessage());
+                        logger.error(ex.toString());
                         System.exit(1);
                     }
                 }
@@ -133,7 +133,7 @@ public class PreSpectra {
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    logger.error(ex.getMessage());
+                    logger.error(ex.toString());
                     System.exit(1);
                 }
 
@@ -141,7 +141,7 @@ public class PreSpectra {
                 num_spectrum_map.put(scan_num, spectrum_entry);
             }
         } catch (Exception ex) {
-            logger.error(ex.getMessage());
+            logger.error(ex.toString());
             ex.printStackTrace();
             System.exit(1);
         }

@@ -71,7 +71,7 @@ public class CalEValue {
                         writer.write(String.format(Locale.US, "%d\n", score_histogram[i]));
                     }
                 } catch (IOException ex) {
-                    logger.error(ex.getMessage());
+                    logger.error(ex.toString());
                     ex.printStackTrace();
                     System.exit(1);
                 }
@@ -198,7 +198,7 @@ public class CalEValue {
                     }
                 }
             } catch (IOException ex) {
-                logger.error(ex.getMessage());
+                logger.error(ex.toString());
                 ex.printStackTrace();
                 System.exit(1);
             }
