@@ -14,14 +14,19 @@ public class DbTool {
     private Map<String, String> pro_seq_map = new HashMap<>();
     private Map<String, String> pro_annotate_map = new HashMap<>();
 
-    public DbTool(String db_name) {
+    public DbTool(String db_name, String databaseType) {
         String id = "";
         String annotate;
         StringBuilder seq = new StringBuilder(99999);
 
         boolean new_pro = true;
 
-        Pattern header_pattern = Pattern.compile(">([^\\s]*)(.*)");
+        Pattern header_pattern = Pattern.compile("^>([^\\s]+)[\\s|]+(.+)");;
+        if (databaseType.contentEquals("TAIR")) {
+            header_pattern = Pattern.compile("^>([^\\s]+)[\\s|]+(.+)$");
+        } else if (databaseType.contentEquals("UniProt") || databaseType.contentEquals("SwissProt")) {
+            header_pattern = Pattern.compile("^>[^|]+\\|(.+)\\|(.+)$");
+        }
 
         try (BufferedReader db_reader = new BufferedReader(new FileReader(db_name))) {
             String line;
@@ -64,5 +69,43 @@ public class DbTool {
 
     public Map<String, String> getProAnnotateMap() {
         return pro_annotate_map;
+    }
+
+    public Set<Integer> findPeptideLocation(String proteinId, String peptide) throws NullPointerException {
+        peptide = peptide.trim().replaceAll("[^A-Z]+", "");
+        Set<Integer> output = new HashSet<>();
+        int idx = pro_seq_map.get(proteinId).indexOf(peptide);
+        while (idx >= 0) {
+            output.add(idx);
+            idx = pro_seq_map.get(proteinId).indexOf(peptide, idx + 1);
+        }
+        if (!output.isEmpty()) {
+            return output;
+        } else {
+            throw new NullPointerException(String.format(Locale.US, "Cannot find the peptide %s from the protein %s.", peptide, proteinId));
+        }
+    }
+
+    public static Set<String> reduceProteinIdSet(Set<String> input) {
+        if (input.size() == 1) {
+            return input;
+        } else {
+            Map<String, Integer> tempMap = new HashMap<>();
+            for (String s : input) {
+                String[] tempArray = s.split("\\.");
+                if (tempMap.containsKey(tempArray[0])) {
+                    if (tempMap.get(tempArray[0]) > Integer.valueOf(tempArray[1])) {
+                        tempMap.put(tempArray[0], Integer.valueOf(tempArray[1]));
+                    }
+                } else {
+                    tempMap.put(tempArray[0], Integer.valueOf(tempArray[1]));
+                }
+            }
+            Set<String> output = new HashSet<>();
+            for (String s : tempMap.keySet()) {
+                output.add(s + "." + tempMap.get(s));
+            }
+            return output;
+        }
     }
 }

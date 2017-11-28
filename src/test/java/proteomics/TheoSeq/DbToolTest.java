@@ -13,7 +13,7 @@ public class DbToolTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        db_tool_obj = new DbTool(Thread.currentThread().getContextClassLoader().getResource("test.fasta").getPath());
+        db_tool_obj = new DbTool(Thread.currentThread().getContextClassLoader().getResource("test.fasta").getPath(), "UniProt");
     }
 
     @Test
