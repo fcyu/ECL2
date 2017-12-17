@@ -92,11 +92,7 @@ public class BuildIndex {
         }
 
         // read protein database
-        String databaseType = "UniProt";
-        if (parameter_map.containsKey("database_type")) {
-            databaseType = parameter_map.get("database_type");
-        }
-        DbTool db_tool_obj = new DbTool(db_path, databaseType);
+        DbTool db_tool_obj = new DbTool(db_path, parameter_map.get("database_type"));
         Map<String, String> pro_seq_map = db_tool_obj.getProSeqMap();
         pro_annotate_map = db_tool_obj.getProAnnotateMap();
 

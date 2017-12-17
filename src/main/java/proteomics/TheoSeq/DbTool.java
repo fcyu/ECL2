@@ -21,11 +21,15 @@ public class DbTool {
 
         boolean new_pro = true;
 
-        Pattern header_pattern = Pattern.compile("^>([^\\s]+)[\\s|]+(.+)");;
+        Pattern header_pattern;
         if (databaseType.contentEquals("TAIR")) {
             header_pattern = Pattern.compile("^>([^\\s]+)[\\s|]+(.+)$");
         } else if (databaseType.contentEquals("UniProt") || databaseType.contentEquals("SwissProt")) {
             header_pattern = Pattern.compile("^>[^|]+\\|(.+)\\|(.+)$");
+        } else {
+            header_pattern = null;
+            logger.error("Incorrect database type ({}) in the parameter file.", databaseType);
+            System.exit(1);
         }
 
         try (BufferedReader db_reader = new BufferedReader(new FileReader(db_name))) {
