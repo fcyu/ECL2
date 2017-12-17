@@ -5,18 +5,13 @@ public class BinaryModParam {
     public final float modMass;
     public final String aas;
 
-    private final String toString;
     private final int hashCode;
 
     public BinaryModParam(float modMass, String aas) {
         this.modMass = modMass;
         this.aas = aas;
-        toString = modMass + "@" + aas + "(binary)";
+        String toString = modMass + "@" + aas + "(binary)";
         hashCode = toString.hashCode();
-    }
-
-    public String toString() {
-        return toString;
     }
 
     public int hashCode() {

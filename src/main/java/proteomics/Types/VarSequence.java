@@ -6,14 +6,13 @@ public class VarSequence {
     public final String seq;
     public final short linkSite;
     public final int binaryModType;
-    private final String toString;
     private final int hashCode;
 
     public VarSequence(String seq, short linkSite, int binaryModType) {
         this.seq = seq;
         this.linkSite = linkSite;
         this.binaryModType = binaryModType;
-        toString = seq + "-" + linkSite + "-" + binaryModType;
+        String toString = seq + "-" + linkSite + "-" + binaryModType;
         hashCode = toString.hashCode();
     }
 
@@ -24,10 +23,6 @@ public class VarSequence {
         } else {
             return false;
         }
-    }
-
-    public String toString() {
-        return toString;
     }
 
     public int hashCode() {

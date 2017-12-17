@@ -28,7 +28,6 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
     public float qvalue = -1;
     public final String mgfTitle;
 
-    private final String toString;
     private final int hashCode;
 
     public final long candidate_num;
@@ -94,7 +93,7 @@ public class FinalResultEntry implements Comparable<FinalResultEntry> {
 
         this.candidate_num = candidate_num;
 
-        toString = scan_num + "-" + seq_1 + "-" + link_site_1 + "-" + seq_2 + link_site_2;
+        String toString = scan_num + "-" + seq_1 + "-" + link_site_1 + "-" + seq_2 + link_site_2;
         hashCode = toString.hashCode();
 
         this.cal_evalue = cal_evalue;

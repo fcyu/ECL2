@@ -5,18 +5,13 @@ public class VarModParam {
 
     public final float modMass;
     public final char aa;
-    private final String toString;
     private final int hashCode;
 
     public VarModParam(float modMass, char aa) {
         this.modMass = modMass;
         this.aa = aa;
-        toString = modMass + "@" + aa;
+        String toString = modMass + "@" + aa;
         hashCode = toString.hashCode();
-    }
-
-    public String toString() {
-        return toString;
     }
 
     public int hashCode() {
