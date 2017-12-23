@@ -43,13 +43,6 @@ public class PreSpectra {
             }
         }
 
-        PrintStream original_stream = System.out;
-        PrintStream null_stream = new PrintStream(new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {}
-        });
-        System.setOut(null_stream);
-
         Iterator<Spectrum> spectrumIterator = spectra_parser.getSpectrumIterator();
         try {
             while (spectrumIterator.hasNext()) {
@@ -145,8 +138,6 @@ public class PreSpectra {
             ex.printStackTrace();
             System.exit(1);
         }
-
-        System.setOut(original_stream);
     }
 
     public Map<Integer, SpectrumEntry> getNumSpectrumMap() {
