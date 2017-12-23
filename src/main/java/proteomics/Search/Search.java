@@ -257,19 +257,27 @@ public class Search {
         spectrum_mass += C13_Diff_num * 1.00335483f;
         float ppm = (spectrum_mass - theo_mass) * 1e6f / theo_mass;
 
-        String pro_1 = "";
+        Set<String> pro1Set = new TreeSet<>();
+        boolean isDecoy1 = false;
         for (String temp : seqProMap.get(chain_entry_1.seq.replaceAll("[^A-Znc]", ""))) {
-            pro_1 += temp + ";";
+            pro1Set.add(temp);
+            if (temp.startsWith("DECOY")) { // there is no overlapped peptide between target and decoy.
+                isDecoy1 = true;
+            }
         }
-        String pro_2 = "";
+        Set<String> pro2Set = new TreeSet<>();
+        boolean isDecoy2 = false;
         for (String temp : seqProMap.get(chain_entry_2.seq.replaceAll("[^A-Znc]", ""))) {
-            pro_2 += temp + ";";
+            pro2Set.add(temp);
+            if (temp.startsWith("DECOY")) { // there is no overlapped peptide between target and decoy.
+                isDecoy2 = true;
+            }
         }
 
         int hit_type; // 0 = T-T; 1 = D-D; 2 = T-D;
-        if (pro_1.startsWith("DECOY") && pro_2.startsWith("DECOY")) {
+        if (isDecoy1 && isDecoy2) {
             hit_type = 1;
-        } else if (!pro_1.startsWith("DECOY") && !pro_2.startsWith("DECOY")) {
+        } else if (!isDecoy1 && !isDecoy2) {
             hit_type = 0;
         } else {
             hit_type = 2;
@@ -305,7 +313,7 @@ public class Search {
         String final_seq_1 = addFixMod(chain_seq_1, result_entry.getLinkSite1());
         String final_seq_2 = addFixMod(chain_seq_2, result_entry.getLinkSite2());
 
-        return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), pro_1, final_seq_2, result_entry.getLinkSite2(), pro_2, cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum(), cal_evalue, spectrumEntry.mgfTitle);
+        return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), String.join(";", pro1Set), final_seq_2, result_entry.getLinkSite2(), String.join(";", pro2Set), cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum(), cal_evalue, spectrumEntry.mgfTitle);
     }
 
     private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
