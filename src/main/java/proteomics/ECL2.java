@@ -59,6 +59,12 @@ public class ECL2 {
         Map<String, String> parameter_map = parameter.returnParameterMap();
         int max_common_ion_charge = Integer.valueOf(parameter_map.get("max_common_ion_charge"));
 
+        // print all parameters
+        logger.info("Parameters:");
+        for (String k : parameter_map.keySet()) {
+            logger.info("{} = {}", k, parameter_map.get(k));
+        }
+
         boolean cal_evalue = true;
         if (parameter_map.containsKey("cal_evalue") && parameter_map.get("cal_evalue").trim().contentEquals("0")) {
             cal_evalue = false;
