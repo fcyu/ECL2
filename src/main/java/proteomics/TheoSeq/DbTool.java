@@ -26,7 +26,10 @@ public class DbTool {
             header_pattern = Pattern.compile("^>([^\\s]+)[\\s|]+(.+)$");
         } else if (databaseType.contentEquals("UniProt") || databaseType.contentEquals("SwissProt")) {
             header_pattern = Pattern.compile("^>[^|]+\\|(.+)\\|(.+)$");
-        } else {
+        } else if (databaseType.contentEquals("Others")) {
+            header_pattern = Pattern.compile("^>(.+)$");
+        }
+        else {
             header_pattern = null;
             logger.error("Incorrect database type ({}) in the parameter file.", databaseType);
             System.exit(1);
@@ -44,7 +47,11 @@ public class DbTool {
                         pro_seq_map.put(id, seq.toString());
                     }
                     id = head_matcher.group(1).trim();
-                    annotate = head_matcher.group(2).trim();
+                    if (databaseType.contentEquals("Others")) {
+                        annotate = id;
+                    } else {
+                        annotate = head_matcher.group(2).trim();
+                    }
                     pro_annotate_map.put(id, annotate);
                     new_pro = true;
                 } else if (!line.isEmpty()) {
