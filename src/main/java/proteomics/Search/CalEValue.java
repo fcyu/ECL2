@@ -22,7 +22,7 @@ public class CalEValue {
     private BuildIndex buildIndexObj;
     private float linker_mass;
 
-    CalEValue(int scan_num, ResultEntry result_entry, BuildIndex buildIndexObj, float linker_mass, float originalTolerance) {
+    CalEValue(int scan_num, ResultEntry result_entry, BuildIndex buildIndexObj, float linker_mass, float originalTolerance) throws IOException {
         this.result_entry = result_entry;
         this.buildIndexObj = buildIndexObj;
         this.linker_mass = linker_mass;
@@ -65,16 +65,12 @@ public class CalEValue {
             logger.debug("Fail to estimate e-value for Scan {} (doesn't have a useful score histogram).", scan_num);
             result_entry.setEValue(9999);
             if (ECL2.debug) {
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"))) {
-                    writer.write("histogram\n");
-                    for (int i = 0; i < max_nonzero_idx; ++i) {
-                        writer.write(String.format(Locale.US, "%d\n", score_histogram[i]));
-                    }
-                } catch (IOException ex) {
-                    logger.error(ex.toString());
-                    ex.printStackTrace();
-                    System.exit(1);
+                BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"));
+                writer.write("histogram\n");
+                for (int i = 0; i < max_nonzero_idx; ++i) {
+                    writer.write(String.format(Locale.US, "%d\n", score_histogram[i]));
                 }
+                writer.close();
             }
             return;
         }
@@ -188,20 +184,16 @@ public class CalEValue {
         }
 
         if (ECL2.debug) {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"))) {
-                writer.write(String.format(Locale.US, "histogram,survival,ln(survival),slope=%.4f,intercept=%.4f,rsquare=%.4f,start=%d,end=%d\n", optimal_slope, optimal_intercept, max_r_square, optimal_start_idx, null_end_idx));
-                for (int i = 0; i <= max_nonzero_idx; ++i) {
-                    if (i < ln_survival_count_array.length) {
-                        writer.write(String.format(Locale.US, "%d,%d,%.4f\n", score_histogram[i], survival_count_array[i], ln_survival_count_array[i]));
-                    } else {
-                        writer.write(String.format(Locale.US, "%d,%d\n", score_histogram[i], survival_count_array[i]));
-                    }
+            BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"));
+            writer.write(String.format(Locale.US, "histogram,survival,ln(survival),slope=%.4f,intercept=%.4f,rsquare=%.4f,start=%d,end=%d\n", optimal_slope, optimal_intercept, max_r_square, optimal_start_idx, null_end_idx));
+            for (int i = 0; i <= max_nonzero_idx; ++i) {
+                if (i < ln_survival_count_array.length) {
+                    writer.write(String.format(Locale.US, "%d,%d,%.4f\n", score_histogram[i], survival_count_array[i], ln_survival_count_array[i]));
+                } else {
+                    writer.write(String.format(Locale.US, "%d,%d\n", score_histogram[i], survival_count_array[i]));
                 }
-            } catch (IOException ex) {
-                logger.error(ex.toString());
-                ex.printStackTrace();
-                System.exit(1);
             }
+            writer.close();
         }
     }
 

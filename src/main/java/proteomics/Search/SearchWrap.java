@@ -40,40 +40,32 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     }
 
     @Override
-    public FinalResultEntry call() {
+    public FinalResultEntry call() throws IOException {
         SparseVector xcorrPL = preSpectrumObj.preSpectrum(spectrumEntry.originalPlMap, spectrumEntry.precursor_mass, spectrumEntry.scan_num);
         int specMaxBinIdx = xcorrPL.getMaxIdx();
         if (ECL2.debug) {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".xcorr.spectrum.csv"))) {
-                writer.write("bin_idx,intensity\n");
-                for (int idx : xcorrPL.getIdxSet()) {
-                    writer.write(idx + "," + xcorrPL.get(idx) + "\n");
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                logger.error(ex.toString());
-                System.exit(1);
+            BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".xcorr.spectrum.csv"));
+            writer.write("bin_idx,intensity\n");
+            for (int idx : xcorrPL.getIdxSet()) {
+                writer.write(idx + "," + xcorrPL.get(idx) + "\n");
             }
+            writer.close();
         }
         ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL, specMaxBinIdx);
         if (resultEntry != null) {
             if (ECL2.debug) {
                 SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(resultEntry.getChain1(), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain1()) + MassTool.H2O), spectrumEntry.precursor_charge, specMaxBinIdx);
                 SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(resultEntry.getChain2(), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain2()) + MassTool.H2O), spectrumEntry.precursor_charge, specMaxBinIdx);
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".chain.spectrum.csv"))) {
-                    writer.write(resultEntry.getChain1() + " bin idx\n");
-                    for (int idx : chainVector1.getIdxSet()) {
-                        writer.write(idx + "\n");
-                    }
-                    writer.write(resultEntry.getChain2() + " bin idx\n");
-                    for (int idx : chainVector2.getIdxSet()) {
-                        writer.write(idx + "\n");
-                    }
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                    logger.error(ex.toString());
-                    System.exit(1);
+                BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".chain.spectrum.csv"));
+                writer.write(resultEntry.getChain1() + " bin idx\n");
+                for (int idx : chainVector1.getIdxSet()) {
+                    writer.write(idx + "\n");
                 }
+                writer.write(resultEntry.getChain2() + " bin idx\n");
+                for (int idx : chainVector2.getIdxSet()) {
+                    writer.write(idx + "\n");
+                }
+                writer.close();
             }
             if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) > delta_c_t) {
                 if (cal_evalue) {

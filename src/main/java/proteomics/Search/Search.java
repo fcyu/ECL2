@@ -59,7 +59,7 @@ public class Search {
         Arrays.sort(C13_correction_range);
     }
 
-    ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx) {
+    ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx) throws IOException {
         int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.mass_without_linker_mass + C13_correction_range[C13_correction_range.length - 1] * 1.00335483f) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
@@ -203,35 +203,24 @@ public class Search {
 
         // write debug file
         if (ECL2.debug) {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.spectrum_id + ".csv"))) {
-                debugEntryList.sort(Comparator.reverseOrder());
-                writer.write("chain,link_site,mass,score\n");
-                for (DebugEntry t : debugEntryList) {
-                    writer.write(String.format(Locale.US, "%s,%d,%f,%f\n", addFixMod(t.chain, t.link_site), t.link_site, t.mass, t.score));
-                }
-            } catch (IOException ex) {
-                logger.error(ex.toString());
-                ex.printStackTrace();
-                System.exit(1);
+            BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.spectrum_id + ".csv"));
+            debugEntryList.sort(Comparator.reverseOrder());
+            writer.write("chain,link_site,mass,score\n");
+            for (DebugEntry t : debugEntryList) {
+                writer.write(String.format(Locale.US, "%s,%d,%f,%f\n", addFixMod(t.chain, t.link_site), t.link_site, t.mass, t.score));
             }
+            writer.close();
         }
 
         if (ECL2.dev && (candidate_num > 0)) {
-            try {
-                // get ranks of each chain
-                Double chain_score_1 = devChainScoreMap.get(resultEntry.getChain1() + "-" + resultEntry.getLinkSite1());
-                Double chain_score_2 = devChainScoreMap.get(resultEntry.getChain2() + "-" + resultEntry.getLinkSite2());
-                List<Double> scores = new LinkedList<>(devChainScoreMap.values());
-                scores.sort(Comparator.reverseOrder());
-                int chain_rank_1 = scores.indexOf(chain_score_1) + 1;
-                int chain_rank_2 = scores.indexOf(chain_score_2) + 1;
-                resultEntry.setChainDetails(chain_score_1, chain_rank_1, chain_score_2, chain_rank_2);
-            } catch (NullPointerException ex) {
-                ex.printStackTrace();
-                logger.error(ex.toString());
-                logger.error("scan num = {}.", spectrumEntry.scan_num);
-                System.exit(1);
-            }
+            // get ranks of each chain
+            Double chain_score_1 = devChainScoreMap.get(resultEntry.getChain1() + "-" + resultEntry.getLinkSite1());
+            Double chain_score_2 = devChainScoreMap.get(resultEntry.getChain2() + "-" + resultEntry.getLinkSite2());
+            List<Double> scores = new LinkedList<>(devChainScoreMap.values());
+            scores.sort(Comparator.reverseOrder());
+            int chain_rank_1 = scores.indexOf(chain_score_1) + 1;
+            int chain_rank_2 = scores.indexOf(chain_score_2) + 1;
+            resultEntry.setChainDetails(chain_score_1, chain_rank_1, chain_score_2, chain_rank_2);
         }
 
         if ((resultEntry.getChain1() != null) && (resultEntry.getChain2() != null)) {

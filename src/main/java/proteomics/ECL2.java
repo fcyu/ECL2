@@ -12,8 +12,10 @@ import proteomics.TheoSeq.MassTool;
 import proteomics.Types.SpectrumEntry;
 import proteomics.Validation.CalFDR;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
+import uk.ac.ebi.pride.tools.jmzreader.JMzReaderException;
 import uk.ac.ebi.pride.tools.mgf_parser.MgfFile;
 import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLFile;
+import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLParsingException;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -54,6 +56,16 @@ public class ECL2 {
         logger.info("Parameter file: {}.", parameter_path);
         logger.info("Spectra file: {}.", spectra_path);
 
+        try {
+            new ECL2(parameter_path, spectra_path);
+        } catch (IOException | MzXMLParsingException | JMzReaderException | ExecutionException | InterruptedException ex) {
+            ex.printStackTrace();
+            logger.error(ex.toString());
+            System.exit(1);
+        }
+    }
+
+    private ECL2(String parameter_path, String spectra_path) throws IOException, MzXMLParsingException, JMzReaderException, ExecutionException, InterruptedException {
         // Get the parameter map
         Parameter parameter = new Parameter(parameter_path);
         Map<String, String> parameter_map = parameter.returnParameterMap();
@@ -100,25 +112,18 @@ public class ECL2 {
 
         logger.info("Reading spectra...");
         JMzReader spectra_parser = null;
-        String ext = "";
-        try {
-            File spectra_file = new File(spectra_path);
-            if ((!spectra_file.exists() || (spectra_file.isDirectory()))) {
-                throw new FileNotFoundException("The spectra file not found.");
-            }
-            String[] temp = spectra_path.split("\\.");
-            ext = temp[temp.length - 1];
-            if (ext.contentEquals("mzXML")) {
-                spectra_parser = new MzXMLFile(spectra_file);
-            } else if (ext.toLowerCase().contentEquals("mgf")) {
-                spectra_parser = new MgfFile(spectra_file);
-            } else {
-                logger.error("Unsupported data format {}. ECL2 only support mzXML and MGF.", ext);
-                System.exit(1);
-            }
-        } catch (Exception ex) {
-            logger.error(ex.toString());
-            ex.printStackTrace();
+        File spectra_file = new File(spectra_path);
+        if ((!spectra_file.exists() || (spectra_file.isDirectory()))) {
+            throw new FileNotFoundException("The spectra file not found.");
+        }
+        String[] temp = spectra_path.split("\\.");
+        String ext = temp[temp.length - 1];
+        if (ext.contentEquals("mzXML")) {
+            spectra_parser = new MzXMLFile(spectra_file);
+        } else if (ext.toLowerCase().contentEquals("mgf")) {
+            spectra_parser = new MgfFile(spectra_file);
+        } else {
+            logger.error("Unsupported data format {}. ECL2 only support mzXML and MGF.", ext);
             System.exit(1);
         }
 
@@ -145,52 +150,39 @@ public class ECL2 {
         // check progress every minute, record results,and delete finished tasks.
         int lastProgress = 0;
         Set<FinalResultEntry> final_search_results = new HashSet<>(scanNumArray.length + 1, 1);
-        try {
-            while (!taskList.isEmpty()) {
-                // record search results and delete finished ones.
-                List<Future<FinalResultEntry>> toBeDeleteTaskList = new LinkedList<>();
-                for (Future<FinalResultEntry> task : taskList) {
-                    if (task.isDone()) {
-                        if (task.get() != null) {
-                            final_search_results.add(task.get());
-                        }
-                        toBeDeleteTaskList.add(task);
-                    } else if (task.isCancelled()) {
-                        toBeDeleteTaskList.add(task);
+        while (!taskList.isEmpty()) {
+            // record search results and delete finished ones.
+            List<Future<FinalResultEntry>> toBeDeleteTaskList = new LinkedList<>();
+            for (Future<FinalResultEntry> task : taskList) {
+                if (task.isDone()) {
+                    if (task.get() != null) {
+                        final_search_results.add(task.get());
                     }
-                }
-                taskList.removeAll(toBeDeleteTaskList);
-
-                int progress = (scanNumArray.length - taskList.size()) * 20 / scanNumArray.length;
-                if (progress != lastProgress) {
-                    logger.info("Searching {}%...", progress * 5);
-                    lastProgress = progress;
-                }
-                if (debug) {
-                    Thread.sleep(1000);
-                } else {
-                    Thread.sleep(6000);
+                    toBeDeleteTaskList.add(task);
+                } else if (task.isCancelled()) {
+                    toBeDeleteTaskList.add(task);
                 }
             }
-        } catch (InterruptedException | ExecutionException ex) {
-            ex.printStackTrace();
-            logger.error(ex.toString());
-            System.exit(1);
+            taskList.removeAll(toBeDeleteTaskList);
+
+            int progress = (scanNumArray.length - taskList.size()) * 20 / scanNumArray.length;
+            if (progress != lastProgress) {
+                logger.info("Searching {}%...", progress * 5);
+                lastProgress = progress;
+            }
+            if (debug) {
+                Thread.sleep(1000);
+            } else {
+                Thread.sleep(6000);
+            }
         }
 
         // shutdown threads
         thread_pool.shutdown();
-        try {
-            if (!thread_pool.awaitTermination(60, TimeUnit.SECONDS)) {
-                thread_pool.shutdownNow();
-                if (!thread_pool.awaitTermination(60, TimeUnit.SECONDS))
-                    System.err.println("Pool did not terminate");
-            }
-        } catch (InterruptedException ie) {
+        if (!thread_pool.awaitTermination(60, TimeUnit.SECONDS)) {
             thread_pool.shutdownNow();
-            Thread.currentThread().interrupt();
-            logger.error("Threads were not finished normally.");
-            System.exit(1);
+            if (!thread_pool.awaitTermination(60, TimeUnit.SECONDS))
+                System.err.println("Pool did not terminate");
         }
 
         if (final_search_results.isEmpty()) {
@@ -221,91 +213,81 @@ public class ECL2 {
         logger.info("Done.");
     }
 
-    private static void saveTargetResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra, boolean cal_evalue) {
-        try {
-            BufferedWriter writer;
-            if (is_intra) {
-                writer = new BufferedWriter(new FileWriter(id_file_name + ".intra.target.csv"));
-            } else {
-                writer = new BufferedWriter(new FileWriter(id_file_name + ".inter.target.csv"));
-            }
+    private static void saveTargetResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra, boolean cal_evalue) throws IOException {
+        BufferedWriter writer;
+        if (is_intra) {
+            writer = new BufferedWriter(new FileWriter(id_file_name + ".intra.target.csv"));
+        } else {
+            writer = new BufferedWriter(new FileWriter(id_file_name + ".inter.target.csv"));
+        }
 
-            if (dev) {
-                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
-            } else {
-                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
-            }
-            for (FinalResultEntry re : result) {
-                if (re.hit_type == 0) {
-                    int link_site_1 = re.link_site_1;
-                    int link_site_2 = re.link_site_2;
-                    List<String> proAnnotationList1 = new LinkedList<>();
-                    for (String s : re.pro_id_1.split(";")) {
-                        proAnnotationList1.add(pro_annotate_map.get(s));
-                    }
-                    List<String> proAnnotationList2 = new LinkedList<>();
-                    for (String s : re.pro_id_2.split(";")) {
-                        proAnnotationList2.add(pro_annotate_map.get(s));
-                    }
+        if (dev) {
+            writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
+        } else {
+            writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
+        }
+        for (FinalResultEntry re : result) {
+            if (re.hit_type == 0) {
+                int link_site_1 = re.link_site_1;
+                int link_site_2 = re.link_site_2;
+                List<String> proAnnotationList1 = new LinkedList<>();
+                for (String s : re.pro_id_1.split(";")) {
+                    proAnnotationList1.add(pro_annotate_map.get(s));
+                }
+                List<String> proAnnotationList2 = new LinkedList<>();
+                for (String s : re.pro_id_2.split(";")) {
+                    proAnnotationList2.add(pro_annotate_map.get(s));
+                }
 
-                    if (dev) {
-                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + "," + String.format(Locale.US, "%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format(Locale.US, "%.4f", re.r_square) + "," + String.format(Locale.US, "%.4f", re.slope) + "," + String.format(Locale.US, "%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format(Locale.US, "%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format(Locale.US, "%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
-                    } else {
-                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," +  re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + "," + String.format(Locale.US, "%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\"\n");
-                    }
+                if (dev) {
+                    writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + "," + String.format(Locale.US, "%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format(Locale.US, "%.4f", re.r_square) + "," + String.format(Locale.US, "%.4f", re.slope) + "," + String.format(Locale.US, "%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format(Locale.US, "%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format(Locale.US, "%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
+                } else {
+                    writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," +  re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + "," + String.format(Locale.US, "%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\"\n");
                 }
             }
-            writer.close();
-        } catch (IOException ex) {
-            logger.error(ex.toString());
-            System.exit(1);
         }
+        writer.close();
     }
 
-    private static void saveDecoyResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra, boolean cal_evalue) {
-        try {
-            BufferedWriter writer;
-            if (is_intra) {
-                writer = new BufferedWriter(new FileWriter(id_file_name + ".intra.decoy.csv"));
-            } else {
-                writer = new BufferedWriter(new FileWriter(id_file_name + ".inter.decoy.csv"));
-            }
+    private static void saveDecoyResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra, boolean cal_evalue) throws IOException {
+        BufferedWriter writer;
+        if (is_intra) {
+            writer = new BufferedWriter(new FileWriter(id_file_name + ".intra.decoy.csv"));
+        } else {
+            writer = new BufferedWriter(new FileWriter(id_file_name + ".inter.decoy.csv"));
+        }
 
-            if (dev) {
-                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,mgf_title,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
-            } else {
-                writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,mgf_title\n");
-            }
-            for (FinalResultEntry re : result) {
-                if ((re.hit_type == 1) || (re.hit_type == 2)) {
-                    int link_site_1 = re.link_site_1;
-                    int link_site_2 = re.link_site_2;
+        if (dev) {
+            writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,mgf_title,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
+        } else {
+            writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,mgf_title\n");
+        }
+        for (FinalResultEntry re : result) {
+            if ((re.hit_type == 1) || (re.hit_type == 2)) {
+                int link_site_1 = re.link_site_1;
+                int link_site_2 = re.link_site_2;
 
-                    String annotate_1 = "DECOY";
-                    String annotate_2 = "DECOY";
+                String annotate_1 = "DECOY";
+                String annotate_2 = "DECOY";
 
-                    if (!re.pro_id_1.startsWith("DECOY")) {
-                        String pro_1 = re.pro_id_1.split(";")[0];
-                        annotate_1 = pro_annotate_map.get(pro_1).replace(',', ';');
-                    }
+                if (!re.pro_id_1.startsWith("DECOY")) {
+                    String pro_1 = re.pro_id_1.split(";")[0];
+                    annotate_1 = pro_annotate_map.get(pro_1).replace(',', ';');
+                }
 
-                    if (!re.pro_id_2.startsWith("DECOY")) {
-                        String pro_2 = re.pro_id_2.split(";")[0];
-                        annotate_2 = pro_annotate_map.get(pro_2).replace(',', ';');
-                    }
+                if (!re.pro_id_2.startsWith("DECOY")) {
+                    String pro_2 = re.pro_id_2.split(";")[0];
+                    annotate_2 = pro_annotate_map.get(pro_2).replace(',', ';');
+                }
 
-                    if (dev) {
-                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + annotate_1 + "\",\"" + annotate_2 + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format(Locale.US, "%.4f", re.r_square) + "," + String.format(Locale.US, "%.4f", re.slope) + "," + String.format(Locale.US, "%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format(Locale.US, "%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format(Locale.US, "%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
-                    } else {
-                        writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + annotate_1 + "\",\"" + annotate_2 + "\"," +  (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + ",\"" + re.mgfTitle + "\"\n");
-                    }
+                if (dev) {
+                    writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + annotate_1 + "\",\"" + annotate_2 + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format(Locale.US, "%.4f", re.r_square) + "," + String.format(Locale.US, "%.4f", re.slope) + "," + String.format(Locale.US, "%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format(Locale.US, "%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format(Locale.US, "%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
+                } else {
+                    writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + annotate_1 + "\",\"" + annotate_2 + "\"," +  (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + ",\"" + re.mgfTitle + "\"\n");
                 }
             }
-            writer.close();
-        } catch (IOException ex) {
-            logger.error(ex.toString());
-            System.exit(1);
         }
+        writer.close();
     }
 
     private static List<List<FinalResultEntry>> pickResult(Set<FinalResultEntry> search_result) {

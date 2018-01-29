@@ -8,6 +8,7 @@ import proteomics.Types.SpectrumEntry;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
 import uk.ac.ebi.pride.tools.jmzreader.model.*;
 import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLFile;
+import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLParsingException;
 import uk.ac.ebi.pride.tools.mzxml_parser.mzxml.model.Scan;
 import uk.ac.ebi.pride.tools.mgf_parser.model.Ms2Query;
 
@@ -27,7 +28,7 @@ public class PreSpectra {
     private Map<Integer, SpectrumEntry> num_spectrum_map = new HashMap<>();
     private Set<Integer> debug_scan_num_set = new HashSet<>();
 
-    public PreSpectra(JMzReader spectra_parser, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext) {
+    public PreSpectra(JMzReader spectra_parser, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext) throws MzXMLParsingException, IOException {
         float min_precursor_mass =  Float.valueOf(parameter_map.get("min_precursor_mass"));
         float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
 
@@ -42,94 +43,78 @@ public class PreSpectra {
         }
 
         Iterator<Spectrum> spectrumIterator = spectra_parser.getSpectrumIterator();
-        try {
-            while (spectrumIterator.hasNext()) {
-                Spectrum spectrum = spectrumIterator.next();
+        while (spectrumIterator.hasNext()) {
+            Spectrum spectrum = spectrumIterator.next();
 
-                if (ECL2.debug && !debug_scan_num_set.contains(Integer.valueOf(spectrum.getId()))) {
-                    continue;
+            if (ECL2.debug && !debug_scan_num_set.contains(Integer.valueOf(spectrum.getId()))) {
+                continue;
+            }
+
+            if (spectrum.getMsLevel() != 2) {
+                continue;
+            }
+
+            if (spectrum.getPrecursorCharge() == null) {
+                logger.warn("Scan {} doesn't have charge information. Skip.", spectrum.getId());
+                continue;
+            }
+            int precursor_charge = spectrum.getPrecursorCharge();
+            double precursor_mz = spectrum.getPrecursorMZ();
+            float precursor_mass = (float) (precursor_mz * precursor_charge - precursor_charge * 1.00727646688);
+
+            if ((precursor_mass > max_precursor_mass) || (precursor_mass < min_precursor_mass)) {
+                continue;
+            }
+
+            Map<Double, Double> raw_mz_intensity_map = spectrum.getPeakList();
+
+            int peakCount = 0;
+            for (double intensity : raw_mz_intensity_map.values()) {
+                if (intensity > 1e-6) {
+                    ++peakCount;
                 }
+            }
+            if (peakCount < 10) {
+                continue;
+            }
 
-                if (spectrum.getMsLevel() != 2) {
-                    continue;
-                }
-
-                if (spectrum.getPrecursorCharge() == null) {
-                    logger.warn("Scan {} doesn't have charge information. Skip.", spectrum.getId());
-                    continue;
-                }
-                int precursor_charge = spectrum.getPrecursorCharge();
-                double precursor_mz = spectrum.getPrecursorMZ();
-                float precursor_mass = (float) (precursor_mz * precursor_charge - precursor_charge * 1.00727646688);
-
-                if ((precursor_mass > max_precursor_mass) || (precursor_mass < min_precursor_mass)) {
-                    continue;
-                }
-
-                Map<Double, Double> raw_mz_intensity_map = spectrum.getPeakList();
-
-                int peakCount = 0;
-                for (double intensity : raw_mz_intensity_map.values()) {
-                    if (intensity > 1e-6) {
-                        ++peakCount;
+            if (ECL2.debug) {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".raw.spectrum.csv"));
+                writer.write("mz,intensity\n");
+                for (double mz : raw_mz_intensity_map.keySet()) {
+                    if (Math.abs(raw_mz_intensity_map.get(mz)) > 1e-6) {
+                        writer.write(mz + "," + raw_mz_intensity_map.get(mz) + "\n");
                     }
                 }
-                if (peakCount < 10) {
-                    continue;
-                }
+                writer.close();
+            }
 
-                if (ECL2.debug) {
-                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".raw.spectrum.csv"))) {
-                        writer.write("mz,intensity\n");
-                        for (double mz : raw_mz_intensity_map.keySet()) {
-                            if (Math.abs(raw_mz_intensity_map.get(mz)) > 1e-6) {
-                                writer.write(mz + "," + raw_mz_intensity_map.get(mz) + "\n");
-                            }
-                        }
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                        logger.error(ex.toString());
-                        System.exit(1);
-                    }
-                }
-
-                int scan_num = -1;
-                String mgfTitle = "";
-                float rt = -1;
-                try {
-                    if (ext.toLowerCase().contentEquals("mgf")) {
-                        mgfTitle = ((Ms2Query) spectrum).getTitle();
-                        Matcher matcher1 = scanNumPattern1.matcher(mgfTitle);
-                        Matcher matcher2 = scanNumPattern2.matcher(mgfTitle);
-                        Matcher matcher3 = scanNumPattern3.matcher(mgfTitle);
-                        if (matcher1.find()) {
-                            scan_num = Integer.valueOf(matcher1.group(1));
-                        } else if (matcher2.find()) {
-                            scan_num = Integer.valueOf(matcher2.group(1));
-                        } else if (matcher3.find()) {
-                            scan_num = Integer.valueOf(matcher3.group(1));
-                        } else {
-                            logger.error("Cannot get scan number from the MGF title {}. Please report your MGF title to the author.", mgfTitle);
-                            System.exit(1);
-                        }
-                    } else {
-                        scan_num = Integer.valueOf(spectrum.getId());
-                        Scan scan = ((MzXMLFile) spectra_parser).getScanByNum((long) scan_num);
-                        rt = scan.getRetentionTime().getSeconds();
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    logger.error(ex.toString());
+            int scan_num = -1;
+            String mgfTitle = "";
+            float rt = -1;
+            if (ext.toLowerCase().contentEquals("mgf")) {
+                mgfTitle = ((Ms2Query) spectrum).getTitle();
+                Matcher matcher1 = scanNumPattern1.matcher(mgfTitle);
+                Matcher matcher2 = scanNumPattern2.matcher(mgfTitle);
+                Matcher matcher3 = scanNumPattern3.matcher(mgfTitle);
+                if (matcher1.find()) {
+                    scan_num = Integer.valueOf(matcher1.group(1));
+                } else if (matcher2.find()) {
+                    scan_num = Integer.valueOf(matcher2.group(1));
+                } else if (matcher3.find()) {
+                    scan_num = Integer.valueOf(matcher3.group(1));
+                } else {
+                    logger.error("Cannot get scan number from the MGF title {}. Please report your MGF title to the author.", mgfTitle);
                     System.exit(1);
                 }
-
-                SpectrumEntry spectrum_entry = new SpectrumEntry(scan_num, spectrum.getId(), (float) precursor_mz, precursor_mass, precursor_charge, rt, raw_mz_intensity_map, build_index_obj.linker_mass, mgfTitle);
-                num_spectrum_map.put(scan_num, spectrum_entry);
+            } else {
+                scan_num = Integer.valueOf(spectrum.getId());
+                Scan scan = ((MzXMLFile) spectra_parser).getScanByNum((long) scan_num);
+                rt = scan.getRetentionTime().getSeconds();
             }
-        } catch (Exception ex) {
-            logger.error(ex.toString());
-            ex.printStackTrace();
-            System.exit(1);
+
+            SpectrumEntry spectrum_entry = new SpectrumEntry(scan_num, spectrum.getId(), (float) precursor_mz, precursor_mass, precursor_charge, rt, raw_mz_intensity_map, build_index_obj.linker_mass, mgfTitle);
+            num_spectrum_map.put(scan_num, spectrum_entry);
         }
     }
 
