@@ -14,9 +14,6 @@ min_chain_length = 5 # Minimum length of a peptide chain.
 max_chain_length = 50
 
 # Spectrum
-min_ms1_charge = 3
-max_ms1_charge = 7
-max_common_ion_charge = 3
 C13_correction_range = 0 # Precursor mass correction range. Normally set to -1,0 to consider one C13 error.
 
 # Tolerance

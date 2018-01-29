@@ -9,6 +9,7 @@ import java.util.regex.*;
 public class MassTool {
 
     private static final int max_charge = 6;
+    private static final int max_common_ion_charge = 3;
     private static final Pattern mod_aa_pattern = Pattern.compile("([A-Znc])(\\[([0-9\\.\\-]+)\\])?");
 
     public static final double H2O = 18.010564684;
@@ -109,7 +110,7 @@ public class MassTool {
         return mass_table;
     }
 
-    public SparseBooleanVector buildTheoVector(String seq, short linkSite, float additional_mass, int precursor_charge, int max_common_ion_charge, int specMaxBinIdx) {
+    public SparseBooleanVector buildTheoVector(String seq, short linkSite, float additional_mass, int precursor_charge, int specMaxBinIdx) {
         linkSite = (short) Math.max(1, linkSite);
 
         int localMaxCharge = Math.min(max_charge, Math.max(precursor_charge - 1, 1));

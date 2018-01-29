@@ -23,18 +23,16 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     private final SpectrumEntry spectrumEntry;
     private final BuildIndex build_index_obj;
     private final MassTool mass_tool_obj;
-    private final int max_common_ion_charge;
     private final PreSpectrum preSpectrumObj;
     private final Map<String, Set<String>> seqProMap;
     private final boolean cal_evalue;
     private final float delta_c_t;
 
-    public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, int max_common_ion_charge, Map<String, Set<String>> seqProMap, boolean cal_evalue, float delta_c_t, boolean flankingPeaks) {
+    public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, Map<String, Set<String>> seqProMap, boolean cal_evalue, float delta_c_t, boolean flankingPeaks) {
         this.search_obj = search_obj;
         this.spectrumEntry = spectrumEntry;
         this.build_index_obj = build_index_obj;
         this.mass_tool_obj = mass_tool_obj;
-        this.max_common_ion_charge = max_common_ion_charge;
         preSpectrumObj = new PreSpectrum(mass_tool_obj, flankingPeaks);
         this.seqProMap = seqProMap;
         this.cal_evalue = cal_evalue;
@@ -60,8 +58,8 @@ public class SearchWrap implements Callable<FinalResultEntry> {
         ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL, specMaxBinIdx);
         if (resultEntry != null) {
             if (ECL2.debug) {
-                SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(resultEntry.getChain1(), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain1()) + MassTool.H2O), spectrumEntry.precursor_charge, max_common_ion_charge, specMaxBinIdx);
-                SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(resultEntry.getChain2(), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain2()) + MassTool.H2O), spectrumEntry.precursor_charge, max_common_ion_charge, specMaxBinIdx);
+                SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(resultEntry.getChain1(), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain1()) + MassTool.H2O), spectrumEntry.precursor_charge, specMaxBinIdx);
+                SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(resultEntry.getChain2(), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain2()) + MassTool.H2O), spectrumEntry.precursor_charge, specMaxBinIdx);
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".chain.spectrum.csv"))) {
                     writer.write(resultEntry.getChain1() + " bin idx\n");
                     for (int idx : chainVector1.getIdxSet()) {

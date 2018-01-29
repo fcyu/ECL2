@@ -57,7 +57,6 @@ public class ECL2 {
         // Get the parameter map
         Parameter parameter = new Parameter(parameter_path);
         Map<String, String> parameter_map = parameter.returnParameterMap();
-        int max_common_ion_charge = Integer.valueOf(parameter_map.get("max_common_ion_charge"));
 
         // print all parameters
         logger.info("Parameters:");
@@ -140,7 +139,7 @@ public class ECL2 {
         Search search_obj = new Search(build_index_obj, parameter_map);
         List<Future<FinalResultEntry>> taskList = new LinkedList<>();
         for (int scanNum : scanNumArray) {
-            taskList.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, max_common_ion_charge, build_index_obj.getSeqProMap(), cal_evalue, delta_c_t, flankingPeaks)));
+            taskList.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, build_index_obj.getSeqProMap(), cal_evalue, delta_c_t, flankingPeaks)));
         }
 
         // check progress every minute, record results,and delete finished tasks.

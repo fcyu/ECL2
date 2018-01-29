@@ -16,7 +16,6 @@ public class Search {
 
     private static final Logger logger = LoggerFactory.getLogger(Search.class);
 
-    private final int max_common_ion_charge;
     public final float ms1_tolerance;
     public final int ms1_tolerance_unit;
     private final Map<String, ChainEntry> chain_entry_map;
@@ -35,7 +34,6 @@ public class Search {
         chain_entry_map = build_index_obj.getSeqEntryMap();
         fix_mod_map = build_index_obj.getFixModMap();
         mass_tool_obj = build_index_obj.returnMassTool();
-        max_common_ion_charge = Integer.valueOf(parameter_map.get("max_common_ion_charge"));
         ms1_tolerance_unit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
         ms1_tolerance = Float.valueOf(parameter_map.get("ms1_tolerance"));
         bin_seq_map = build_index_obj.getMassBinSeqMap();
@@ -319,7 +317,7 @@ public class Search {
     private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, int specMaxBinIdx, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
         for (short link_site_1 : chainEntry.link_site_set) {
             int precursor_charge = spectrumEntry.precursor_charge;
-            SparseBooleanVector theo_mz = mass_tool_obj.buildTheoVector(chainEntry.seq, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, precursor_charge, max_common_ion_charge, specMaxBinIdx);
+            SparseBooleanVector theo_mz = mass_tool_obj.buildTheoVector(chainEntry.seq, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, precursor_charge, specMaxBinIdx);
 
             // Calculate dot produce
             double dot_product = theo_mz.dot(xcorrPL) * 0.005;

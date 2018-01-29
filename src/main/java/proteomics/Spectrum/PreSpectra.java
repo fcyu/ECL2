@@ -28,8 +28,6 @@ public class PreSpectra {
     private Set<Integer> debug_scan_num_set = new HashSet<>();
 
     public PreSpectra(JMzReader spectra_parser, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext) {
-        int min_ms1_charge = Integer.valueOf(parameter_map.get("min_ms1_charge"));
-        int max_ms1_charge = Integer.valueOf(parameter_map.get("max_ms1_charge"));
         float min_precursor_mass =  Float.valueOf(parameter_map.get("min_precursor_mass"));
         float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
 
@@ -61,11 +59,6 @@ public class PreSpectra {
                     continue;
                 }
                 int precursor_charge = spectrum.getPrecursorCharge();
-
-                if ((precursor_charge < min_ms1_charge) || (precursor_charge > max_ms1_charge)) {
-                    continue;
-                }
-
                 double precursor_mz = spectrum.getPrecursorMZ();
                 float precursor_mass = (float) (precursor_mz * precursor_charge - precursor_charge * 1.00727646688);
 
