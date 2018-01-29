@@ -84,7 +84,7 @@ public class BuildIndex {
                 linker_mass = Float.valueOf(parameter_map.get("cl_mass")) - fix_mod_map.get('K');
             }
         } else if (linker_type == 2) {
-            linker_mass = Float.valueOf(parameter_map.get("cl_mass")) - fix_mod_map.get('C');
+            linker_mass = Float.valueOf(parameter_map.get("cl_mass"));
         } else {
             linker_mass = 0;
             logger.error("The cross-linker type cannot be recognized.");
