@@ -7,6 +7,7 @@ import proteomics.TheoSeq.DbTool;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,7 +31,7 @@ public class BuildIndex {
     private Map<String, Set<String>> seqProMap;
     private final float ms1_bin_size;
 
-    public BuildIndex(Map<String, String> parameter_map) {
+    public BuildIndex(Map<String, String> parameter_map) throws IOException {
         // initialize parameters
         int min_chain_length = Integer.valueOf(parameter_map.get("min_chain_length")) + 2; // n and c are counted in the sequence
         int max_chain_length = Integer.valueOf(parameter_map.get("max_chain_length")) + 2; // n and c are counted in the sequence
@@ -93,8 +94,11 @@ public class BuildIndex {
 
         // read protein database
         DbTool db_tool_obj = new DbTool(db_path, parameter_map.get("database_type"));
-        Map<String, String> pro_seq_map = db_tool_obj.getProSeqMap();
-        pro_annotate_map = db_tool_obj.getProAnnotateMap();
+        DbTool contaminantsDb = new DbTool(null, "contaminants");
+        Map<String, String> pro_seq_map = contaminantsDb.getProSeqMap();
+        pro_seq_map.putAll(db_tool_obj.getProSeqMap()); // using the target sequence to replace contaminant sequence if there is conflict.
+        pro_annotate_map = contaminantsDb.getProAnnotateMap();
+        pro_annotate_map.putAll(db_tool_obj.getProAnnotateMap()); // using the target sequence to replace contaminant sequence if there is conflict.
 
         // define a new MassTool object
         mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, "KR", "P", mz_bin_size, one_minus_bin_offset);

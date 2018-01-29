@@ -14,7 +14,7 @@ public class DbTool {
     private Map<String, String> pro_seq_map = new HashMap<>();
     private Map<String, String> pro_annotate_map = new HashMap<>();
 
-    public DbTool(String db_name, String databaseType) {
+    public DbTool(String db_name, String databaseType) throws IOException {
         String id = "";
         String annotate;
         StringBuilder seq = new StringBuilder(99999);
@@ -26,52 +26,55 @@ public class DbTool {
             header_pattern = Pattern.compile("^>([^\\s]+)[\\s|]+(.+)$");
         } else if (databaseType.contentEquals("UniProt") || databaseType.contentEquals("SwissProt")) {
             header_pattern = Pattern.compile("^>[^|]+\\|(.+)\\|(.+)$");
+        } else if (databaseType.contentEquals("contaminants")) {
+            header_pattern = Pattern.compile("^>([^ ]+) (.+)$");
         } else if (databaseType.contentEquals("Others")) {
             header_pattern = Pattern.compile("^>(.+)$");
-        }
-        else {
+        } else {
             header_pattern = null;
             logger.error("Incorrect database type ({}) in the parameter file.", databaseType);
             System.exit(1);
         }
 
-        try (BufferedReader db_reader = new BufferedReader(new FileReader(db_name))) {
-            String line;
-            while ((line = db_reader.readLine()) != null) {
-                line = line.trim();
-                Matcher head_matcher = header_pattern.matcher(line);
-                if (head_matcher.matches()) {
-                    // This line is a header
-                    if (!new_pro) {
-                        // This isn't the first protein
-                        pro_seq_map.put(id, seq.toString());
-                    }
-                    id = head_matcher.group(1).trim();
-                    if (databaseType.contentEquals("Others")) {
-                        annotate = id;
-                    } else {
-                        annotate = head_matcher.group(2).trim();
-                    }
-                    pro_annotate_map.put(id, annotate);
-                    new_pro = true;
-                } else if (!line.isEmpty()) {
-                    // This line is a body
-                    if (new_pro) {
-                        seq = new StringBuilder(99999);
-                        seq.append(line);
-                        new_pro = false;
-                    } else {
-                        seq.append(line);
-                    }
+        BufferedReader db_reader;
+        if (databaseType.contentEquals("contaminants")) {
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("contaminants.fasta");
+            db_reader = new BufferedReader(new InputStreamReader(inputStream));
+        } else {
+            db_reader = new BufferedReader(new FileReader(db_name));
+        }
+        String line;
+        while ((line = db_reader.readLine()) != null) {
+            line = line.trim();
+            Matcher head_matcher = header_pattern.matcher(line);
+            if (head_matcher.matches()) {
+                // This line is a header
+                if (!new_pro) {
+                    // This isn't the first protein
+                    pro_seq_map.put(id, seq.toString());
+                }
+                id = head_matcher.group(1).trim();
+                if (databaseType.contentEquals("Others")) {
+                    annotate = id;
+                } else {
+                    annotate = head_matcher.group(2).trim();
+                }
+                pro_annotate_map.put(id, annotate);
+                new_pro = true;
+            } else if (!line.isEmpty()) {
+                // This line is a body
+                if (new_pro) {
+                    seq = new StringBuilder(99999);
+                    seq.append(line);
+                    new_pro = false;
+                } else {
+                    seq.append(line);
                 }
             }
-            // Last protein
-            pro_seq_map.put(id, seq.toString());
-        } catch (IOException | PatternSyntaxException ex) {
-            logger.error(ex.toString());
-            ex.printStackTrace();
-            System.exit(1);
         }
+        db_reader.close();
+        // Last protein
+        pro_seq_map.put(id, seq.toString());
     }
 
     public Map<String, String> getProSeqMap() {
