@@ -26,7 +26,6 @@ public class BuildIndex {
     private final Map<String, String> pro_annotate_map;
     private Map<Character, Float> fix_mod_map = new HashMap<>(25, 1);
     private TreeMap<Integer, Set<String>> bin_seq_map = new TreeMap<>();
-    private Map<Integer, Long> bin_candidate_num_map = new HashMap<>();
     private Map<String, ChainEntry> seq_entry_map = new HashMap<>();
     private Map<String, Set<String>> seqProMap;
     private final float ms1_bin_size;
@@ -187,15 +186,6 @@ public class BuildIndex {
                 }
             }
         }
-
-        // summarize candidate numbers in each bin
-        for (int bin_index : bin_seq_map.keySet()) {
-            long candidate_num = 0;
-            for (String seq : bin_seq_map.get(bin_index)) {
-                candidate_num += seq_entry_map.get(seq).link_site_set.size();
-            }
-            bin_candidate_num_map.put(bin_index, candidate_num);
-        }
     }
 
     public Map<String, Set<String>> getSeqProMap() {
@@ -232,10 +222,6 @@ public class BuildIndex {
 
     public int massToBin(float mass) {
         return (int) Math.floor(mass / ms1_bin_size);
-    }
-
-    public Map<Integer, Long> getBinCandidateNumMap() {
-        return bin_candidate_num_map;
     }
 
     private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, Map<String, boolean[]> seq_term_map, int min_chain_length, int max_chain_length) {

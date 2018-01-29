@@ -24,7 +24,6 @@ public class Search {
     private final TreeMap<Integer, Set<String>> bin_seq_map;
     private final BuildIndex build_index_obj;
     private final int[] C13_correction_range;
-    private final Map<Integer, Long> bin_candidate_num_map;
     private final float single_chain_t;
     private final boolean cal_evalue;
 
@@ -37,7 +36,6 @@ public class Search {
         ms1_tolerance_unit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
         ms1_tolerance = Float.valueOf(parameter_map.get("ms1_tolerance"));
         bin_seq_map = build_index_obj.getMassBinSeqMap();
-        bin_candidate_num_map = build_index_obj.getBinCandidateNumMap();
 
         if (parameter_map.containsKey("single_chain_t")) {
             single_chain_t = Float.valueOf(parameter_map.get("single_chain_t"));
@@ -85,8 +83,6 @@ public class Search {
         long candidate_num = 0;
         ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge, cal_evalue, binChainMap);
         for (int idx_1 : bin_seq_map.keySet()) {
-            long bin1_candidate_num = bin_candidate_num_map.get(idx_1);
-
             float left_mass_2;
             float right_mass_2;
             int left_idx_2;
@@ -130,19 +126,15 @@ public class Search {
                         if (binChainMap.containsKey(idx_2)) { // There may be no chain with chain score > single_chain_t
                             ChainResultEntry chain_score_entry_2 = binChainMap.get(idx_2);
 
-                            if (idx_1 == idx_2) {
-                                candidate_num += bin1_candidate_num * (bin1_candidate_num + 1) / 2;
-                            } else {
-                                candidate_num += bin1_candidate_num * bin_candidate_num_map.get(idx_2);
-                            }
-
                             // only two sequences with the same binary mod type can be linked.
                             if (chain_entry_map.get(chain_score_entry_1.getSeq()).binaryModType == chain_entry_map.get(chain_score_entry_2.getSeq()).binaryModType) {
                                 double score;
                                 if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
                                     score = (chain_score_entry_1.getScore() + chain_score_entry_2.getScore()) / 2;
+                                    ++candidate_num;
                                 } else {
                                     score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
+                                    ++candidate_num;
                                 }
 
                                 // calculate second score
