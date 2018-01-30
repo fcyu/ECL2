@@ -40,12 +40,7 @@ public class BuildIndex {
         float mz_bin_size = Float.valueOf(parameter_map.get("mz_bin_size"));
         float one_minus_bin_offset = 1 - Float.valueOf(parameter_map.get("mz_bin_offset"));
         float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
-
-        if (parameter_map.containsKey("ms1_bin_size")) {
-            ms1_bin_size = Float.valueOf(parameter_map.get("ms1_bin_size"));
-        } else {
-            ms1_bin_size = 0.001f;
-        }
+        ms1_bin_size = Float.valueOf(parameter_map.get("ms1_bin_size"));
         inverseMs1BinSize = 1 / ms1_bin_size;
 
         // Read fix modification

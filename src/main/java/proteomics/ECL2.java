@@ -77,17 +77,14 @@ public class ECL2 {
         }
 
         boolean cal_evalue = true;
-        if (parameter_map.containsKey("cal_evalue") && parameter_map.get("cal_evalue").trim().contentEquals("0")) {
+        if (parameter_map.get("cal_evalue").contentEquals("0")) {
             cal_evalue = false;
         }
 
-        float delta_c_t = 0;
-        if (parameter_map.containsKey("delta_c_t")) {
-            delta_c_t = Float.valueOf(parameter_map.get("delta_c_t"));
-        }
+        float delta_c_t = Float.valueOf(parameter_map.get("delta_c_t"));
 
         boolean flankingPeaks = true;
-        if (parameter_map.containsKey("flanking_peaks") && parameter_map.get("flanking_peaks").contentEquals("0")) {
+        if (parameter_map.get("flanking_peaks").contentEquals("0")) {
             flankingPeaks = false;
         }
 

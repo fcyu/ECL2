@@ -36,14 +36,8 @@ public class Search {
         ms1_tolerance_unit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
         ms1_tolerance = Float.valueOf(parameter_map.get("ms1_tolerance"));
         bin_seq_map = build_index_obj.getMassBinSeqMap();
-
-        if (parameter_map.containsKey("single_chain_t")) {
-            single_chain_t = Float.valueOf(parameter_map.get("single_chain_t"));
-        } else {
-            single_chain_t = 0.1f;
-        }
-
-        if (parameter_map.containsKey("cal_evalue") && parameter_map.get("cal_evalue").trim().contentEquals("0")) {
+        single_chain_t = Float.valueOf(parameter_map.get("single_chain_t"));
+        if (parameter_map.get("cal_evalue").contentEquals("0")) {
             cal_evalue = false;
         } else {
             cal_evalue = true;
