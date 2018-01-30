@@ -89,12 +89,18 @@ public class BuildIndex {
         }
 
         // read protein database
+        Map<String, String> pro_seq_map;
         DbTool db_tool_obj = new DbTool(db_path, parameter_map.get("database_type"));
-        DbTool contaminantsDb = new DbTool(null, "contaminants");
-        Map<String, String> pro_seq_map = contaminantsDb.getProSeqMap();
-        pro_seq_map.putAll(db_tool_obj.getProSeqMap()); // using the target sequence to replace contaminant sequence if there is conflict.
-        pro_annotate_map = contaminantsDb.getProAnnotateMap();
-        pro_annotate_map.putAll(db_tool_obj.getProAnnotateMap()); // using the target sequence to replace contaminant sequence if there is conflict.
+        if (parameter_map.get("append_contaminants").contentEquals("1")) {
+            DbTool contaminantsDb = new DbTool(null, "contaminants");
+            pro_seq_map = contaminantsDb.getProSeqMap();
+            pro_seq_map.putAll(db_tool_obj.getProSeqMap()); // using the target sequence to replace contaminant sequence if there is conflict.
+            pro_annotate_map = contaminantsDb.getProAnnotateMap();
+            pro_annotate_map.putAll(db_tool_obj.getProAnnotateMap()); // using the target sequence to replace contaminant sequence if there is conflict.
+        } else {
+            pro_seq_map = db_tool_obj.getProSeqMap();
+            pro_annotate_map = db_tool_obj.getProAnnotateMap();
+        }
 
         // define a new MassTool object
         mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, "KR", "P", mz_bin_size, one_minus_bin_offset);
