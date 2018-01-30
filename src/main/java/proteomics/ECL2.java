@@ -137,6 +137,9 @@ public class ECL2 {
         if (thread_num == 0) {
             thread_num = 1 + Runtime.getRuntime().availableProcessors();
         }
+        if (debug) {
+            thread_num = 1;
+        }
         ExecutorService thread_pool = Executors.newFixedThreadPool(thread_num);
         Search search_obj = new Search(build_index_obj, parameter_map);
         List<Future<FinalResultEntry>> taskList = new LinkedList<>();
