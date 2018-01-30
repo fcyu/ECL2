@@ -1,5 +1,7 @@
 package proteomics.Types;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -14,7 +16,7 @@ public class SparseBooleanVectorTest {
 
     @Before
     public void setUp() throws Exception {
-        Set<Integer> temp = new HashSet<>();
+        Multiset<Integer> temp = HashMultiset.create();
         temp.add(1);
         temp.add(3);
         temp.add(23);
@@ -23,7 +25,7 @@ public class SparseBooleanVectorTest {
 
     @Test
     public void put() throws Exception {
-        Set<Integer> temp = new HashSet<>();
+        Multiset<Integer> temp = HashMultiset.create();
         temp.add(1);
         temp.add(3);
         temp.add(23);
@@ -35,35 +37,11 @@ public class SparseBooleanVectorTest {
     }
 
     @Test
-    public void norm2square() throws Exception {
-        assertEquals(3, vector.norm2square(), 0);
-    }
-
-    @Test
     public void dot() throws Exception {
         SparseVector other = new SparseVector();
         other.put(1, 1.5f);
         other.put(2, 3);
         assertEquals(1.5f, vector.dot(other), 0);
-    }
-
-    @Test
-    public void dot1() throws Exception {
-        SparseBooleanVector other = new SparseBooleanVector();
-        other.put(1);
-        other.put(2);
-        assertEquals(1, vector.dot(other), 0);
-    }
-
-    @Test
-    public void size() throws Exception {
-        assertEquals(3, vector.size());
-    }
-
-    @Test
-    public void contains() throws Exception {
-        assertTrue(vector.contains(1));
-        assertFalse(vector.contains(2));
     }
 
     @Test
