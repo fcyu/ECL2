@@ -39,7 +39,6 @@ public class BuildIndex {
         int missed_cleavage = Integer.valueOf(parameter_map.get("missed_cleavage"));
         float mz_bin_size = Float.valueOf(parameter_map.get("mz_bin_size"));
         float one_minus_bin_offset = 1 - Float.valueOf(parameter_map.get("mz_bin_offset"));
-        float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
         ms1_bin_size = Float.valueOf(parameter_map.get("ms1_bin_size"));
         inverseMs1BinSize = 1 / ms1_bin_size;
 
@@ -146,18 +145,16 @@ public class BuildIndex {
             Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm, proteinCTerm, linker_type);
             if (!linkSiteSet.isEmpty()) {
                 float totalMass = (float) (mass_tool_obj.calResidueMass(seq) + MassTool.H2O);
-                if (totalMass < max_precursor_mass - linker_mass) {
-                    int bin = massToBin(totalMass);
-                    if (bin_seq_map.containsKey(bin)) {
-                        bin_seq_map.get(bin).add(seq);
-                    } else {
-                        Set<String> temp = new HashSet<>();
-                        temp.add(seq);
-                        bin_seq_map.put(bin, temp);
-                    }
-                    ChainEntry chainEntry = new ChainEntry(seq, totalMass, linkSiteSet, proteinNTerm, proteinCTerm, "0".hashCode());
-                    seq_entry_map.put(seq, chainEntry);
+                int bin = massToBin(totalMass);
+                if (bin_seq_map.containsKey(bin)) {
+                    bin_seq_map.get(bin).add(seq);
+                } else {
+                    Set<String> temp = new HashSet<>();
+                    temp.add(seq);
+                    bin_seq_map.put(bin, temp);
                 }
+                ChainEntry chainEntry = new ChainEntry(seq, totalMass, linkSiteSet, proteinNTerm, proteinCTerm, "0".hashCode());
+                seq_entry_map.put(seq, chainEntry);
             }
 
             // mod containing
@@ -167,24 +164,22 @@ public class BuildIndex {
                 linkSiteSet.add(varSeq.linkSite);
                 if (!linkSiteSet.isEmpty()) {
                     float totalMass = (float) (mass_tool_obj.calResidueMass(varSeq.seq) + MassTool.H2O);
-                    if (totalMass < max_precursor_mass - linker_mass) {
-                        int bin = massToBin(totalMass);
-                        if (bin_seq_map.containsKey(bin)) {
-                            bin_seq_map.get(bin).add(varSeq.seq);
-                        } else {
-                            Set<String> temp = new HashSet<>();
-                            temp.add(varSeq.seq);
-                            bin_seq_map.put(bin, temp);
-                        }
-                        ChainEntry chainEntry = new ChainEntry(varSeq.seq, totalMass, linkSiteSet, proteinNTerm, proteinCTerm, varSeq.binaryModType);
-                        if (seq_entry_map.containsKey(varSeq.seq)) {
-                            // Binary mod has the higher priority
-                            if (seq_entry_map.get(varSeq.seq).binaryModType == "0".hashCode()) {
-                                seq_entry_map.put(varSeq.seq, chainEntry);
-                            }
-                        } else {
+                    int bin = massToBin(totalMass);
+                    if (bin_seq_map.containsKey(bin)) {
+                        bin_seq_map.get(bin).add(varSeq.seq);
+                    } else {
+                        Set<String> temp = new HashSet<>();
+                        temp.add(varSeq.seq);
+                        bin_seq_map.put(bin, temp);
+                    }
+                    ChainEntry chainEntry = new ChainEntry(varSeq.seq, totalMass, linkSiteSet, proteinNTerm, proteinCTerm, varSeq.binaryModType);
+                    if (seq_entry_map.containsKey(varSeq.seq)) {
+                        // Binary mod has the higher priority
+                        if (seq_entry_map.get(varSeq.seq).binaryModType == "0".hashCode()) {
                             seq_entry_map.put(varSeq.seq, chainEntry);
                         }
+                    } else {
+                        seq_entry_map.put(varSeq.seq, chainEntry);
                     }
                 }
             }

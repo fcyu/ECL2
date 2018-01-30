@@ -29,9 +29,6 @@ public class PreSpectra {
     private Set<Integer> debug_scan_num_set = new HashSet<>();
 
     public PreSpectra(JMzReader spectra_parser, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext) throws MzXMLParsingException, IOException {
-        float min_precursor_mass =  Float.valueOf(parameter_map.get("min_precursor_mass"));
-        float max_precursor_mass = Float.valueOf(parameter_map.get("max_precursor_mass"));
-
         //  In DEBUG mode, filter out unlisted scan num
         if (ECL2.debug) {
             for (String k : parameter_map.keySet()) {
@@ -62,21 +59,7 @@ public class PreSpectra {
             double precursor_mz = spectrum.getPrecursorMZ();
             float precursor_mass = (float) (precursor_mz * precursor_charge - precursor_charge * 1.00727646688);
 
-            if ((precursor_mass > max_precursor_mass) || (precursor_mass < min_precursor_mass)) {
-                continue;
-            }
-
             Map<Double, Double> raw_mz_intensity_map = spectrum.getPeakList();
-
-            int peakCount = 0;
-            for (double intensity : raw_mz_intensity_map.values()) {
-                if (intensity > 1e-6) {
-                    ++peakCount;
-                }
-            }
-            if (peakCount < 10) {
-                continue;
-            }
 
             if (ECL2.debug) {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".raw.spectrum.csv"));
