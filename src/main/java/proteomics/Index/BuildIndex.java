@@ -29,6 +29,7 @@ public class BuildIndex {
     private Map<String, ChainEntry> seq_entry_map = new HashMap<>();
     private Map<String, Set<String>> seqProMap;
     private final float ms1_bin_size;
+    private final float inverseMs1BinSize;
 
     public BuildIndex(Map<String, String> parameter_map) throws IOException {
         // initialize parameters
@@ -45,6 +46,7 @@ public class BuildIndex {
         } else {
             ms1_bin_size = 0.001f;
         }
+        inverseMs1BinSize = 1 / ms1_bin_size;
 
         // Read fix modification
         fix_mod_map.put('G', Float.valueOf(parameter_map.get("G")));
@@ -221,7 +223,7 @@ public class BuildIndex {
     }
 
     public int massToBin(float mass) {
-        return (int) Math.floor(mass / ms1_bin_size);
+        return (int) Math.floor(mass * inverseMs1BinSize);
     }
 
     private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, Map<String, boolean[]> seq_term_map, int min_chain_length, int max_chain_length) {

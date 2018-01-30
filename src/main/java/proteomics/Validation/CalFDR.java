@@ -7,7 +7,7 @@ import java.util.List;
 
 public class CalFDR {
 
-    private final float precision;
+    private final float inversePrecision;
 
     private double min_score = 999;
     private double max_score = -999;
@@ -17,9 +17,9 @@ public class CalFDR {
     public CalFDR(List<FinalResultEntry> results, boolean cal_evalue) {
         this.results = results;
         if (cal_evalue) {
-            precision = 0.1f;
+            inversePrecision = 10;
         } else {
-            precision = 0.001f;
+            inversePrecision = 1000;
         }
 
         // find the max score
@@ -41,7 +41,7 @@ public class CalFDR {
             }
         }
 
-        final int array_length = 1 + (int) Math.ceil((max_score - min_score) / precision);
+        final int array_length = 1 + (int) Math.ceil((max_score - min_score) * inversePrecision);
         float[] decoy_count_vector = new float[array_length];
         float[] target_count_vector = new float[array_length];
         float[] fuse_count_vector = new float[array_length];
@@ -52,25 +52,25 @@ public class CalFDR {
             if (re.hit_type == 1) {
                 int idx;
                 if (cal_evalue) {
-                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) / precision);
+                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) * inversePrecision);
                 } else {
-                    idx = (int) Math.floor((re.score - min_score) / precision);
+                    idx = (int) Math.floor((re.score - min_score) * inversePrecision);
                 }
                 ++decoy_count_vector[idx];
             } else if (re.hit_type == 0) {
                 int idx;
                 if (cal_evalue) {
-                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) / precision);
+                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) * inversePrecision);
                 } else {
-                    idx = (int) Math.floor((re.score - min_score) / precision);
+                    idx = (int) Math.floor((re.score - min_score) * inversePrecision);
                 }
                 ++target_count_vector[idx];
             } else {
                 int idx;
                 if (cal_evalue) {
-                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) / precision);
+                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) * inversePrecision);
                 } else {
-                    idx = (int) Math.floor((re.score - min_score) / precision);
+                    idx = (int) Math.floor((re.score - min_score) * inversePrecision);
                 }
                 ++fuse_count_vector[idx];
             }
@@ -119,10 +119,10 @@ public class CalFDR {
         for (FinalResultEntry re : results) {
             if (re.hit_type == 0) {
                 if (cal_evalue) {
-                    int idx = (int) Math.floor((re.negative_log10_evalue - min_score) / precision);
+                    int idx = (int) Math.floor((re.negative_log10_evalue - min_score) * inversePrecision);
                     re.qvalue = qvalue_array[idx];
                 } else {
-                    int idx = (int) Math.floor((re.score - min_score) / precision);
+                    int idx = (int) Math.floor((re.score - min_score) * inversePrecision);
                     re.qvalue = qvalue_array[idx];
                 }
             }

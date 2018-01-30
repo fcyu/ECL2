@@ -17,11 +17,11 @@ public class MassTool {
     private final int missed_cleavage;
     private final String cut_site;
     private final String protect_site;
-    private double mz_bin_size = 1.0005;
-    private double one_minus_bin_offset = 0.4;
+    private final double inverseMzBinSize;
+    private final double one_minus_bin_offset;
 
     public MassTool(int missed_cleavage, Map<Character, Float> fix_mod_map, String cut_site, String protect_site, float mz_bin_size, float one_minus_bin_offset) {
-        this.mz_bin_size = mz_bin_size;
+        inverseMzBinSize = 1 / mz_bin_size;
         this.missed_cleavage = missed_cleavage;
         this.cut_site = cut_site;
         this.protect_site = protect_site;
@@ -53,7 +53,7 @@ public class MassTool {
     }
 
     public int mzToBin(double mz) {
-        return (int) (mz / mz_bin_size + one_minus_bin_offset);
+        return (int) (mz * inverseMzBinSize + one_minus_bin_offset);
     }
 
     public float calResidueMass(String seq) { // n and c are also AA.
@@ -113,9 +113,13 @@ public class MassTool {
         linkSite = (short) Math.max(1, linkSite);
 
         int localMaxCharge = Math.min(max_charge, Math.max(precursor_charge - 1, 1));
+        double[] inverseChargeArray = new double[localMaxCharge];
+        for (int charge = 1; charge <= localMaxCharge; ++charge) {
+            inverseChargeArray[charge - 1] = (double) 1 / (double) charge;
+        }
 
         SparseBooleanVector outputVector = new SparseBooleanVector();
-        
+
         AA[] aaArray = seqToAAList(seq);
 
         // traverse the sequence to get b-ion
@@ -123,48 +127,48 @@ public class MassTool {
         for (int i = 1; i < aaArray.length - 2; ++i) {
             bIonMass += mass_table.get(aaArray[i].aa) + aaArray[i].delta_mass;
             if (i < linkSite) {
-                for (int charge = 1; charge <= localMaxCharge; ++charge) {
-                    outputVector.put(mzToBin(bIonMass / charge + 1.00727646688));
+                for (double inverseCharge : inverseChargeArray) {
+                    outputVector.put(mzToBin(bIonMass * inverseCharge + 1.00727646688));
                 }
             } else {
-                for (int charge = 1; charge <= localMaxCharge; ++charge) {
-                    outputVector.put(mzToBin((bIonMass + additional_mass) / charge + 1.00727646688));
+                for (double inverseCharge : inverseChargeArray) {
+                    outputVector.put(mzToBin((bIonMass + additional_mass) * inverseCharge + 1.00727646688));
                 }
             }
         }
         // calculate the last b-ion with C-term modification
         bIonMass +=  mass_table.get(aaArray[aaArray.length - 2].aa) + aaArray[aaArray.length - 2].delta_mass + mass_table.get(aaArray[aaArray.length - 1].aa) + aaArray[aaArray.length - 1].delta_mass;
-        for (int charge = 1; charge <= localMaxCharge; ++charge) {
-            outputVector.put(mzToBin((bIonMass + additional_mass) / charge + 1.00727646688)); // for the fragment containing all amino acids, the additional mass is always included.
+        for (double inverseCharge : inverseChargeArray) {
+            outputVector.put(mzToBin((bIonMass + additional_mass) * inverseCharge + 1.00727646688)); // for the fragment containing all amino acids, the additional mass is always included.
         }
 
         // traverse the sequence with reversed order to get y-ion
         // the whole sequence
         double yIonMass = bIonMass + H2O;
-        for (int charge = 1; charge <= localMaxCharge; ++charge) {
-            outputVector.put(mzToBin((yIonMass + additional_mass) / charge + 1.00727646688)); // for the fragment containing all amino acids, the additional mass is always included.
+        for (double inverseCharge : inverseChargeArray) {
+            outputVector.put(mzToBin((yIonMass + additional_mass) * inverseCharge + 1.00727646688)); // for the fragment containing all amino acids, the additional mass is always included.
         }
         // delete the first amino acid and N-term modification
         yIonMass -= mass_table.get(aaArray[0].aa) + aaArray[0].delta_mass + mass_table.get(aaArray[1].aa) + aaArray[1].delta_mass;
         if (1 >= linkSite) {
-            for (int charge = 1; charge <= localMaxCharge; ++charge) {
-                outputVector.put(mzToBin(yIonMass / charge + 1.00727646688));
+            for (double inverseCharge : inverseChargeArray) {
+                outputVector.put(mzToBin(yIonMass * inverseCharge + 1.00727646688));
             }
         } else {
-            for (int charge = 1; charge <= localMaxCharge; ++charge) {
-                outputVector.put(mzToBin((yIonMass + additional_mass) / charge + 1.00727646688));
+            for (double inverseCharge : inverseChargeArray) {
+                outputVector.put(mzToBin((yIonMass + additional_mass) * inverseCharge + 1.00727646688));
             }
         }
         // rest of the sequence
         for (int i = 2; i < aaArray.length - 2; ++i) {
             yIonMass -= mass_table.get(aaArray[i].aa) + aaArray[i].delta_mass;
             if (i >= linkSite) { // caution: here, it is different from b-ion
-                for (int charge = 1; charge <= localMaxCharge; ++charge) {
-                    outputVector.put(mzToBin(yIonMass / charge + 1.00727646688));
+                for (double inverseCharge : inverseChargeArray) {
+                    outputVector.put(mzToBin(yIonMass * inverseCharge + 1.00727646688));
                 }
             } else {
-                for (int charge = 1; charge <= localMaxCharge; ++charge) {
-                    outputVector.put(mzToBin((yIonMass + additional_mass) / charge + 1.00727646688));
+                for (double inverseCharge : inverseChargeArray) {
+                    outputVector.put(mzToBin((yIonMass + additional_mass) * inverseCharge + 1.00727646688));
                 }
             }
         }

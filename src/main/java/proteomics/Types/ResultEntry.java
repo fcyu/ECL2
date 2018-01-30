@@ -9,7 +9,7 @@ import java.util.TreeMap;
 public class ResultEntry{
 
     private static final Logger logger = LoggerFactory.getLogger(ResultEntry.class);
-    public static final double histogram_bin_size = 0.05f;
+    public static final double inverseHistogramBinSize = 20;
     private static final double max_score = 20;
 
     public final String spectrum_id;
@@ -44,7 +44,7 @@ public class ResultEntry{
 
     public ResultEntry(String spectrum_id, float spectrum_mz, float spectrum_mass, float rt, int charge, boolean cal_evalue, TreeMap<Integer, ChainResultEntry> binChainMap) {
         if (cal_evalue) {
-            score_histogram = new int[(int) Math.round(max_score / histogram_bin_size) + 1]; // start from zero score.
+            score_histogram = new int[(int) Math.round(max_score * inverseHistogramBinSize) + 1]; // start from zero score.
         }
         this.spectrum_id = spectrum_id;
         this.spectrum_mz = spectrum_mz;
@@ -88,7 +88,7 @@ public class ResultEntry{
 
     public void addToScoreHistogram(double score) {
         try {
-            ++score_histogram[(int) Math.round(score / histogram_bin_size)];
+            ++score_histogram[(int) Math.round(score * inverseHistogramBinSize)];
             ++score_count;
         } catch (ArrayIndexOutOfBoundsException ex) {
             logger.warn("Score {} is out of the range [0, {}].", score, max_score);
@@ -138,8 +138,8 @@ public class ResultEntry{
         return score_histogram;
     }
 
-    public double getHistogramBinSize() {
-        return histogram_bin_size;
+    public static double getInverseHistogramBinSize() {
+        return inverseHistogramBinSize;
     }
 
     public double getEValue() {

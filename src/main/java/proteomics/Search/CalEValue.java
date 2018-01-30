@@ -39,7 +39,7 @@ public class CalEValue {
         }
 
         int[] score_histogram = result_entry.getScoreHistogram();
-        double histogram_bin_size = result_entry.getHistogramBinSize();
+        double inverseHistogramBinSize = ResultEntry.getInverseHistogramBinSize();
 
         int min_nonzero_idx = 0;
         for (int i = 0; i < score_histogram.length; ++i) {
@@ -179,7 +179,7 @@ public class CalEValue {
             result_entry.setEValue(9999);
             logger.debug("Estimating E-value failed. Scan: {}, mass: {}, slope: {}, intercept: {}, R square: {}, point num: {}.",scan_num, result_entry.spectrum_mass, optimal_slope, optimal_intercept, max_r_square, result_entry.getScoreCount());
         } else {
-            result_entry.setEValue(Math.exp((optimal_slope * Math.round(result_entry.getScore() / histogram_bin_size) + optimal_intercept) + Math.log((double) result_entry.getCandidateNum() / (double) result_entry.getScoreCount()))); // double point precision limitation.
+            result_entry.setEValue(Math.exp((optimal_slope * Math.round(result_entry.getScore() * inverseHistogramBinSize) + optimal_intercept) + Math.log((double) result_entry.getCandidateNum() / (double) result_entry.getScoreCount()))); // double point precision limitation.
             result_entry.setEValueDetails((float) max_r_square, (float) optimal_slope, (float) optimal_intercept, optimal_start_idx, null_end_idx);
         }
 
