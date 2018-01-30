@@ -42,7 +42,6 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     @Override
     public FinalResultEntry call() throws IOException {
         SparseVector xcorrPL = preSpectrumObj.preSpectrum(spectrumEntry.originalPlMap, spectrumEntry.precursor_mass, spectrumEntry.scan_num);
-        int specMaxBinIdx = xcorrPL.getMaxIdx();
         if (ECL2.debug) {
             BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".xcorr.spectrum.csv"));
             writer.write("bin_idx,intensity\n");
@@ -51,11 +50,11 @@ public class SearchWrap implements Callable<FinalResultEntry> {
             }
             writer.close();
         }
-        ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL, specMaxBinIdx);
+        ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL);
         if (resultEntry != null) {
             if (ECL2.debug) {
-                SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(resultEntry.getChain1(), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain1()) + MassTool.H2O), spectrumEntry.precursor_charge, specMaxBinIdx);
-                SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(resultEntry.getChain2(), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain2()) + MassTool.H2O), spectrumEntry.precursor_charge, specMaxBinIdx);
+                SparseBooleanVector chainVector1 = mass_tool_obj.buildTheoVector(resultEntry.getChain1(), (short) resultEntry.getLinkSite1(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain1()) + MassTool.H2O), spectrumEntry.precursor_charge);
+                SparseBooleanVector chainVector2 = mass_tool_obj.buildTheoVector(resultEntry.getChain2(), (short) resultEntry.getLinkSite2(), spectrumEntry.precursor_mass - (float) (mass_tool_obj.calResidueMass(resultEntry.getChain2()) + MassTool.H2O), spectrumEntry.precursor_charge);
                 BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.scan_num + ".chain.spectrum.csv"));
                 writer.write(resultEntry.getChain1() + " bin idx\n");
                 for (int idx : chainVector1.getIdxSet()) {
