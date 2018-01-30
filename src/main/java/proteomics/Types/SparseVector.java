@@ -81,10 +81,6 @@ public class SparseVector {
         return sparse_vector.keySet();
     }
 
-    boolean isNonzero(int i) {
-        return get(i) != 0;
-    }
-
     public int getNonzeroNum() {
         return sparse_vector.size();
     }

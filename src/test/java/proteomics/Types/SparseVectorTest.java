@@ -100,12 +100,6 @@ public class SparseVectorTest {
     }
 
     @Test
-    public void isNonzero() throws Exception {
-        assertTrue(vector.isNonzero(1));
-        assertFalse(vector.isNonzero(2));
-    }
-
-    @Test
     public void getNonzeroNum() throws Exception {
         assertEquals(3, vector.getNonzeroNum());
     }
