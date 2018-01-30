@@ -76,7 +76,12 @@ public class Search {
         Set<Integer> checkedBinSet = new HashSet<>(bin_seq_map.size() + 1, 1);
         long candidate_num = 0;
         ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge, cal_evalue, binChainMap);
+        int stopIdx = (int) Math.ceil(build_index_obj.massToBin((spectrumEntry.mass_without_linker_mass + 1.00335483f) * 0.5f + rightMs1Tol));
         for (int idx_1 : bin_seq_map.keySet()) {
+            if (idx_1 > stopIdx) {
+                break;
+            }
+
             float left_mass_2;
             float right_mass_2;
             int left_idx_2;
@@ -93,17 +98,14 @@ public class Search {
             }
 
             if (!sub_map.isEmpty()) {
-                if (checkedBinSet.contains(idx_1)) {
-                    // The first bin has reach the middle point of the whole range. All pairs have been checked.
-                    break;
+                if (!checkedBinSet.contains(idx_1)) {
+                    // This bin hasn't been visited. Linear scan first.
+                    for (String seq : bin_seq_map.get(idx_1)) {
+                        ChainEntry chainEntry = chain_entry_map.get(seq);
+                        linearScan(spectrumEntry, xcorrPL, chainEntry, idx_1, binChainMap, debugEntryList, devChainScoreMap);
+                    }
+                    checkedBinSet.add(idx_1);
                 }
-
-                // this bin hasn't been visited. Linear scan first.
-                for (String seq : bin_seq_map.get(idx_1)) {
-                    ChainEntry chainEntry = chain_entry_map.get(seq);
-                    linearScan(spectrumEntry, xcorrPL, chainEntry, idx_1, binChainMap, debugEntryList, devChainScoreMap);
-                }
-                checkedBinSet.add(idx_1);
 
                 if (binChainMap.containsKey(idx_1)) { // There may be no chain with chain score > single_chain_t
                     ChainResultEntry chain_score_entry_1 = binChainMap.get(idx_1);
