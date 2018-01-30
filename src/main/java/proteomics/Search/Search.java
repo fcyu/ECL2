@@ -279,11 +279,8 @@ public class Search {
 
     private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
         for (short link_site_1 : chainEntry.link_site_set) {
-            int precursor_charge = spectrumEntry.precursor_charge;
-            SparseBooleanVector theo_mz = mass_tool_obj.buildTheoVector(chainEntry.seq, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, precursor_charge);
-
-            // Calculate dot produce
-            double dot_product = theo_mz.dot(xcorrPL) * 0.005;
+            // generate theoretical fragment ion bins and calculate XCorr.
+            double dot_product = mass_tool_obj.generateTheoFragmentAndCalXCorr(chainEntry.seq, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, spectrumEntry.precursor_charge, xcorrPL);
 
             if (ECL2.debug) {
                 debugEntryList.add(new DebugEntry(chainEntry.seq, link_site_1, chainEntry.chain_mass, dot_product));
