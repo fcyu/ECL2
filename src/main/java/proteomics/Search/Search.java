@@ -122,32 +122,18 @@ public class Search {
 
                             // only two sequences with the same binary mod type can be linked.
                             if (chain_entry_map.get(chain_score_entry_1.getSeq()).binaryModType == chain_entry_map.get(chain_score_entry_2.getSeq()).binaryModType) {
-                                double score;
-                                if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
-                                    score = (chain_score_entry_1.getScore() + chain_score_entry_2.getScore()) * 0.5;
-                                    ++candidate_num;
-                                } else {
-                                    score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
-                                    ++candidate_num;
-                                }
+                                double score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
+                                ++candidate_num;
 
                                 // calculate second score
                                 double second_score = 0;
                                 double temp_1 = -1;
                                 if (chain_score_entry_1.getSecondSeq() != null) {
-                                    if (chain_score_entry_1.getSecondPtmFreeSeq().contentEquals(chain_score_entry_2.getPtmFreeSeq())) {
-                                        temp_1 = (chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore()) * 0.5;
-                                    } else {
-                                        temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
-                                    }
+                                    temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
                                 }
                                 double temp_2 = -1;
                                 if (chain_score_entry_2.getSecondSeq() != null) {
-                                    if (chain_score_entry_1.getPtmFreeSeq().contentEquals(chain_score_entry_2.getSecondPtmFreeSeq())) {
-                                        temp_2 = (chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore()) * 0.5;
-                                    } else {
-                                        temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
-                                    }
+                                    temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
                                 }
 
                                 if (temp_1 > 0) {
