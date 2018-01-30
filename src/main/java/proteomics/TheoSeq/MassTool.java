@@ -9,7 +9,6 @@ import java.util.regex.*;
 public class MassTool {
 
     private static final int max_charge = 6;
-    private static final int max_common_ion_charge = 3;
     private static final Pattern mod_aa_pattern = Pattern.compile("([A-Znc])(\\[([0-9\\.\\-]+)\\])?");
 
     public static final double H2O = 18.010564684;
@@ -114,7 +113,6 @@ public class MassTool {
         linkSite = (short) Math.max(1, linkSite);
 
         int localMaxCharge = Math.min(max_charge, Math.max(precursor_charge - 1, 1));
-        int localMaxCommonIonCharge = Math.min(max_common_ion_charge, localMaxCharge);
 
         SparseBooleanVector outputVector = new SparseBooleanVector();
 
@@ -135,7 +133,7 @@ public class MassTool {
         for (int i = 1; i < aaArray.length - 2; ++i) {
             bIonMass += mass_table.get(aaArray[i].aa) + aaArray[i].delta_mass;
             if (i < linkSite) {
-                for (int charge = 1; charge <= localMaxCommonIonCharge; ++charge) {
+                for (int charge = 1; charge <= localMaxCharge; ++charge) {
                     int idx = mzToBin(bIonMass / charge + 1.00727646688);
                     if (idx <= specMaxBinIdx) {
                         outputVector.put(idx);
@@ -171,7 +169,7 @@ public class MassTool {
         // delete the first amino acid and N-term modification
         yIonMass -= mass_table.get(aaArray[0].aa) + aaArray[0].delta_mass + mass_table.get(aaArray[1].aa) + aaArray[1].delta_mass;
         if (1 >= linkSite) {
-            for (int charge = 1; charge <= localMaxCommonIonCharge; ++charge) {
+            for (int charge = 1; charge <= localMaxCharge; ++charge) {
                 int idx = mzToBin(yIonMass / charge + 1.00727646688);
                 if (idx <= specMaxBinIdx) {
                     outputVector.put(idx);
@@ -189,7 +187,7 @@ public class MassTool {
         for (int i = 2; i < aaArray.length - 2; ++i) {
             yIonMass -= mass_table.get(aaArray[i].aa) + aaArray[i].delta_mass;
             if (i >= linkSite) { // caution: here, it is different from b-ion
-                for (int charge = 1; charge <= localMaxCommonIonCharge; ++charge) {
+                for (int charge = 1; charge <= localMaxCharge; ++charge) {
                     int idx = mzToBin(yIonMass / charge + 1.00727646688);
                     if (idx <= specMaxBinIdx) {
                         outputVector.put(idx);
