@@ -4,13 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
+import proteomics.TheoSeq.MassTool;
 import proteomics.Types.*;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Locale;
-import java.util.TreeMap;
+import java.util.*;
 
 public class CalEValue {
 
@@ -18,19 +18,13 @@ public class CalEValue {
     private static final float maxTolerance = 20;
     private static final float toleranceStep = 1;
 
-    private ResultEntry result_entry;
-    private BuildIndex buildIndexObj;
-    private float linker_mass;
-
-    CalEValue(int scan_num, ResultEntry result_entry, BuildIndex buildIndexObj, float linker_mass, float originalTolerance) throws IOException {
-        this.result_entry = result_entry;
-        this.buildIndexObj = buildIndexObj;
-        this.linker_mass = linker_mass;
-
+    static void calEValue(int scan_num, ResultEntry result_entry, BuildIndex buildIndexObj, TreeMap<Integer, List<Double>> binScoresMap, float linker_mass, float originalTolerance, SparseVector xcorrPL, double singleChainT) throws IOException {
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
         float tolerance = originalTolerance;
+        float massWithoutLinker = result_entry.spectrum_mass - linker_mass;
+        int maxBinIdx = buildIndexObj.massToBin(massWithoutLinker * 0.5f);
         while (gap_num > 0 && tolerance <= maxTolerance) {
-            gap_num = generateRandomRandomScores(gap_num, tolerance, toleranceStep, result_entry.getBinChainMap());
+            gap_num = generateRandomRandomScores(gap_num, tolerance, toleranceStep, binScoresMap, result_entry.spectrum_mass, massWithoutLinker, result_entry.charge, xcorrPL, buildIndexObj, buildIndexObj.getMassBinSeqMap(), buildIndexObj.getSeqEntryMap(), buildIndexObj.returnMassTool(), result_entry, maxBinIdx, singleChainT);
             tolerance += toleranceStep;
         }
 
@@ -102,7 +96,7 @@ public class CalEValue {
         if (null_end_idx > 3 * inverseHistogramBinSize) {
             start_idx = Math.max(min_nonzero_idx, (int) (0.75 * null_end_idx));
         } else {
-            start_idx = Math.max(min_nonzero_idx, (int) ( 0.5 * null_end_idx));
+            start_idx = Math.max(min_nonzero_idx, (int) (0.5 * null_end_idx));
         }
 
         // linear regression
@@ -195,22 +189,21 @@ public class CalEValue {
         }
     }
 
-    private int generateRandomRandomScores(int gap_num, float tolerance, float toleranceStep, TreeMap<Integer, ChainResultEntry> binChainMap) {
-        int maxBinIdx = buildIndexObj.massToBin((result_entry.spectrum_mass - linker_mass) * 0.5f);
-        for (int binIdx1 : binChainMap.keySet()) {
+    private static int generateRandomRandomScores(int gap_num, float tolerance, float toleranceStep, TreeMap<Integer, List<Double>> binScoresMap, float precursorMass, float massWithoutLinker, int precursorCharge, SparseVector xcorrPL, BuildIndex buildIndex, TreeMap<Integer, Set<String>> binSequencesMap, Map<String, ChainEntry> seqEntryMap, MassTool massTool, ResultEntry resultEntry, int maxBinIdx, double singleChainT) {
+        for (int binIdx1 : binSequencesMap.keySet()) {
             if (binIdx1 < maxBinIdx) {
-                int leftBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - tolerance - toleranceStep) - maxBinIdx;
-                int rightBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - tolerance) - maxBinIdx - 1;
-                int leftBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + tolerance) - maxBinIdx + 1;
-                int rightBinIdx2 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass + tolerance + toleranceStep) - maxBinIdx;
-                TreeMap<Integer, ChainResultEntry> sub_map = new TreeMap<>();
-                sub_map.putAll(binChainMap.subMap(leftBinIdx1, true, rightBinIdx1, false));
-                sub_map.putAll(binChainMap.subMap(leftBinIdx2, false, rightBinIdx2, true));
-                if (!sub_map.isEmpty()) {
-                    for (double score1 : binChainMap.get(binIdx1).getScoreList()) {
-                        for (int binIdx2 : sub_map.keySet()) {
-                            for (double score2 : binChainMap.get(binIdx2).getScoreList()) {
-                                result_entry.addToScoreHistogram(score1 + score2);
+                int leftBinIdx1 = buildIndex.massToBin(massWithoutLinker - tolerance - toleranceStep) - binIdx1;
+                int rightBinIdx1 = buildIndex.massToBin(massWithoutLinker - tolerance) - binIdx1;
+                int leftBinIdx2 = buildIndex.massToBin(massWithoutLinker + tolerance) - binIdx1;
+                int rightBinIdx2 = buildIndex.massToBin(massWithoutLinker + tolerance + toleranceStep) - binIdx1;
+                TreeMap<Integer, Set<String>> subMap = new TreeMap<>();
+                subMap.putAll(binSequencesMap.subMap(leftBinIdx1, true, rightBinIdx1, false));
+                subMap.putAll(binSequencesMap.subMap(leftBinIdx2, false, rightBinIdx2, true));
+                if (!subMap.isEmpty()) {
+                    for (double score1 : subFunction(binIdx1, binScoresMap, binSequencesMap, seqEntryMap, massTool, precursorMass, precursorCharge, xcorrPL, singleChainT)) {
+                        for (int binIdx2 : subMap.keySet()) {
+                            for (double score2 : subFunction(binIdx2, binScoresMap, binSequencesMap, seqEntryMap, massTool, precursorMass, precursorCharge, xcorrPL, singleChainT)) {
+                                resultEntry.addToScoreHistogram(score1 + score2);
                                 --gap_num;
                                 if (gap_num <= 0) {
                                     return gap_num;
@@ -222,5 +215,24 @@ public class CalEValue {
             }
         }
         return gap_num;
+    }
+
+    private static List<Double> subFunction(int binIdx, TreeMap<Integer, List<Double>> binScoresMap, TreeMap<Integer, Set<String>> binSequencesMap, Map<String, ChainEntry> seqEntryMap, MassTool massTool, float precursorMass, int precursorCharge, SparseVector xcorrPL, double singleChainT) {
+        List<Double> scoreList = new ArrayList<>();
+        if (binScoresMap.containsKey(binIdx)) {
+            scoreList = binScoresMap.get(binIdx);
+        } else {
+            for (String seq : binSequencesMap.get(binIdx)) {
+                ChainEntry chainEntry = seqEntryMap.get(seq);
+                for (short linkSite : chainEntry.link_site_set) {
+                    double xcorr = massTool.generateTheoFragmentAndCalXCorr(seq, linkSite, precursorMass - chainEntry.chain_mass, precursorCharge, xcorrPL);
+                    if (xcorr > singleChainT) {
+                        scoreList.add(xcorr);
+                    }
+                }
+            }
+            binScoresMap.put(binIdx, scoreList);
+        }
+        return scoreList;
     }
 }

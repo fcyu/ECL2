@@ -88,8 +88,10 @@ public class ResultEntry{
 
     public void addToScoreHistogram(double score) {
         try {
-            ++score_histogram[(int) Math.round(score * inverseHistogramBinSize)];
-            ++score_count;
+            if (score > 0) {
+                ++score_histogram[(int) Math.round(score * inverseHistogramBinSize)];
+                ++score_count;
+            }
         } catch (ArrayIndexOutOfBoundsException ex) {
             logger.warn("Score {} is out of the range [0, {}].", score, max_score);
         }

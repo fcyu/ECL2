@@ -1,8 +1,5 @@
 package proteomics.Types;
 
-import java.util.LinkedList;
-import java.util.List;
-
 public class ChainResultEntry implements Comparable<ChainResultEntry>{
 
     private String seq;
@@ -12,7 +9,6 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
     private int link_site;
     private double score;
     private double second_score;
-    private List<Double> score_list = new LinkedList<>(); // contains all chain score for generating the random histogram
 
     public ChainResultEntry() {}
 
@@ -24,12 +20,6 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
     public void setSecondSeq(String second_seq) {
         this.second_seq = second_seq;
         secondPtmFreeSeq = second_seq.replaceAll("[^A-Znc]", "");
-    }
-
-    public void addToScoreList(double score, boolean cal_evalue) {
-        if (cal_evalue) {
-            score_list.add(score);
-        }
     }
 
     public void setLinkSite(int link_site) {
@@ -80,9 +70,5 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
         } else {
             return 0;
         }
-    }
-
-    public List<Double> getScoreList() {
-        return score_list;
     }
 }

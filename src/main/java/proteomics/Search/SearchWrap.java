@@ -9,8 +9,10 @@ import proteomics.Types.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
 public class SearchWrap implements Callable<FinalResultEntry> {
@@ -44,7 +46,8 @@ public class SearchWrap implements Callable<FinalResultEntry> {
             }
             writer.close();
         }
-        ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL);
+        TreeMap<Integer, List<Double>> binScoresMap = new TreeMap<>();
+        ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL, binScoresMap);
         if (resultEntry != null) {
             if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) >= delta_c_t) {
                 if (cal_evalue) {
@@ -54,7 +57,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
                     } else {
                         originalTolerance = search_obj.ms1_tolerance;
                     }
-                    new CalEValue(spectrumEntry.scan_num, resultEntry, build_index_obj, build_index_obj.linker_mass, originalTolerance);
+                    CalEValue.calEValue(spectrumEntry.scan_num, resultEntry, build_index_obj, binScoresMap, build_index_obj.linker_mass, originalTolerance, xcorrPL, search_obj.single_chain_t);
                     if (resultEntry.getEValue() != 9999) {
                         return search_obj.convertResultEntry(spectrumEntry.scan_num, resultEntry, seqProMap, spectrumEntry);
                     } else {

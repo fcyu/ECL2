@@ -20,7 +20,7 @@ public class Search {
     private final TreeMap<Integer, Set<String>> bin_seq_map;
     private final BuildIndex build_index_obj;
     private final int[] C13_correction_range;
-    private final float single_chain_t;
+    final float single_chain_t;
     private final boolean cal_evalue;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ public class Search {
         Arrays.sort(C13_correction_range);
     }
 
-    ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL) throws IOException {
+    ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL, TreeMap<Integer, List<Double>> binScoresMap) throws IOException {
         int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.mass_without_linker_mass + C13_correction_range[C13_correction_range.length - 1] * 1.00335483f) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
@@ -98,7 +98,7 @@ public class Search {
                     // This bin hasn't been visited. Linear scan first.
                     for (String seq : bin_seq_map.get(idx_1)) {
                         ChainEntry chainEntry = chain_entry_map.get(seq);
-                        linearScan(spectrumEntry, xcorrPL, chainEntry, idx_1, binChainMap, debugEntryList, devChainScoreMap);
+                        linearScan(spectrumEntry, xcorrPL, chainEntry, idx_1, binChainMap, binScoresMap, debugEntryList, devChainScoreMap);
                     }
                     checkedBinSet.add(idx_1);
                 }
@@ -110,7 +110,7 @@ public class Search {
                             // this bin hasn't been visited. Linear scan first.
                             for (String seq : bin_seq_map.get(idx_2)) {
                                 ChainEntry chainEntry = chain_entry_map.get(seq);
-                                linearScan(spectrumEntry, xcorrPL, chainEntry, idx_2, binChainMap, debugEntryList, devChainScoreMap);
+                                linearScan(spectrumEntry, xcorrPL, chainEntry, idx_2, binChainMap, binScoresMap, debugEntryList, devChainScoreMap);
                             }
                             checkedBinSet.add(idx_2);
                         }
@@ -145,8 +145,8 @@ public class Search {
                                 }
 
                                 if (cal_evalue && (resultEntry.getScoreCount() < ECL2.score_point_t)) {
-                                    for (double s1 : chain_score_entry_1.getScoreList()) {
-                                        for (double s2 : chain_score_entry_2.getScoreList()) {
+                                    for (double s1 : binScoresMap.get(idx_1)) {
+                                        for (double s2 : binScoresMap.get(idx_2)) {
                                             resultEntry.addToScoreHistogram(s1 + s2);
                                         }
                                     }
@@ -273,7 +273,7 @@ public class Search {
         return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), String.join(";", pro1Set), final_seq_2, result_entry.getLinkSite2(), String.join(";", pro2Set), cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum(), cal_evalue, spectrumEntry.mgfTitle);
     }
 
-    private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
+    private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, TreeMap<Integer, List<Double>> binScoresMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
         for (short link_site_1 : chainEntry.link_site_set) {
             // generate theoretical fragment ion bins and calculate XCorr.
             double dot_product = mass_tool_obj.generateTheoFragmentAndCalXCorr(chainEntry.seq, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, spectrumEntry.precursor_charge, xcorrPL);
@@ -288,9 +288,17 @@ public class Search {
 
             // Record result
             if (dot_product > single_chain_t) {
+                if (cal_evalue) {
+                    if (binScoresMap.containsKey(binInx)) {
+                        binScoresMap.get(binInx).add(dot_product);
+                    } else {
+                        List<Double> tempList = new ArrayList<>();
+                        tempList.add(dot_product);
+                        binScoresMap.put(binInx, tempList);
+                    }
+                }
                 if (binChainMap.containsKey(binInx)) {
                     ChainResultEntry chain_result_entry = binChainMap.get(binInx);
-                    chain_result_entry.addToScoreList(dot_product, cal_evalue);
                     if (dot_product > chain_result_entry.getScore()) {
                         chain_result_entry.setSecondScore(chain_result_entry.getScore());
                         chain_result_entry.setSecondSeq(chain_result_entry.getSeq());
@@ -303,7 +311,6 @@ public class Search {
                     }
                 } else {
                     ChainResultEntry chain_result_entry = new ChainResultEntry();
-                    chain_result_entry.addToScoreList(dot_product, cal_evalue);
                     chain_result_entry.setSeq(chainEntry.seq);
                     chain_result_entry.setLinkSite(link_site_1);
                     chain_result_entry.setScore(dot_product);
