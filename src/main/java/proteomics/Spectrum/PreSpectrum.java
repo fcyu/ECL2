@@ -1,7 +1,5 @@
 package proteomics.Spectrum;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.SparseVector;
@@ -13,7 +11,6 @@ import java.util.*;
 
 public class PreSpectrum {
 
-    private static final Logger logger = LoggerFactory.getLogger(PreSpectrum.class);
     private static final int XCORR_OFFSET = 75;
 
     private final MassTool mass_tool_obj;

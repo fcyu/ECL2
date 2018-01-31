@@ -1,7 +1,5 @@
 package proteomics.Search;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
 import proteomics.Spectrum.PreSpectrum;
@@ -17,12 +15,9 @@ import java.util.concurrent.Callable;
 
 public class SearchWrap implements Callable<FinalResultEntry> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SearchWrap.class);
-
     private final Search search_obj;
     private final SpectrumEntry spectrumEntry;
     private final BuildIndex build_index_obj;
-    private final MassTool mass_tool_obj;
     private final PreSpectrum preSpectrumObj;
     private final Map<String, Set<String>> seqProMap;
     private final boolean cal_evalue;
@@ -32,7 +27,6 @@ public class SearchWrap implements Callable<FinalResultEntry> {
         this.search_obj = search_obj;
         this.spectrumEntry = spectrumEntry;
         this.build_index_obj = build_index_obj;
-        this.mass_tool_obj = mass_tool_obj;
         preSpectrumObj = new PreSpectrum(mass_tool_obj, flankingPeaks);
         this.seqProMap = seqProMap;
         this.cal_evalue = cal_evalue;

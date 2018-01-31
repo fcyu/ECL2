@@ -1,7 +1,5 @@
 package proteomics.Search;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.*;
@@ -13,8 +11,6 @@ import java.io.IOException;
 import java.util.*;
 
 public class Search {
-
-    private static final Logger logger = LoggerFactory.getLogger(Search.class);
 
     public final float ms1_tolerance;
     public final int ms1_tolerance_unit;
