@@ -52,7 +52,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
         }
         ResultEntry resultEntry =  search_obj.doSearch(spectrumEntry, xcorrPL);
         if (resultEntry != null) {
-            if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) > delta_c_t) {
+            if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) >= delta_c_t) {
                 if (cal_evalue) {
                     float originalTolerance;
                     if (search_obj.ms1_tolerance_unit == 1) {
