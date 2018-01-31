@@ -84,12 +84,10 @@ public class CalEValue {
 
         // find the next max nonzero idx. from this down to the changing point are from null.
         int null_end_idx = max_nonzero_idx;
-        for (int i = min_nonzero_idx; i <= max_nonzero_idx; ++i) {
-            if (score_histogram[i] == 0) {
-                if (i == max_nonzero_idx || score_histogram[i + 1] == 0) {
-                    null_end_idx = i - 1;
-                    break;
-                }
+        for (int i = max_nonzero_idx; i > min_nonzero_idx + 4; --i) {
+            if (score_histogram[i] == 0 && score_histogram[i - 1] == 0 && score_histogram[i - 2] != 0) {
+                null_end_idx = i - 2;
+                break;
             }
         }
 
@@ -100,8 +98,8 @@ public class CalEValue {
         }
 
         // find the start point
-        int start_idx = min_nonzero_idx;
-        if (null_end_idx > 3 / ResultEntry.histogram_bin_size) {
+        int start_idx;
+        if (null_end_idx > 3 * inverseHistogramBinSize) {
             start_idx = Math.max(min_nonzero_idx, (int) (0.75 * null_end_idx));
         } else {
             start_idx = Math.max(min_nonzero_idx, (int) ( 0.5 * null_end_idx));
