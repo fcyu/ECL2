@@ -198,7 +198,7 @@ public class CalEValue {
     }
 
     private int generateRandomRandomScores(int gap_num, float tolerance, float toleranceStep, TreeMap<Integer, ChainResultEntry> binChainMap) {
-        int maxBinIdx = buildIndexObj.massToBin((result_entry.spectrum_mass - linker_mass) / 2);
+        int maxBinIdx = buildIndexObj.massToBin((result_entry.spectrum_mass - linker_mass) * 0.5f);
         for (int binIdx1 : binChainMap.keySet()) {
             if (binIdx1 < maxBinIdx) {
                 int leftBinIdx1 = buildIndexObj.massToBin(result_entry.spectrum_mass - linker_mass - tolerance - toleranceStep) - maxBinIdx;
