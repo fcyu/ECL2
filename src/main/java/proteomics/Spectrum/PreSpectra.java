@@ -40,7 +40,6 @@ public class PreSpectra {
         // prepare SQL database
         Connection sqlConnection = DriverManager.getConnection(sqlPath);
         Statement sqlStatement = sqlConnection.createStatement();
-        sqlStatement.executeUpdate("PRAGMA journal_mode=WAL");
         sqlStatement.executeUpdate("DROP TABLE IF EXISTS spectraTable");
         sqlStatement.executeUpdate("CREATE TABLE spectraTable (scanNum INTEGER NOT NULL, scanId TEXT PRIMARY KEY, precursorCharge INTEGER NOT NULL, precursorMz REAL NOT NULL, precursorMass REAL NOT NULL, rt INTEGER NOT NULL, massWithoutLinker REAL NOT NULL, mgfTitle TEXT NOT NULL, isotopeCorrectionNum INTEGER NOT NULL, ms1PearsonCorrelationCoefficient REAL NOT NULL, theoMass REAL, score REAL, deltaC REAL, rank INTEGER, ppm REAL, seq1 TEXT, linkSite1 INTEGER, proId1 TEXT, seq2 TEXT, linkSite2 INTEGER, proId2 TEXT, clType TEXT, hitType INTEGER, eValue REAL, candidateNum INTEGER, pointCount INTEGER, rSquare REAL, slope REAL, intercept REAL, startIdx INTEGER, endIdx INTEGER, chainScore1 REAL, chainRank1 INTEGER, chainScore2 REAL, chainRank2 INTEGER)");
         sqlStatement.close();
