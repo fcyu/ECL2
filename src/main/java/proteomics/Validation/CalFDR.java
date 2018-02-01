@@ -112,7 +112,7 @@ public class CalFDR {
         return scanIdEntryMap;
     }
 
-    public static class Entry {
+    public static class Entry implements Comparable<Entry> {
 
         public final String scanId;
         public final double score;
@@ -124,6 +124,30 @@ public class CalFDR {
             this.scanId = scanId;
             this.score = score;
             this.hitType = hitType;
+        }
+
+        public boolean equals(Object other) {
+            if (other instanceof Entry) {
+                return ((Entry) other).scanId.contentEquals(scanId) && ((Entry) other).score == score && ((Entry) other).hitType == hitType;
+            } else {
+                return false;
+            }
+        }
+
+        public int compareTo(Entry other) {
+            if (score > other.score) {
+                return 1;
+            } else if (score < other.score) {
+                return -1;
+            } else {
+                if (hitType == 0 && other.hitType != 0) {
+                    return 1;
+                } else if (hitType != 0 && other.hitType == 0) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            }
         }
     }
 }
