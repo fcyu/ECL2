@@ -15,7 +15,6 @@ public class Search {
     public final double ms1_tolerance;
     public final int ms1_tolerance_unit;
     private final Map<String, ChainEntry> chain_entry_map;
-    private final Map<Character, Float> fix_mod_map;
     private final MassTool mass_tool_obj;
     private final TreeMap<Integer, Set<String>> bin_seq_map;
     private final BuildIndex build_index_obj;
@@ -27,7 +26,6 @@ public class Search {
     public Search(BuildIndex build_index_obj, Map<String, String> parameter_map) {
         this.build_index_obj = build_index_obj;
         chain_entry_map = build_index_obj.getSeqEntryMap();
-        fix_mod_map = build_index_obj.getFixModMap();
         mass_tool_obj = build_index_obj.returnMassTool();
         ms1_tolerance_unit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
         ms1_tolerance = Double.valueOf(parameter_map.get("ms1_tolerance"));
@@ -47,8 +45,8 @@ public class Search {
         Arrays.sort(C13_correction_range);
     }
 
-    ResultEntry doSearch(SpectrumEntry spectrumEntry, SparseVector xcorrPL, TreeMap<Integer, List<Double>> binScoresMap) throws IOException {
-        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(spectrumEntry.mass_without_linker_mass + C13_correction_range[C13_correction_range.length - 1] * 1.00335483f) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
+    ResultEntry doSearch(SparseVector xcorrPL, TreeMap<Integer, List<Double>> binScoresMap, double massWithoutLinker, int precursorCharge, double precursorMass, String scanId) throws IOException {
+        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(massWithoutLinker + C13_correction_range[C13_correction_range.length - 1] * 1.00335483) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
         if (max_chain_bin_idx < min_chain_bin_idx) {
@@ -59,8 +57,8 @@ public class Search {
         double leftMs1Tol = ms1_tolerance;
         double rightMs1Tol = ms1_tolerance;
         if (ms1_tolerance_unit == 1) {
-            leftMs1Tol = spectrumEntry.precursor_mass - (spectrumEntry.precursor_mass / (1 + ms1_tolerance * 1e-6f));
-            rightMs1Tol = (spectrumEntry.precursor_mass / (1 - ms1_tolerance * 1e-6f)) - spectrumEntry.precursor_mass;
+            leftMs1Tol = precursorMass - (precursorMass / (1 + ms1_tolerance * 1e-6));
+            rightMs1Tol = (precursorMass / (1 - ms1_tolerance * 1e-6)) - precursorMass;
         }
 
         // for debug
@@ -71,8 +69,8 @@ public class Search {
         TreeMap<Integer, ChainResultEntry> binChainMap = new TreeMap<>();
         Set<Integer> checkedBinSet = new HashSet<>(bin_seq_map.size() + 1, 1);
         long candidate_num = 0;
-        ResultEntry resultEntry = new ResultEntry(spectrumEntry.spectrum_id, spectrumEntry.precursor_mz, spectrumEntry.precursor_mass, spectrumEntry.rt, spectrumEntry.precursor_charge, cal_evalue, binChainMap);
-        int stopIdx = (int) Math.ceil(build_index_obj.massToBin((spectrumEntry.mass_without_linker_mass + 1.00335483f) * 0.5f + rightMs1Tol));
+        ResultEntry resultEntry = new ResultEntry(scanId, cal_evalue, binChainMap);
+        int stopIdx = (int) Math.ceil(build_index_obj.massToBin((massWithoutLinker + 1.00335483) * 0.5 + rightMs1Tol));
         for (int idx_1 : bin_seq_map.keySet()) {
             if (idx_1 > stopIdx) {
                 break;
@@ -86,8 +84,8 @@ public class Search {
 
             // consider C13 correction
             for (int i : C13_correction_range) {
-                left_mass_2 = spectrumEntry.mass_without_linker_mass + i * 1.00335483f - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
-                right_mass_2 = spectrumEntry.mass_without_linker_mass + i * 1.00335483f - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
+                left_mass_2 = massWithoutLinker + i * 1.00335483 - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
+                right_mass_2 = massWithoutLinker + i * 1.00335483 - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
                 left_idx_2 = build_index_obj.massToBin(left_mass_2);
                 right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
                 sub_map.putAll(bin_seq_map.subMap(left_idx_2, true, right_idx_2, true));
@@ -98,7 +96,7 @@ public class Search {
                     // This bin hasn't been visited. Linear scan first.
                     for (String seq : bin_seq_map.get(idx_1)) {
                         ChainEntry chainEntry = chain_entry_map.get(seq);
-                        linearScan(spectrumEntry, xcorrPL, chainEntry, idx_1, binChainMap, binScoresMap, debugEntryList, devChainScoreMap);
+                        linearScan(xcorrPL, chainEntry, idx_1, binChainMap, binScoresMap, debugEntryList, devChainScoreMap, precursorCharge, precursorMass);
                     }
                     checkedBinSet.add(idx_1);
                 }
@@ -110,7 +108,7 @@ public class Search {
                             // this bin hasn't been visited. Linear scan first.
                             for (String seq : bin_seq_map.get(idx_2)) {
                                 ChainEntry chainEntry = chain_entry_map.get(seq);
-                                linearScan(spectrumEntry, xcorrPL, chainEntry, idx_2, binChainMap, binScoresMap, debugEntryList, devChainScoreMap);
+                                linearScan(xcorrPL, chainEntry, idx_2, binChainMap, binScoresMap, debugEntryList, devChainScoreMap, precursorCharge, precursorMass);
                             }
                             checkedBinSet.add(idx_2);
                         }
@@ -173,11 +171,11 @@ public class Search {
 
         // write debug file
         if (ECL2.debug) {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(spectrumEntry.spectrum_id + ".csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(scanId + ".csv"));
             debugEntryList.sort(Comparator.reverseOrder());
             writer.write("chain,link_site,mass,score\n");
             for (DebugEntry t : debugEntryList) {
-                writer.write(String.format(Locale.US, "%s,%d,%f,%f\n", addFixMod(t.chain, t.link_site), t.link_site, t.mass, t.score));
+                writer.write(String.format(Locale.US, "%s,%d,%f,%f\n", t.chain, t.link_site, t.mass, t.score));
             }
             writer.close();
         }
@@ -200,83 +198,10 @@ public class Search {
         }
     }
 
-    public FinalResultEntry convertResultEntry(int scanNum, ResultEntry result_entry, Map<String, Set<String>> seqProMap, SpectrumEntry spectrumEntry) {
-        int rank = 1;
-        String chain_seq_1 = result_entry.getChain1();
-        String chain_seq_2 = result_entry.getChain2();
-        ChainEntry chain_entry_1 = chain_entry_map.get(chain_seq_1);
-        ChainEntry chain_entry_2 = chain_entry_map.get(chain_seq_2);
-
-        float spectrum_mass = result_entry.spectrum_mass;
-        float theo_mass = chain_entry_1.chain_mass + chain_entry_2.chain_mass + build_index_obj.linker_mass;
-
-        int C13_Diff_num = getC13Num(spectrum_mass, theo_mass);
-        spectrum_mass += C13_Diff_num * 1.00335483f;
-        float ppm = (spectrum_mass - theo_mass) * 1e6f / theo_mass;
-
-        Set<String> pro1Set = new TreeSet<>();
-        boolean isDecoy1 = false;
-        for (String temp : seqProMap.get(chain_entry_1.seq.replaceAll("[^A-Znc]", ""))) {
-            pro1Set.add(temp);
-            if (temp.startsWith("DECOY")) { // there is no overlapped peptide between target and decoy.
-                isDecoy1 = true;
-            }
-        }
-        Set<String> pro2Set = new TreeSet<>();
-        boolean isDecoy2 = false;
-        for (String temp : seqProMap.get(chain_entry_2.seq.replaceAll("[^A-Znc]", ""))) {
-            pro2Set.add(temp);
-            if (temp.startsWith("DECOY")) { // there is no overlapped peptide between target and decoy.
-                isDecoy2 = true;
-            }
-        }
-
-        int hit_type; // 0 = T-T; 1 = D-D; 2 = T-D;
-        if (isDecoy1 && isDecoy2) {
-            hit_type = 1;
-        } else if (!isDecoy1 && !isDecoy2) {
-            hit_type = 0;
-        } else {
-            hit_type = 2;
-        }
-
-        String cl_type = "intra_protein";
-        boolean keep = false;
-        for (String temp_1 : seqProMap.get(chain_entry_1.seq.replaceAll("[^A-Znc]", ""))) {
-            if (temp_1.startsWith("DECOY_")) {
-                temp_1 = temp_1.substring(6);
-            }
-            for (String temp_2 : seqProMap.get(chain_entry_2.seq.replaceAll("[^A-Znc]", ""))) {
-                if (temp_2.startsWith("DECOY_")) {
-                    temp_2 = temp_2.substring(6);
-                }
-                if (temp_1.contentEquals(temp_2)) { // bias to intra protein cross-linking
-                    keep = true;
-                    break;
-                }
-            }
-            if (keep) {
-                break;
-            }
-        }
-
-        if (!keep) {
-            cl_type = "inter_protein";
-        }
-
-        double delta_c = 1 - (result_entry.getSecondScore() / result_entry.getScore());
-
-        // add fix modification to the sequences.
-        String final_seq_1 = addFixMod(chain_seq_1, result_entry.getLinkSite1());
-        String final_seq_2 = addFixMod(chain_seq_2, result_entry.getLinkSite2());
-
-        return new FinalResultEntry(scanNum, result_entry.spectrum_id, rank, result_entry.charge, result_entry.spectrum_mz, result_entry.spectrum_mass, theo_mass, result_entry.rt, ppm, result_entry.getScore(), delta_c, final_seq_1, result_entry.getLinkSite1(), String.join(";", pro1Set), final_seq_2, result_entry.getLinkSite2(), String.join(";", pro2Set), cl_type, hit_type, C13_Diff_num, result_entry.getEValue(), result_entry.getScoreCount(), result_entry.getRSquare(), result_entry.getSlope(), result_entry.getIntercept(), result_entry.getStartIdx(), result_entry.getEndIdx(), result_entry.getChainScore1(), result_entry.getChainRank1(), result_entry.getChainScore2(), result_entry.getChainRank2(), result_entry.getCandidateNum(), cal_evalue, spectrumEntry.mgfTitle);
-    }
-
-    private void linearScan(SpectrumEntry spectrumEntry, SparseVector xcorrPL, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, TreeMap<Integer, List<Double>> binScoresMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap) {
+    private void linearScan(SparseVector xcorrPL, ChainEntry chainEntry, int binInx, TreeMap<Integer, ChainResultEntry> binChainMap, TreeMap<Integer, List<Double>> binScoresMap, List<DebugEntry> debugEntryList, Map<String, Double> devChainScoreMap, int precursorCharge, double precursorMass) {
         for (short link_site_1 : chainEntry.link_site_set) {
             // generate theoretical fragment ion bins and calculate XCorr.
-            double dot_product = mass_tool_obj.generateTheoFragmentAndCalXCorr(chainEntry.seq, link_site_1, spectrumEntry.precursor_mass - chainEntry.chain_mass, spectrumEntry.precursor_charge, xcorrPL);
+            double dot_product = mass_tool_obj.generateTheoFragmentAndCalXCorr(chainEntry.seq, link_site_1, precursorMass - chainEntry.chain_mass, precursorCharge, xcorrPL);
 
             if (ECL2.debug) {
                 debugEntryList.add(new DebugEntry(chainEntry.seq, link_site_1, chainEntry.chain_mass, dot_product));
@@ -319,40 +244,5 @@ public class Search {
                 }
             }
         }
-    }
-
-    private int getC13Num(float exp_mass, float theo_mass) {
-        float min_diff = 10;
-        int num = 0;
-
-        for (int i : C13_correction_range) {
-            float temp = Math.abs(exp_mass + i * 1.00335483f - theo_mass);
-            if (temp < min_diff) {
-                min_diff = temp;
-                num = i;
-            }
-        }
-
-        return num;
-    }
-
-    private String addFixMod(String seq, int linkSite) {
-        AA[] aaList = MassTool.seqToAAList(seq);
-        StringBuilder sb = new StringBuilder(seq.length() * 3);
-        for (int i = 0; i < aaList.length; ++i) {
-            AA aa = aaList[i];
-            if (i == linkSite) { // priority order: linkSite > fixMod > varMod
-                sb.append(aa.aa);
-            } else if (Math.abs(fix_mod_map.get(aa.aa)) > 1e-6) {
-                sb.append(String.format(Locale.US, "%c[%.3f]", aa.aa, fix_mod_map.get(aa.aa)));
-            } else {
-                if (Math.abs(aa.delta_mass) > 1e-6) {
-                    sb.append(String.format(Locale.US, "%c[%.3f]", aa.aa, aa.delta_mass));
-                } else {
-                    sb.append(aa.aa);
-                }
-            }
-        }
-        return sb.toString();
     }
 }

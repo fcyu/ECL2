@@ -21,7 +21,7 @@ public class PreSpectrum {
         this.flankingPeaks =flankingPeaks;
     }
 
-    public SparseVector preSpectrum (Map<Double, Double> peaks_map, float precursor_mass, int scanNum) throws IOException {
+    public SparseVector preSpectrum (Map<Double, Double> peaks_map, double precursor_mass, String scanId) throws IOException {
         // sqrt the intensity
         Map<Double, Double> sqrt_pl_map = new HashMap<>(peaks_map.size() + 1, 1);
         for (double mz : peaks_map.keySet()) {
@@ -37,7 +37,7 @@ public class PreSpectrum {
         double[] normalizedSpectrum =  normalizeSpec(pl_array);
 
         if (ECL2.debug) {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(scanNum + ".normalized.spectrum.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(scanId + ".normalized.spectrum.csv"));
             writer.write("bin_idx,intensity\n");
             for (int i = 0; i < normalizedSpectrum.length; ++i) {
                 writer.write(i + "," + normalizedSpectrum[i] + "\n");

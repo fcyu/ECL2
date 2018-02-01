@@ -1,77 +1,68 @@
 package proteomics.Validation;
 
 
-import proteomics.Types.FinalResultEntry;
-
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 
 public class CalFDR {
 
-    private final float inversePrecision;
-
-    private double min_score = 999;
-    private double max_score = -999;
-    private float[] qvalue_array = null;
-    private List<FinalResultEntry> results;
-
-    public CalFDR(List<FinalResultEntry> results, boolean cal_evalue) {
-        this.results = results;
+    public static Map<String, Entry> calFDR(String sqlPath, boolean cal_evalue, String clType) throws SQLException {
+        double min_score = 999;
+        double max_score = -999;
+        double inversePrecision;
         if (cal_evalue) {
             inversePrecision = 10;
         } else {
             inversePrecision = 1000;
         }
 
-        // find the max score
-        for (FinalResultEntry entry : results) {
-            if (cal_evalue) {
-                if (entry.negative_log10_evalue > max_score) {
-                    max_score = entry.negative_log10_evalue;
+
+        String scoreType = "score";
+        if (cal_evalue) {
+            scoreType = "eValue";
+        }
+
+        Map<String, Entry> scanIdEntryMap = new HashMap<>();
+        Connection sqlConnection = DriverManager.getConnection(sqlPath);
+        Statement sqlStatement = sqlConnection.createStatement();
+        ResultSet sqlResultSet = sqlStatement.executeQuery(String.format(Locale.US, "SELECT scanId, %s, hitType FROM spectraTable WHERE clType='%s'", scoreType, clType));
+        while (sqlResultSet.next()) {
+            int hitType = sqlResultSet.getInt("hitType");
+            if (!sqlResultSet.wasNull()) {
+                String scanId = sqlResultSet.getString("scanId");
+                double score = sqlResultSet.getDouble(scoreType);
+                if (cal_evalue) {
+                    score = -1 * Math.log10(score);
                 }
-                if (entry.negative_log10_evalue < min_score) {
-                    min_score = entry.negative_log10_evalue;
+                scanIdEntryMap.put(scanId, new Entry(scanId, score, hitType));
+                if (score > max_score) {
+                    max_score = score;
                 }
-            } else {
-                if (entry.score > max_score) {
-                    max_score = entry.score;
-                }
-                if (entry.score < min_score) {
-                    min_score = entry.score;
+                if (score < min_score) {
+                    min_score = score;
                 }
             }
         }
+        sqlResultSet.close();
+        sqlStatement.close();
+        sqlConnection.close();
 
         final int array_length = 1 + (int) Math.ceil((max_score - min_score) * inversePrecision);
-        float[] decoy_count_vector = new float[array_length];
-        float[] target_count_vector = new float[array_length];
-        float[] fuse_count_vector = new float[array_length];
-        float[] fdr_array = new float[array_length];
-        qvalue_array = new float[array_length];
+        double[] decoy_count_vector = new double[array_length];
+        double[] target_count_vector = new double[array_length];
+        double[] fuse_count_vector = new double[array_length];
+        double[] fdr_array = new double[array_length];
+        double[] qvalue_array = new double[array_length];
 
-        for (FinalResultEntry re : results) {
-            if (re.hit_type == 1) {
-                int idx;
-                if (cal_evalue) {
-                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) * inversePrecision);
-                } else {
-                    idx = (int) Math.floor((re.score - min_score) * inversePrecision);
-                }
+        for (Entry re : scanIdEntryMap.values()) {
+            if (re.hitType == 1) {
+                int idx = (int) Math.round((re.score - min_score) * inversePrecision);
                 ++decoy_count_vector[idx];
-            } else if (re.hit_type == 0) {
-                int idx;
-                if (cal_evalue) {
-                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) * inversePrecision);
-                } else {
-                    idx = (int) Math.floor((re.score - min_score) * inversePrecision);
-                }
+            } else if (re.hitType == 0) {
+                int idx = (int) Math.round((re.score - min_score) * inversePrecision);
                 ++target_count_vector[idx];
             } else {
-                int idx;
-                if (cal_evalue) {
-                    idx = (int) Math.floor((re.negative_log10_evalue - min_score) * inversePrecision);
-                } else {
-                    idx = (int) Math.floor((re.score - min_score) * inversePrecision);
-                }
+                int idx = (int) Math.round((re.score - min_score) * inversePrecision);
                 ++fuse_count_vector[idx];
             }
         }
@@ -113,21 +104,26 @@ public class CalFDR {
                 last_q_value = q_value;
             }
         }
-    }
 
-    public List<FinalResultEntry> includeStats(boolean cal_evalue) {
-        for (FinalResultEntry re : results) {
-            if (re.hit_type == 0) {
-                if (cal_evalue) {
-                    int idx = (int) Math.floor((re.negative_log10_evalue - min_score) * inversePrecision);
-                    re.qvalue = qvalue_array[idx];
-                } else {
-                    int idx = (int) Math.floor((re.score - min_score) * inversePrecision);
-                    re.qvalue = qvalue_array[idx];
-                }
-            }
+        for (Entry entry : scanIdEntryMap.values()) {
+            entry.qValue = qvalue_array[(int) Math.round((entry.score - min_score) * inversePrecision)];
         }
 
-        return results;
+        return scanIdEntryMap;
+    }
+
+    public static class Entry {
+
+        public final String scanId;
+        public final double score;
+        public final int hitType;
+
+        public double qValue;
+
+        public Entry(String scanId, double score, int hitType) {
+            this.scanId = scanId;
+            this.score = score;
+            this.hitType = hitType;
+        }
     }
 }

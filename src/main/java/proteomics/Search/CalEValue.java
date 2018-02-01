@@ -18,17 +18,17 @@ public class CalEValue {
     private static final double maxTolerance = 20;
     private static final double toleranceStep = 1;
 
-    static void calEValue(int scan_num, ResultEntry result_entry, BuildIndex buildIndexObj, TreeMap<Integer, List<Double>> binScoresMap, float linker_mass, float originalTolerance, SparseVector xcorrPL, double singleChainT) throws IOException {
+    static void calEValue(String scanId, ResultEntry result_entry, BuildIndex buildIndexObj, TreeMap<Integer, List<Double>> binScoresMap, int precursorCharge, double massWithoutLinker, double precursorMass, double originalTolerance, SparseVector xcorrPL, double singleChainT) throws IOException {
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
         double tolerance = originalTolerance;
         int maxBinIdx = buildIndexObj.massToBin(massWithoutLinker * 0.5);
         while (gap_num > 0 && tolerance <= maxTolerance) {
-            gap_num = generateRandomRandomScores(gap_num, tolerance, toleranceStep, binScoresMap, result_entry.spectrum_mass, massWithoutLinker, result_entry.charge, xcorrPL, buildIndexObj, buildIndexObj.getMassBinSeqMap(), buildIndexObj.getSeqEntryMap(), buildIndexObj.returnMassTool(), result_entry, maxBinIdx, singleChainT);
+            gap_num = generateRandomRandomScores(gap_num, tolerance, toleranceStep, binScoresMap, precursorMass, massWithoutLinker, precursorCharge, xcorrPL, buildIndexObj, buildIndexObj.getMassBinSeqMap(), buildIndexObj.getSeqEntryMap(), buildIndexObj.returnMassTool(), result_entry, maxBinIdx, singleChainT);
             tolerance += toleranceStep;
         }
 
         if (gap_num > 0) {
-            logger.debug("Scan {}: Estimated e-value may not be accurate ({} data points).", scan_num, ECL2.score_point_t - gap_num);
+            logger.debug("Scan {}: Estimated e-value may not be accurate ({} data points).", scanId, ECL2.score_point_t - gap_num);
         }
 
         int[] score_histogram = result_entry.getScoreHistogram();
@@ -42,7 +42,7 @@ public class CalEValue {
             }
         }
         if (min_nonzero_idx == score_histogram.length - 1) {
-            logger.debug("Fail to estimate e-value for Scan {} (an empty score histogram).", scan_num);
+            logger.debug("Fail to estimate e-value for Scan {} (an empty score histogram).", scanId);
             result_entry.setEValue(9999);
             return;
         }
@@ -55,10 +55,10 @@ public class CalEValue {
             }
         }
         if (max_nonzero_idx - min_nonzero_idx < 5) {
-            logger.debug("Fail to estimate e-value for Scan {} (doesn't have a useful score histogram).", scan_num);
+            logger.debug("Fail to estimate e-value for Scan {} (doesn't have a useful score histogram).", scanId);
             result_entry.setEValue(9999);
             if (ECL2.debug) {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"));
+                BufferedWriter writer = new BufferedWriter(new FileWriter(scanId + ".evalue.csv"));
                 writer.write("histogram\n");
                 for (int i = 0; i < max_nonzero_idx; ++i) {
                     writer.write(String.format(Locale.US, "%d\n", score_histogram[i]));
@@ -168,14 +168,14 @@ public class CalEValue {
 
         if (optimal_slope >= 0) {
             result_entry.setEValue(9999);
-            logger.debug("Estimating E-value failed. Scan: {}, mass: {}, slope: {}, intercept: {}, R square: {}, point num: {}.",scan_num, result_entry.spectrum_mass, optimal_slope, optimal_intercept, max_r_square, result_entry.getScoreCount());
+            logger.debug("Estimating E-value failed. Scan: {}, mass: {}, slope: {}, intercept: {}, R square: {}, point num: {}.",scanId, precursorMass, optimal_slope, optimal_intercept, max_r_square, result_entry.getScoreCount());
         } else {
             result_entry.setEValue(Math.exp((optimal_slope * Math.round(result_entry.getScore() * inverseHistogramBinSize) + optimal_intercept) + Math.log((double) result_entry.getCandidateNum() / (double) result_entry.getScoreCount()))); // double point precision limitation.
             result_entry.setEValueDetails(max_r_square, optimal_slope, optimal_intercept, optimal_start_idx, null_end_idx);
         }
 
         if (ECL2.debug) {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(scanId + ".evalue.csv"));
             writer.write(String.format(Locale.US, "histogram,survival,ln(survival),slope=%f,intercept=%f,rsquare=%f,start=%d,end=%d\n", optimal_slope, optimal_intercept, max_r_square, optimal_start_idx, null_end_idx));
             for (int i = 0; i <= max_nonzero_idx; ++i) {
                 if (i < ln_survival_count_array.length) {

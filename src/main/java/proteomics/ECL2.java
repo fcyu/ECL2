@@ -5,11 +5,9 @@ import org.slf4j.LoggerFactory;
 import proteomics.Index.BuildIndex;
 import proteomics.Parameter.Parameter;
 import proteomics.Search.SearchWrap;
-import proteomics.Types.FinalResultEntry;
 import proteomics.Search.Search;
 import proteomics.Spectrum.PreSpectra;
 import proteomics.TheoSeq.MassTool;
-import proteomics.Types.SpectrumEntry;
 import proteomics.Validation.CalFDR;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReaderException;
@@ -20,12 +18,16 @@ import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLParsingException;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ECL2 {
 
     public static final int score_point_t = 15000;
+    public static final int[] C13CorrectionRange = new int[]{-2, -1, 0};
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
     public static final String version = "2.1.5";
@@ -46,26 +48,30 @@ public class ECL2 {
         logger.info("ECL2 Version {}.", version);
         logger.info("Author: Fengchao Yu. Email: fyuab@connect.ust.hk");
 
+        String dbName = null;
         try {
             String hostName = InetAddress.getLocalHost().getHostName();
             logger.info("Computer: {}.", hostName);
+            dbName = String.format(Locale.US, "ECL2.%s.%s.temp.db", hostName, new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(Calendar.getInstance().getTime()));
+
+            logger.info("Parameter file: {}.", parameter_path);
+            logger.info("Spectra file: {}.", spectra_path);
+
+            new ECL2(parameter_path, spectra_path, dbName);
         } catch (UnknownHostException ex) {
             logger.warn("Cannot get the computer's name.");
-        }
-
-        logger.info("Parameter file: {}.", parameter_path);
-        logger.info("Spectra file: {}.", spectra_path);
-
-        try {
-            new ECL2(parameter_path, spectra_path);
-        } catch (IOException | MzXMLParsingException | JMzReaderException | ExecutionException | InterruptedException ex) {
+        } catch (IOException | MzXMLParsingException | JMzReaderException | ExecutionException | InterruptedException | ClassNotFoundException | IllegalAccessException | InstantiationException | SQLException ex) {
             ex.printStackTrace();
             logger.error(ex.toString());
             System.exit(1);
+        } finally {
+            if (dbName != null) {
+                (new File(dbName)).delete();
+            }
         }
     }
 
-    private ECL2(String parameter_path, String spectra_path) throws IOException, MzXMLParsingException, JMzReaderException, ExecutionException, InterruptedException {
+    private ECL2(String parameter_path, String spectra_path, String dbName) throws IOException, MzXMLParsingException, JMzReaderException, ExecutionException, InterruptedException, ClassNotFoundException, IllegalAccessException, InstantiationException, SQLException {
         // Get the parameter map
         Parameter parameter = new Parameter(parameter_path);
         Map<String, String> parameter_map = parameter.returnParameterMap();
@@ -107,6 +113,9 @@ public class ECL2 {
 
         logger.info("Peptide chains number: {}.", build_index_obj.getSeqEntryMap().size());
 
+        String sqlPath = "jdbc:sqlite:" + dbName;
+        Class.forName("org.sqlite.JDBC").newInstance();
+
         logger.info("Reading spectra...");
         JMzReader spectra_parser = null;
         File spectra_file = new File(spectra_path);
@@ -124,12 +133,7 @@ public class ECL2 {
             System.exit(1);
         }
 
-        PreSpectra pre_spectra_obj = new PreSpectra(spectra_parser, build_index_obj, parameter_map, ext);
-        Map<Integer, SpectrumEntry> num_spectrum_map = pre_spectra_obj.getNumSpectrumMap();
-        Integer[] scanNumArray = num_spectrum_map.keySet().toArray(new Integer[num_spectrum_map.size()]);
-        Arrays.sort(scanNumArray);
-
-        logger.info("Useful MS/MS spectra number: {}.", num_spectrum_map.size());
+        new PreSpectra(spectra_parser, build_index_obj, parameter_map, ext, sqlPath);
 
         logger.info("Start searching...");
 
@@ -142,34 +146,52 @@ public class ECL2 {
         }
         ExecutorService thread_pool = Executors.newFixedThreadPool(thread_num);
         Search search_obj = new Search(build_index_obj, parameter_map);
-        List<Future<FinalResultEntry>> taskList = new LinkedList<>();
-        for (int scanNum : scanNumArray) {
-            taskList.add(thread_pool.submit(new SearchWrap(search_obj, num_spectrum_map.get(scanNum), build_index_obj, mass_tool_obj, build_index_obj.getSeqProMap(), cal_evalue, delta_c_t, flankingPeaks)));
+        List<Future<Boolean>> taskList = new LinkedList<>();
+        Connection sqlConnection = DriverManager.getConnection(sqlPath);
+        Statement sqlStatement = sqlConnection.createStatement();
+        ResultSet sqlResultSet = sqlStatement.executeQuery("SELECT scanId, precursorCharge, massWithoutLinker, precursorMass FROM spectraTable");
+        ReentrantLock lock = new ReentrantLock();
+        while (sqlResultSet.next()) {
+            String scanId = sqlResultSet.getString("scanId");
+            int precursorCharge = sqlResultSet.getInt("precursorCharge");
+            double massWithoutLinker = sqlResultSet.getDouble("massWithoutLinker");
+            double precursorMass = sqlResultSet.getDouble("precursorMass");
+            taskList.add(thread_pool.submit(new SearchWrap(search_obj, build_index_obj, mass_tool_obj, cal_evalue, delta_c_t, flankingPeaks, spectra_parser, lock, scanId, precursorCharge, massWithoutLinker, precursorMass, sqlConnection)));
         }
+        sqlResultSet.close();
+        sqlStatement.close();
 
         // check progress every minute, record results,and delete finished tasks.
         int lastProgress = 0;
-        Set<FinalResultEntry> final_search_results = new HashSet<>(scanNumArray.length + 1, 1);
-        while (!taskList.isEmpty()) {
+        int resultCount = 0;
+        int totalCount = taskList.size();
+        int count = 0;
+        while (count < totalCount) {
             // record search results and delete finished ones.
-            List<Future<FinalResultEntry>> toBeDeleteTaskList = new LinkedList<>();
-            for (Future<FinalResultEntry> task : taskList) {
+            List<Future<Boolean>> toBeDeleteTaskList = new LinkedList<>();
+            for (Future<Boolean> task : taskList) {
                 if (task.isDone()) {
-                    if (task.get() != null) {
-                        final_search_results.add(task.get());
+                    if (task.get()) {
+                        ++resultCount;
                     }
                     toBeDeleteTaskList.add(task);
                 } else if (task.isCancelled()) {
                     toBeDeleteTaskList.add(task);
                 }
             }
+            count += toBeDeleteTaskList.size();
             taskList.removeAll(toBeDeleteTaskList);
 
-            int progress = (scanNumArray.length - taskList.size()) * 20 / scanNumArray.length;
+            int progress = count * 20 / totalCount;
             if (progress != lastProgress) {
                 logger.info("Searching {}%...", progress * 5);
                 lastProgress = progress;
             }
+
+            if (count == totalCount) {
+                break;
+            }
+
             if (debug) {
                 Thread.sleep(1000);
             } else {
@@ -185,147 +207,111 @@ public class ECL2 {
                 System.err.println("Pool did not terminate");
         }
 
-        if (final_search_results.isEmpty()) {
-            logger.warn("There is no useful PSM.");
+        sqlConnection.close();
+        if (lock.isLocked()) {
+            lock.unlock();
+        }
+
+        if (resultCount == 0) {
+            logger.warn("There is no useful results.");
         } else {
             // save result
             logger.info("Estimating q-value...");
-            List<List<FinalResultEntry>> picked_result = pickResult(final_search_results);
-            List<FinalResultEntry> intra_result = new LinkedList<>();
-            List<FinalResultEntry> inter_result = new LinkedList<>();
-            if (!picked_result.get(0).isEmpty()) {
-                CalFDR cal_fdr_obj = new CalFDR(picked_result.get(0), cal_evalue);
-                intra_result = cal_fdr_obj.includeStats(cal_evalue);
-                intra_result.sort(Collections.reverseOrder());
-            }
-            if (!picked_result.get(1).isEmpty()) {
-                CalFDR cal_fdr_obj = new CalFDR(picked_result.get(1), cal_evalue);
-                inter_result = cal_fdr_obj.includeStats(cal_evalue);
-                inter_result.sort(Collections.reverseOrder());
-            }
+            Map<String, CalFDR.Entry> inter_result = CalFDR.calFDR(sqlPath, cal_evalue, "inter_protein");
+            Map<String, CalFDR.Entry> intra_result = CalFDR.calFDR(sqlPath, cal_evalue, "intra_protein");
 
             logger.info("Saving results...");
-            saveTargetResult(intra_result, build_index_obj.getProAnnotateMap(), spectra_path, true, cal_evalue);
-            saveTargetResult(inter_result, build_index_obj.getProAnnotateMap(), spectra_path, false, cal_evalue);
-            saveDecoyResult(intra_result, build_index_obj.getProAnnotateMap(), spectra_path, true, cal_evalue);
-            saveDecoyResult(inter_result, build_index_obj.getProAnnotateMap(), spectra_path, false, cal_evalue);
+            Map<String, CalFDR.Entry> allResult = new HashMap<>();
+            allResult.putAll(inter_result);
+            allResult.putAll(intra_result);
+            saveTargetResult(allResult, build_index_obj.getProAnnotateMap(), spectra_path, cal_evalue, sqlPath);
         }
         logger.info("Done.");
     }
 
-    private static void saveTargetResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra, boolean cal_evalue) throws IOException {
-        BufferedWriter writer;
-        if (is_intra) {
-            writer = new BufferedWriter(new FileWriter(id_file_name + ".intra.target.csv"));
-        } else {
-            writer = new BufferedWriter(new FileWriter(id_file_name + ".inter.target.csv"));
-        }
+    private static void saveTargetResult(Map<String, CalFDR.Entry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean cal_evalue, String sqlPath) throws IOException, SQLException, NullPointerException {
+        BufferedWriter intraTargetWriter = new BufferedWriter(new FileWriter(id_file_name + ".intra.target.csv"));
+        BufferedWriter intraDecoyWriter = new BufferedWriter(new FileWriter(id_file_name + ".intra.decoy.csv"));
+        BufferedWriter interTargetWriter = new BufferedWriter(new FileWriter(id_file_name + ".inter.target.csv"));
+        BufferedWriter interDecoyWriter = new BufferedWriter(new FileWriter(id_file_name + ".inter.decoy.csv"));
+
+        Connection sqlConnection = DriverManager.getConnection(sqlPath);
+        Statement sqlStatement = sqlConnection.createStatement();
+        ResultSet sqlResultSet = null;
 
         if (dev) {
-            writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
+            intraTargetWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,,MS1_pearson_correlation_coefficient,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
+            intraDecoyWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,,MS1_pearson_correlation_coefficient,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
+            interTargetWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,,MS1_pearson_correlation_coefficient,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
+            interDecoyWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,,MS1_pearson_correlation_coefficient,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
         } else {
-            writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
+            intraTargetWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
+            intraDecoyWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
+            interTargetWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
+            interDecoyWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
         }
-        for (FinalResultEntry re : result) {
-            if (re.hit_type == 0) {
-                int link_site_1 = re.link_site_1;
-                int link_site_2 = re.link_site_2;
+        for (CalFDR.Entry entry : result.values()) {
+            sqlResultSet = sqlStatement.executeQuery(String.format(Locale.US, "SELECT scanNum, precursorMz, precursorMass, rt, isotopeCorrectionNum, ms1PearsonCorrelationCoefficient, precursorCharge, theoMass, score, deltaC, ppm, seq1, linkSite1, seq2, linkSite2, proId1, proId2, eValue, mgfTitle, candidateNum, pointCount, rSquare, slope, intercept, startIdx, endIdx, chainScore1, chainRank1, chainScore2, chainRank2, hitType, clType FROM spectraTable WHERE scanId='%s'", entry.scanId));
+            if (sqlResultSet.next()) {
                 List<String> proAnnotationList1 = new LinkedList<>();
-                for (String s : re.pro_id_1.split(";")) {
-                    proAnnotationList1.add(pro_annotate_map.get(s));
+                for (String s : sqlResultSet.getString("proId1").split(";")) {
+                    if (s.startsWith("DECOY_")) {
+                        proAnnotationList1.add("DECOY");
+                    } else {
+                        proAnnotationList1.add(pro_annotate_map.get(s));
+                    }
                 }
                 List<String> proAnnotationList2 = new LinkedList<>();
-                for (String s : re.pro_id_2.split(";")) {
-                    proAnnotationList2.add(pro_annotate_map.get(s));
+                for (String s : sqlResultSet.getString("proId2").split(";")) {
+                    if (s.startsWith("DECOY_")) {
+                        proAnnotationList2.add("DECOY");
+                    } else {
+                        proAnnotationList2.add(pro_annotate_map.get(s));
+                    }
                 }
 
                 if (dev) {
-                    writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + "," + String.format(Locale.US, "%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format(Locale.US, "%.4f", re.r_square) + "," + String.format(Locale.US, "%.4f", re.slope) + "," + String.format(Locale.US, "%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format(Locale.US, "%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format(Locale.US, "%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
+                    if (sqlResultSet.getString("clType").contentEquals("intra_protein")) {
+                        if (sqlResultSet.getInt("hitType") == 0) {
+                            intraTargetWriter.write(sqlResultSet.getInt("scanNum") + "," + entry.scanId + "," + sqlResultSet.getDouble("precursorMz") + "," + sqlResultSet.getDouble("precursorMass") + "," + sqlResultSet.getDouble("theoMass") + "," + sqlResultSet.getInt("rt") + "," + sqlResultSet.getInt("isotopeCorrectionNum") + "," + sqlResultSet.getInt("precursorCharge") + "," + sqlResultSet.getDouble("score") + "," + sqlResultSet.getDouble("deltaC") + "," + sqlResultSet.getDouble("ppm") + "," + sqlResultSet.getString("seq1") + "-" + sqlResultSet.getInt("linkSite1") + "-" + sqlResultSet.getString("seq2") + "-" + sqlResultSet.getInt("linkSite2") + "," + sqlResultSet.getString("proId1") + "-" + sqlResultSet.getString("proId2") + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", sqlResultSet.getDouble("eValue")) : "-") + "," + entry.qValue + ",\"" + sqlResultSet.getString("mgfTitle") + "\",," + sqlResultSet.getDouble("ms1PearsonCorrelationCoefficient") + "," + sqlResultSet.getInt("candidateNum") + "," + sqlResultSet.getInt("pointCount") + "," + sqlResultSet.getDouble("rSquare") + "," + sqlResultSet.getDouble("slope") + "," + sqlResultSet.getDouble("intercept") + "," + sqlResultSet.getInt("startIdx") + "," + sqlResultSet.getInt("endIdx") + "," + sqlResultSet.getDouble("chainScore1") + "," + sqlResultSet.getInt("chainRank1") + "," + sqlResultSet.getDouble("chainScore2") + "," + sqlResultSet.getInt("chainRank2") + "\n");
+                        } else {
+                            intraDecoyWriter.write(sqlResultSet.getInt("scanNum") + "," + entry.scanId + "," + sqlResultSet.getDouble("precursorMz") + "," + sqlResultSet.getDouble("precursorMass") + "," + sqlResultSet.getDouble("theoMass") + "," + sqlResultSet.getInt("rt") + "," + sqlResultSet.getInt("isotopeCorrectionNum") + "," + sqlResultSet.getInt("precursorCharge") + "," + sqlResultSet.getDouble("score") + "," + sqlResultSet.getDouble("deltaC") + "," + sqlResultSet.getDouble("ppm") + "," + sqlResultSet.getString("seq1") + "-" + sqlResultSet.getInt("linkSite1") + "-" + sqlResultSet.getString("seq2") + "-" + sqlResultSet.getInt("linkSite2") + "," + sqlResultSet.getString("proId1") + "-" + sqlResultSet.getString("proId2") + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", sqlResultSet.getDouble("eValue")) : "-") + "," + entry.qValue + ",\"" + sqlResultSet.getString("mgfTitle") + "\",," + sqlResultSet.getDouble("ms1PearsonCorrelationCoefficient") + "," + sqlResultSet.getInt("candidateNum") + "," + sqlResultSet.getInt("pointCount") + "," + sqlResultSet.getDouble("rSquare") + "," + sqlResultSet.getDouble("slope") + "," + sqlResultSet.getDouble("intercept") + "," + sqlResultSet.getInt("startIdx") + "," + sqlResultSet.getInt("endIdx") + "," + sqlResultSet.getDouble("chainScore1") + "," + sqlResultSet.getInt("chainRank1") + "," + sqlResultSet.getDouble("chainScore2") + "," + sqlResultSet.getInt("chainRank2") + "\n");
+                        }
+                    } else {
+                        if (sqlResultSet.getInt("hitType") == 0) {
+                            interTargetWriter.write(sqlResultSet.getInt("scanNum") + "," + entry.scanId + "," + sqlResultSet.getDouble("precursorMz") + "," + sqlResultSet.getDouble("precursorMass") + "," + sqlResultSet.getDouble("theoMass") + "," + sqlResultSet.getInt("rt") + "," + sqlResultSet.getInt("isotopeCorrectionNum") + "," + sqlResultSet.getInt("precursorCharge") + "," + sqlResultSet.getDouble("score") + "," + sqlResultSet.getDouble("deltaC") + "," + sqlResultSet.getDouble("ppm") + "," + sqlResultSet.getString("seq1") + "-" + sqlResultSet.getInt("linkSite1") + "-" + sqlResultSet.getString("seq2") + "-" + sqlResultSet.getInt("linkSite2") + "," + sqlResultSet.getString("proId1") + "-" + sqlResultSet.getString("proId2") + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", sqlResultSet.getDouble("eValue")) : "-") + "," + entry.qValue + ",\"" + sqlResultSet.getString("mgfTitle") + "\",," + sqlResultSet.getDouble("ms1PearsonCorrelationCoefficient") + "," + sqlResultSet.getInt("candidateNum") + "," + sqlResultSet.getInt("pointCount") + "," + sqlResultSet.getDouble("rSquare") + "," + sqlResultSet.getDouble("slope") + "," + sqlResultSet.getDouble("intercept") + "," + sqlResultSet.getInt("startIdx") + "," + sqlResultSet.getInt("endIdx") + "," + sqlResultSet.getDouble("chainScore1") + "," + sqlResultSet.getInt("chainRank1") + "," + sqlResultSet.getDouble("chainScore2") + "," + sqlResultSet.getInt("chainRank2") + "\n");
+                        } else {
+                            interDecoyWriter.write(sqlResultSet.getInt("scanNum") + "," + entry.scanId + "," + sqlResultSet.getDouble("precursorMz") + "," + sqlResultSet.getDouble("precursorMass") + "," + sqlResultSet.getDouble("theoMass") + "," + sqlResultSet.getInt("rt") + "," + sqlResultSet.getInt("isotopeCorrectionNum") + "," + sqlResultSet.getInt("precursorCharge") + "," + sqlResultSet.getDouble("score") + "," + sqlResultSet.getDouble("deltaC") + "," + sqlResultSet.getDouble("ppm") + "," + sqlResultSet.getString("seq1") + "-" + sqlResultSet.getInt("linkSite1") + "-" + sqlResultSet.getString("seq2") + "-" + sqlResultSet.getInt("linkSite2") + "," + sqlResultSet.getString("proId1") + "-" + sqlResultSet.getString("proId2") + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", sqlResultSet.getDouble("eValue")) : "-") + "," + entry.qValue + ",\"" + sqlResultSet.getString("mgfTitle") + "\",," + sqlResultSet.getDouble("ms1PearsonCorrelationCoefficient") + "," + sqlResultSet.getInt("candidateNum") + "," + sqlResultSet.getInt("pointCount") + "," + sqlResultSet.getDouble("rSquare") + "," + sqlResultSet.getDouble("slope") + "," + sqlResultSet.getDouble("intercept") + "," + sqlResultSet.getInt("startIdx") + "," + sqlResultSet.getInt("endIdx") + "," + sqlResultSet.getDouble("chainScore1") + "," + sqlResultSet.getInt("chainRank1") + "," + sqlResultSet.getDouble("chainScore2") + "," + sqlResultSet.getInt("chainRank2") + "\n");
+                        }
+                    }
                 } else {
-                    writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," +  re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + "," + String.format(Locale.US, "%.4f", re.qvalue) + ",\"" + re.mgfTitle + "\"\n");
+                    if (sqlResultSet.getString("clType").contentEquals("intra_protein")) {
+                        if (sqlResultSet.getInt("hitType") == 0) {
+                            intraTargetWriter.write(sqlResultSet.getInt("scanNum") + "," + entry.scanId + "," + sqlResultSet.getDouble("precursorMz") + "," + sqlResultSet.getDouble("precursorMass") + "," + sqlResultSet.getDouble("theoMass") + "," + sqlResultSet.getInt("rt") + "," + sqlResultSet.getInt("isotopeCorrectionNum") + "," + sqlResultSet.getInt("precursorCharge") + "," + sqlResultSet.getDouble("score") + "," + sqlResultSet.getDouble("deltaC") + "," + sqlResultSet.getDouble("ppm") + "," + sqlResultSet.getString("seq1") + "-" + sqlResultSet.getInt("linkSite1") + "-" + sqlResultSet.getString("seq2") + "-" + sqlResultSet.getInt("linkSite2") + "," + sqlResultSet.getString("proId1") + "-" + sqlResultSet.getString("proId2") + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", sqlResultSet.getDouble("eValue")) : "-") + "," + entry.qValue + ",\"" + sqlResultSet.getString("mgfTitle") + "\"\n");
+                        } else {
+                            intraDecoyWriter.write(sqlResultSet.getInt("scanNum") + "," + entry.scanId + "," + sqlResultSet.getDouble("precursorMz") + "," + sqlResultSet.getDouble("precursorMass") + "," + sqlResultSet.getDouble("theoMass") + "," + sqlResultSet.getInt("rt") + "," + sqlResultSet.getInt("isotopeCorrectionNum") + "," + sqlResultSet.getInt("precursorCharge") + "," + sqlResultSet.getDouble("score") + "," + sqlResultSet.getDouble("deltaC") + "," + sqlResultSet.getDouble("ppm") + "," + sqlResultSet.getString("seq1") + "-" + sqlResultSet.getInt("linkSite1") + "-" + sqlResultSet.getString("seq2") + "-" + sqlResultSet.getInt("linkSite2") + "," + sqlResultSet.getString("proId1") + "-" + sqlResultSet.getString("proId2") + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", sqlResultSet.getDouble("eValue")) : "-") + "," + entry.qValue + ",\"" + sqlResultSet.getString("mgfTitle") + "\",\n");
+                        }
+                    } else {
+                        if (sqlResultSet.getInt("hitType") == 0) {
+                            interTargetWriter.write(sqlResultSet.getInt("scanNum") + "," + entry.scanId + "," + sqlResultSet.getDouble("precursorMz") + "," + sqlResultSet.getDouble("precursorMass") + "," + sqlResultSet.getDouble("theoMass") + "," + sqlResultSet.getInt("rt") + "," + sqlResultSet.getInt("isotopeCorrectionNum") + "," + sqlResultSet.getInt("precursorCharge") + "," + sqlResultSet.getDouble("score") + "," + sqlResultSet.getDouble("deltaC") + "," + sqlResultSet.getDouble("ppm") + "," + sqlResultSet.getString("seq1") + "-" + sqlResultSet.getInt("linkSite1") + "-" + sqlResultSet.getString("seq2") + "-" + sqlResultSet.getInt("linkSite2") + "," + sqlResultSet.getString("proId1") + "-" + sqlResultSet.getString("proId2") + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", sqlResultSet.getDouble("eValue")) : "-") + "," + entry.qValue + ",\"" + sqlResultSet.getString("mgfTitle") + "\",\n");
+                        } else {
+                            interDecoyWriter.write(sqlResultSet.getInt("scanNum") + "," + entry.scanId + "," + sqlResultSet.getDouble("precursorMz") + "," + sqlResultSet.getDouble("precursorMass") + "," + sqlResultSet.getDouble("theoMass") + "," + sqlResultSet.getInt("rt") + "," + sqlResultSet.getInt("isotopeCorrectionNum") + "," + sqlResultSet.getInt("precursorCharge") + "," + sqlResultSet.getDouble("score") + "," + sqlResultSet.getDouble("deltaC") + "," + sqlResultSet.getDouble("ppm") + "," + sqlResultSet.getString("seq1") + "-" + sqlResultSet.getInt("linkSite1") + "-" + sqlResultSet.getString("seq2") + "-" + sqlResultSet.getInt("linkSite2") + "," + sqlResultSet.getString("proId1") + "-" + sqlResultSet.getString("proId2") + ",\"" + String.join(";", proAnnotationList1) + "\",\"" + String.join(";", proAnnotationList2) + "\"," + (cal_evalue ? String.format(Locale.US, "%E", sqlResultSet.getDouble("eValue")) : "-") + "," + entry.qValue + ",\"" + sqlResultSet.getString("mgfTitle") + "\",\n");
+                        }
+                    }
                 }
-            }
-        }
-        writer.close();
-    }
-
-    private static void saveDecoyResult(List<FinalResultEntry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean is_intra, boolean cal_evalue) throws IOException {
-        BufferedWriter writer;
-        if (is_intra) {
-            writer = new BufferedWriter(new FileWriter(id_file_name + ".intra.decoy.csv"));
-        } else {
-            writer = new BufferedWriter(new FileWriter(id_file_name + ".inter.decoy.csv"));
-        }
-
-        if (dev) {
-            writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,mgf_title,,candidate_num,point_num,r_square,slope,intercept,start_idx,end_idx,chain_score_1,chain_rank_1,chain_score_2,chain_rank_2\n");
-        } else {
-            writer.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,mgf_title\n");
-        }
-        for (FinalResultEntry re : result) {
-            if ((re.hit_type == 1) || (re.hit_type == 2)) {
-                int link_site_1 = re.link_site_1;
-                int link_site_2 = re.link_site_2;
-
-                String annotate_1 = "DECOY";
-                String annotate_2 = "DECOY";
-
-                if (!re.pro_id_1.startsWith("DECOY")) {
-                    String pro_1 = re.pro_id_1.split(";")[0];
-                    annotate_1 = pro_annotate_map.get(pro_1).replace(',', ';');
-                }
-
-                if (!re.pro_id_2.startsWith("DECOY")) {
-                    String pro_2 = re.pro_id_2.split(";")[0];
-                    annotate_2 = pro_annotate_map.get(pro_2).replace(',', ';');
-                }
-
-                if (dev) {
-                    writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + annotate_1 + "\",\"" + annotate_2 + "\"," + (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + ",\"" + re.mgfTitle + "\",," + re.candidate_num + "," + re.point_count + "," + String.format(Locale.US, "%.4f", re.r_square) + "," + String.format(Locale.US, "%.4f", re.slope) + "," + String.format(Locale.US, "%.4f", re.intercept) + "," + re.start_idx + "," + re.end_idx + "," + String.format(Locale.US, "%.4f", re.chain_score_1) + "," + re.chain_rank_1 + "," + String.format(Locale.US, "%.4f", re.chain_score_2) + "," + re.chain_rank_2 + "\n");
-                } else {
-                    writer.write(re.scan_num + "," + re.spectrum_id + "," + re.spectrum_mz + "," + re.spectrum_mass + "," + re.peptide_mass + "," + re.rt + "," + re.C13_correction + "," + re.charge + "," + String.format(Locale.US, "%.4f", re.score) + "," + re.delta_c + "," + String.format(Locale.US, "%.2f", re.ppm) + "," + re.seq_1 + "-" + link_site_1 + "-" + re.seq_2 + "-" + link_site_2 + "," + re.pro_id_1 + "-" + re.pro_id_2 + ",\"" + annotate_1 + "\",\"" + annotate_2 + "\"," +  (cal_evalue ? String.format(Locale.US, "%E", re.e_value) : "-") + ",\"" + re.mgfTitle + "\"\n");
-                }
-            }
-        }
-        writer.close();
-    }
-
-    private static List<List<FinalResultEntry>> pickResult(Set<FinalResultEntry> search_result) {
-        List<List<FinalResultEntry>> picked_result = new LinkedList<>();
-        List<FinalResultEntry> inter_protein_result = new LinkedList<>();
-        List<FinalResultEntry> intra_protein_result = new LinkedList<>();
-
-        for (FinalResultEntry result_entry : search_result) {
-            if (result_entry.cl_type.contentEquals("intra_protein")) {
-                intra_protein_result.add(result_entry);
             } else {
-                inter_protein_result.add(result_entry);
+                throw new NullPointerException(String.format(Locale.US, "Cannot find the record of scan %s.", entry.scanId));
             }
         }
-
-        picked_result.add(intra_protein_result);
-        picked_result.add(inter_protein_result);
-
-        return picked_result;
-    }
-
-    private static int finishedFutureNum(List<Future<FinalResultEntry>> futureList) {
-        int count = 0;
-        for (Future<FinalResultEntry> future : futureList) {
-            if (future.isDone()) {
-                ++count;
-            }
+        intraTargetWriter.close();
+        intraDecoyWriter.close();
+        interTargetWriter.close();
+        interDecoyWriter.close();
+        if (sqlResultSet != null) {
+            sqlResultSet.close();
         }
-        return count;
-    }
-
-    private static boolean hasUnfinishedFuture(List<Future<FinalResultEntry>> futureList) {
-        for (Future<FinalResultEntry> future : futureList) {
-            if (!future.isDone()) {
-                return true;
-            }
-        }
-        return false;
+        sqlStatement.close();
+        sqlConnection.close();
     }
 
     private static void help() {

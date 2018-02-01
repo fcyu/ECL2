@@ -13,10 +13,6 @@ public class ResultEntry{
     private static final double max_score = 20;
 
     public final String spectrum_id;
-    public final float spectrum_mass;
-    public final float spectrum_mz;
-    public final float rt;
-    public final int charge;
 
     private final TreeMap<Integer, ChainResultEntry> binChainMap;
 
@@ -42,15 +38,11 @@ public class ResultEntry{
     private double chain_score_2;
     private int chain_rank_2;
 
-    public ResultEntry(String spectrum_id, float spectrum_mz, float spectrum_mass, float rt, int charge, boolean cal_evalue, TreeMap<Integer, ChainResultEntry> binChainMap) {
+    public ResultEntry(String spectrum_id, boolean cal_evalue, TreeMap<Integer, ChainResultEntry> binChainMap) {
         if (cal_evalue) {
             score_histogram = new int[(int) Math.round(max_score * inverseHistogramBinSize) + 1]; // start from zero score.
         }
         this.spectrum_id = spectrum_id;
-        this.spectrum_mz = spectrum_mz;
-        this.spectrum_mass = spectrum_mass;
-        this.rt = rt;
-        this.charge = charge;
         this.binChainMap = binChainMap;
     }
 
