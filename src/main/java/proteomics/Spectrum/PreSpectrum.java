@@ -78,7 +78,7 @@ public class PreSpectrum {
                 }
             }
             if (Math.abs(temp) > 1e-6) {
-                xcorr_pl.put(i, (float) temp);
+                xcorr_pl.put(i, temp);
             }
         }
 
@@ -109,7 +109,7 @@ public class PreSpectrum {
 
             if (maxWindowIntensity > 0) {
                 double temp1 = 50 / maxWindowIntensity;
-                double temp2 = 0.05f * maxIntensity;
+                double temp2 = 0.05 * maxIntensity;
                 for (int j = 0; j < windowSize; ++j) {
                     int idx = i * windowSize + j;
                     if (idx < plArray.length) {

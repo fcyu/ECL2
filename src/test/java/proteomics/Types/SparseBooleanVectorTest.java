@@ -39,9 +39,9 @@ public class SparseBooleanVectorTest {
     @Test
     public void dot() throws Exception {
         SparseVector other = new SparseVector();
-        other.put(1, 1.5f);
+        other.put(1, 1.5);
         other.put(2, 3);
-        assertEquals(1.5f, vector.dot(other), 0);
+        assertEquals(1.5, vector.dot(other), 0);
     }
 
     @Test

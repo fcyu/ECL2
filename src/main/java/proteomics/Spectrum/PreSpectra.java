@@ -57,7 +57,7 @@ public class PreSpectra {
             }
             int precursor_charge = spectrum.getPrecursorCharge();
             double precursor_mz = spectrum.getPrecursorMZ();
-            float precursor_mass = (float) (precursor_mz * precursor_charge - precursor_charge * 1.00727646688);
+            double precursor_mass = (precursor_mz * precursor_charge - precursor_charge * 1.00727646688);
 
             Map<Double, Double> raw_mz_intensity_map = spectrum.getPeakList();
 

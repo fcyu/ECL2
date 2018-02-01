@@ -4,9 +4,9 @@ import java.util.*;
 
 public class SparseVector {
 
-    private Map<Integer, Float> sparse_vector = new HashMap<>();
+    private Map<Integer, Double> sparse_vector = new HashMap<>();
 
-    SparseVector(Map<Integer, Float> sparse_vector) {
+    SparseVector(Map<Integer, Double> sparse_vector) {
         for (int i : sparse_vector.keySet()) {
             this.sparse_vector.put(i, sparse_vector.get(i));
         }
@@ -14,7 +14,7 @@ public class SparseVector {
 
     public SparseVector() {}
 
-    public void add(int i, float v) {
+    public void add(int i, double v) {
         if (Math.abs(v) > 1e-6) {
             if (sparse_vector.containsKey(i)) {
                 sparse_vector.put(i, sparse_vector.get(i) + v);
@@ -24,13 +24,13 @@ public class SparseVector {
         }
     }
 
-    public void put(int i, float v) {
+    public void put(int i, double v) {
         if (Math.abs(v) > 1e-6) {
             sparse_vector.put(i, v);
         }
     }
 
-    public float get(int i) {
+    public double get(int i) {
         if (sparse_vector.containsKey(i)) {
             return sparse_vector.get(i);
         } else {
@@ -42,21 +42,21 @@ public class SparseVector {
         return sparse_vector.keySet();
     }
 
-    float getMaxValue() {
-        List<Float> intensity_list = new LinkedList<>(sparse_vector.values());
+    double getMaxValue() {
+        List<Double> intensity_list = new LinkedList<>(sparse_vector.values());
         intensity_list.sort(Collections.reverseOrder());
         return intensity_list.get(0);
     }
 
-    float getMinValue() {
-        List<Float> intensity_list = new LinkedList<>(sparse_vector.values());
+    double getMinValue() {
+        List<Double> intensity_list = new LinkedList<>(sparse_vector.values());
         Collections.sort(intensity_list);
         return intensity_list.get(0);
     }
 
     double norm2square() {
-        float output = 0;
-        for (float v : sparse_vector.values()) {
+        double output = 0;
+        for (double v : sparse_vector.values()) {
             output += v * v;
         }
         return output;
@@ -64,7 +64,7 @@ public class SparseVector {
 
     double dot(SparseVector other) {
         double output = 0;
-        Map<Integer, Float> other_vector = other.sparse_vector;
+        Map<Integer, Double> other_vector = other.sparse_vector;
         Set<Integer> intersectedKeys = new HashSet<>(sparse_vector.keySet());
         intersectedKeys.retainAll(other_vector.keySet());
         for (int i : intersectedKeys) {
@@ -73,7 +73,7 @@ public class SparseVector {
         return output;
     }
 
-    Map<Integer, Float> getVectorMap() {
+    Map<Integer, Double> getVectorMap() {
         return sparse_vector;
     }
 

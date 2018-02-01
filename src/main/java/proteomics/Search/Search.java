@@ -12,7 +12,7 @@ import java.util.*;
 
 public class Search {
 
-    public final float ms1_tolerance;
+    public final double ms1_tolerance;
     public final int ms1_tolerance_unit;
     private final Map<String, ChainEntry> chain_entry_map;
     private final Map<Character, Float> fix_mod_map;
@@ -20,7 +20,7 @@ public class Search {
     private final TreeMap<Integer, Set<String>> bin_seq_map;
     private final BuildIndex build_index_obj;
     private final int[] C13_correction_range;
-    final float single_chain_t;
+    final double single_chain_t;
     private final boolean cal_evalue;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
@@ -30,9 +30,9 @@ public class Search {
         fix_mod_map = build_index_obj.getFixModMap();
         mass_tool_obj = build_index_obj.returnMassTool();
         ms1_tolerance_unit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
-        ms1_tolerance = Float.valueOf(parameter_map.get("ms1_tolerance"));
+        ms1_tolerance = Double.valueOf(parameter_map.get("ms1_tolerance"));
         bin_seq_map = build_index_obj.getMassBinSeqMap();
-        single_chain_t = Float.valueOf(parameter_map.get("single_chain_t"));
+        single_chain_t = Double.valueOf(parameter_map.get("single_chain_t"));
         if (parameter_map.get("cal_evalue").contentEquals("0")) {
             cal_evalue = false;
         } else {
@@ -56,8 +56,8 @@ public class Search {
         }
 
         // set MS1 tolerance for further usage.
-        float leftMs1Tol = ms1_tolerance;
-        float rightMs1Tol = ms1_tolerance;
+        double leftMs1Tol = ms1_tolerance;
+        double rightMs1Tol = ms1_tolerance;
         if (ms1_tolerance_unit == 1) {
             leftMs1Tol = spectrumEntry.precursor_mass - (spectrumEntry.precursor_mass / (1 + ms1_tolerance * 1e-6f));
             rightMs1Tol = (spectrumEntry.precursor_mass / (1 - ms1_tolerance * 1e-6f)) - spectrumEntry.precursor_mass;
@@ -78,8 +78,8 @@ public class Search {
                 break;
             }
 
-            float left_mass_2;
-            float right_mass_2;
+            double left_mass_2;
+            double right_mass_2;
             int left_idx_2;
             int right_idx_2;
             NavigableMap<Integer, Set<String>> sub_map = new TreeMap<>();

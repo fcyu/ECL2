@@ -16,34 +16,34 @@ public class SparseVectorTest {
 
     @Before
     public void setUp() throws Exception {
-        Map<Integer, Float> temp = new HashMap<>();
-        temp.put(1, 0.5f);
-        temp.put(3, 1.2f);
-        temp.put(11, 3.2f);
+        Map<Integer, Double> temp = new HashMap<>();
+        temp.put(1, 0.5);
+        temp.put(3, 1.2);
+        temp.put(11, 3.2);
         vector = new SparseVector(temp);
     }
 
     @Test
     public void add() throws Exception {
-        vector.add(1, 2.1f);
-        vector.add(2, 3f);
-        assertEquals(2.6f, vector.get(1), 0);
-        assertEquals(3f, vector.get(2), 0);
+        vector.add(1, 2.1);
+        vector.add(2, 3);
+        assertEquals(2.6, vector.get(1), 0);
+        assertEquals(3, vector.get(2), 0);
     }
 
     @Test
     public void put() throws Exception {
-        vector.put(1, 2.1f);
-        vector.put(2, 3f);
-        assertEquals(2.1f, vector.get(1), 0);
-        assertEquals(3f, vector.get(2), 0);
+        vector.put(1, 2.1);
+        vector.put(2, 3);
+        assertEquals(2.1, vector.get(1), 0);
+        assertEquals(3, vector.get(2), 0);
     }
 
     @Test
     public void get() throws Exception {
-        assertEquals(0.5f, vector.get(1), 0);
-        assertEquals(1.2f, vector.get(3), 0);
-        assertEquals(3.2f, vector.get(11), 0);
+        assertEquals(0.5, vector.get(1), 0);
+        assertEquals(1.2, vector.get(3), 0);
+        assertEquals(3.2, vector.get(11), 0);
     }
 
     @Test
@@ -58,17 +58,17 @@ public class SparseVectorTest {
 
     @Test
     public void getMaxValue() throws Exception {
-        assertEquals(3.2f, vector.getMaxValue(), 0);
+        assertEquals(3.2, vector.getMaxValue(), 0);
     }
 
     @Test
     public void getMinValue() throws Exception {
-        assertEquals(0.5f, vector.getMinValue(), 0);
+        assertEquals(0.5, vector.getMinValue(), 0);
     }
 
     @Test
     public void norm2square() throws Exception {
-        assertEquals(11.93f, vector.norm2square(), 0);
+        assertEquals(11.93, vector.norm2square(), 0);
     }
 
     @Test
@@ -83,10 +83,10 @@ public class SparseVectorTest {
 
     @Test
     public void getVectorMap() throws Exception {
-        Map<Integer, Float> ground_truth = new HashMap<>();
-        ground_truth.put(1, 0.5f);
-        ground_truth.put(3, 1.2f);
-        ground_truth.put(11, 3.2f);
+        Map<Integer, Double> ground_truth = new HashMap<>();
+        ground_truth.put(1, 0.5);
+        ground_truth.put(3, 1.2);
+        ground_truth.put(11, 3.2);
         assertEquals(ground_truth, vector.getVectorMap());
     }
 

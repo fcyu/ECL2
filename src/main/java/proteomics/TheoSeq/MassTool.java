@@ -14,41 +14,41 @@ public class MassTool {
 
     public static final double H2O = 18.010564684;
 
-    private final Map<Character, Float> mass_table = new HashMap<>(25, 1);
+    private final Map<Character, Double> mass_table = new HashMap<>(25, 1);
     private final int missed_cleavage;
     private final String cut_site;
     private final String protect_site;
     private final double inverseMzBinSize;
     private final double one_minus_bin_offset;
 
-    public MassTool(int missed_cleavage, Map<Character, Float> fix_mod_map, String cut_site, String protect_site, float mz_bin_size, float one_minus_bin_offset) {
+    public MassTool(int missed_cleavage, Map<Character, Double> fix_mod_map, String cut_site, String protect_site, double mz_bin_size, double one_minus_bin_offset) {
         inverseMzBinSize = 1 / mz_bin_size;
         this.missed_cleavage = missed_cleavage;
         this.cut_site = cut_site;
         this.protect_site = protect_site;
         this.one_minus_bin_offset = one_minus_bin_offset;
-        mass_table.put('G', 57.021464f + fix_mod_map.get('G'));
-        mass_table.put('A', 71.037114f + fix_mod_map.get('A'));
-        mass_table.put('S', 87.032028f + fix_mod_map.get('S'));
-        mass_table.put('P', 97.052764f + fix_mod_map.get('P'));
-        mass_table.put('V', 99.068414f + fix_mod_map.get('V'));
-        mass_table.put('T', 101.047678f + fix_mod_map.get('I'));
-        mass_table.put('C', 103.009184f + fix_mod_map.get('C'));
-        mass_table.put('I', 113.084064f + fix_mod_map.get('I'));
-        mass_table.put('L', 113.084064f + fix_mod_map.get('L'));
-        mass_table.put('N', 114.042927f + fix_mod_map.get('N'));
-        mass_table.put('D', 115.026943f + fix_mod_map.get('D'));
-        mass_table.put('Q', 128.058578f + fix_mod_map.get('Q'));
-        mass_table.put('K', 128.094963f + fix_mod_map.get('K'));
-        mass_table.put('E', 129.042593f + fix_mod_map.get('E'));
-        mass_table.put('M', 131.040485f + fix_mod_map.get('M'));
-        mass_table.put('H', 137.058912f + fix_mod_map.get('H'));
-        mass_table.put('F', 147.068414f + fix_mod_map.get('F'));
-        mass_table.put('R', 156.101111f + fix_mod_map.get('R'));
-        mass_table.put('Y', 163.063329f + fix_mod_map.get('Y'));
-        mass_table.put('W', 186.079313f + fix_mod_map.get('W'));
-        mass_table.put('U', 150.953636f + fix_mod_map.get('U'));
-        mass_table.put('O', 132.08988f + fix_mod_map.get('O'));
+        mass_table.put('G', 57.021464 + fix_mod_map.get('G'));
+        mass_table.put('A', 71.037114 + fix_mod_map.get('A'));
+        mass_table.put('S', 87.032028 + fix_mod_map.get('S'));
+        mass_table.put('P', 97.052764 + fix_mod_map.get('P'));
+        mass_table.put('V', 99.068414 + fix_mod_map.get('V'));
+        mass_table.put('T', 101.047678 + fix_mod_map.get('I'));
+        mass_table.put('C', 103.009184 + fix_mod_map.get('C'));
+        mass_table.put('I', 113.084064 + fix_mod_map.get('I'));
+        mass_table.put('L', 113.084064 + fix_mod_map.get('L'));
+        mass_table.put('N', 114.042927 + fix_mod_map.get('N'));
+        mass_table.put('D', 115.026943 + fix_mod_map.get('D'));
+        mass_table.put('Q', 128.058578 + fix_mod_map.get('Q'));
+        mass_table.put('K', 128.094963 + fix_mod_map.get('K'));
+        mass_table.put('E', 129.042593 + fix_mod_map.get('E'));
+        mass_table.put('M', 131.040485 + fix_mod_map.get('M'));
+        mass_table.put('H', 137.058912 + fix_mod_map.get('H'));
+        mass_table.put('F', 147.068414 + fix_mod_map.get('F'));
+        mass_table.put('R', 156.101111 + fix_mod_map.get('R'));
+        mass_table.put('Y', 163.063329 + fix_mod_map.get('Y'));
+        mass_table.put('W', 186.079313 + fix_mod_map.get('W'));
+        mass_table.put('U', 150.953636 + fix_mod_map.get('U'));
+        mass_table.put('O', 132.08988 + fix_mod_map.get('O'));
         mass_table.put('n', fix_mod_map.get('n'));
         mass_table.put('c', fix_mod_map.get('c'));
     }
@@ -57,19 +57,19 @@ public class MassTool {
         return (int) (mz * inverseMzBinSize + one_minus_bin_offset);
     }
 
-    public float calResidueMass(String seq) { // n and c are also AA.
+    public double calResidueMass(String seq) { // n and c are also AA.
         double total_mass = 0;
         Matcher matcher = mod_aa_pattern.matcher(seq);
         while (matcher.find()) {
             char aa = matcher.group(1).charAt(0);
-            float delta_mass = 0;
+            double delta_mass = 0;
             if (matcher.group(3) != null) {
-                delta_mass = Float.valueOf(matcher.group(3));
+                delta_mass = Double.valueOf(matcher.group(3));
             }
             total_mass += mass_table.get(aa) + delta_mass;
         }
 
-        return (float) total_mass;
+        return total_mass;
     }
 
     public Set<String> buildChainSet(String pro_seq, short linker_type) {
@@ -106,11 +106,11 @@ public class MassTool {
         return chain_seq_set;
     }
 
-    public Map<Character, Float> getMassTable() {
+    public Map<Character, Double> getMassTable() {
         return mass_table;
     }
 
-    public double generateTheoFragmentAndCalXCorr(String seq, short linkSite, float additional_mass, int precursor_charge, SparseVector xcorrPL) {
+    public double generateTheoFragmentAndCalXCorr(String seq, short linkSite, double additional_mass, int precursor_charge, SparseVector xcorrPL) {
         linkSite = (short) Math.max(1, linkSite);
 
         int localMaxCharge = Math.min(max_charge, Math.max(precursor_charge - 1, 1));
@@ -182,9 +182,9 @@ public class MassTool {
         List<AA> temp = new LinkedList<>();
         while (matcher.find()) {
             char aa = matcher.group(1).charAt(0);
-            float delta_mass = 0;
+            double delta_mass = 0;
             if (matcher.group(3) != null) {
-                delta_mass = Float.valueOf(matcher.group(3));
+                delta_mass = Double.valueOf(matcher.group(3));
             }
             temp.add(new AA(aa, delta_mass));
         }

@@ -5,10 +5,10 @@ import java.util.Locale;
 public class AA {
 
     public final char aa;
-    public final float delta_mass;
+    public final double delta_mass;
     private final int hashCode;
 
-    public AA(char aa, float delta_mass) {
+    public AA(char aa, double delta_mass) {
         this.aa = aa;
         this.delta_mass = delta_mass;
         String toString;

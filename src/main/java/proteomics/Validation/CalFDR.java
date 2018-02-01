@@ -87,13 +87,13 @@ public class CalFDR {
                 fuse_count += fuse_count_vector[idx_2];
             }
 
-            float fdr;
+            double fdr;
             if (target_count == 0) {
                 fdr = 0;
             } else if (fuse_count < decoy_count) {
                 fdr = 0;
             } else {
-                fdr = (float) (fuse_count - decoy_count) / (float) target_count;
+                fdr = (double) (fuse_count - decoy_count) / (double) target_count;
             }
 
             fdr = Math.min(fdr, 1); // Adjust those fdrs that are larger than 1
@@ -101,11 +101,11 @@ public class CalFDR {
         }
 
         // Convert FDR to qvalue
-        float last_q_value = fdr_array[0];
+        double last_q_value = fdr_array[0];
         qvalue_array[0] = last_q_value;
 
         for (int idx_1 = 1; idx_1 < array_length; ++idx_1) {
-            float q_value = fdr_array[idx_1];
+            double q_value = fdr_array[idx_1];
             if (q_value > last_q_value) {
                 qvalue_array[idx_1] = last_q_value;
             } else {

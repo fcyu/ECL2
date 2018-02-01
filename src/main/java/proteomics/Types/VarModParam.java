@@ -3,11 +3,11 @@ package proteomics.Types;
 
 public class VarModParam {
 
-    public final float modMass;
+    public final double modMass;
     public final char aa;
     private final int hashCode;
 
-    public VarModParam(float modMass, char aa) {
+    public VarModParam(double modMass, char aa) {
         this.modMass = modMass;
         this.aa = aa;
         String toString = modMass + "@" + aa;

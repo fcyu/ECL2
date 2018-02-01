@@ -15,14 +15,13 @@ import java.util.*;
 public class CalEValue {
 
     private static final Logger logger = LoggerFactory.getLogger(CalEValue.class);
-    private static final float maxTolerance = 20;
-    private static final float toleranceStep = 1;
+    private static final double maxTolerance = 20;
+    private static final double toleranceStep = 1;
 
     static void calEValue(int scan_num, ResultEntry result_entry, BuildIndex buildIndexObj, TreeMap<Integer, List<Double>> binScoresMap, float linker_mass, float originalTolerance, SparseVector xcorrPL, double singleChainT) throws IOException {
         int gap_num = ECL2.score_point_t - result_entry.getScoreCount();
-        float tolerance = originalTolerance;
-        float massWithoutLinker = result_entry.spectrum_mass - linker_mass;
-        int maxBinIdx = buildIndexObj.massToBin(massWithoutLinker * 0.5f);
+        double tolerance = originalTolerance;
+        int maxBinIdx = buildIndexObj.massToBin(massWithoutLinker * 0.5);
         while (gap_num > 0 && tolerance <= maxTolerance) {
             gap_num = generateRandomRandomScores(gap_num, tolerance, toleranceStep, binScoresMap, result_entry.spectrum_mass, massWithoutLinker, result_entry.charge, xcorrPL, buildIndexObj, buildIndexObj.getMassBinSeqMap(), buildIndexObj.getSeqEntryMap(), buildIndexObj.returnMassTool(), result_entry, maxBinIdx, singleChainT);
             tolerance += toleranceStep;
@@ -172,15 +171,15 @@ public class CalEValue {
             logger.debug("Estimating E-value failed. Scan: {}, mass: {}, slope: {}, intercept: {}, R square: {}, point num: {}.",scan_num, result_entry.spectrum_mass, optimal_slope, optimal_intercept, max_r_square, result_entry.getScoreCount());
         } else {
             result_entry.setEValue(Math.exp((optimal_slope * Math.round(result_entry.getScore() * inverseHistogramBinSize) + optimal_intercept) + Math.log((double) result_entry.getCandidateNum() / (double) result_entry.getScoreCount()))); // double point precision limitation.
-            result_entry.setEValueDetails((float) max_r_square, (float) optimal_slope, (float) optimal_intercept, optimal_start_idx, null_end_idx);
+            result_entry.setEValueDetails(max_r_square, optimal_slope, optimal_intercept, optimal_start_idx, null_end_idx);
         }
 
         if (ECL2.debug) {
             BufferedWriter writer = new BufferedWriter(new FileWriter(scan_num + ".evalue.csv"));
-            writer.write(String.format(Locale.US, "histogram,survival,ln(survival),slope=%.4f,intercept=%.4f,rsquare=%.4f,start=%d,end=%d\n", optimal_slope, optimal_intercept, max_r_square, optimal_start_idx, null_end_idx));
+            writer.write(String.format(Locale.US, "histogram,survival,ln(survival),slope=%f,intercept=%f,rsquare=%f,start=%d,end=%d\n", optimal_slope, optimal_intercept, max_r_square, optimal_start_idx, null_end_idx));
             for (int i = 0; i <= max_nonzero_idx; ++i) {
                 if (i < ln_survival_count_array.length) {
-                    writer.write(String.format(Locale.US, "%d,%d,%.4f\n", score_histogram[i], survival_count_array[i], ln_survival_count_array[i]));
+                    writer.write(String.format(Locale.US, "%d,%d,%f\n", score_histogram[i], survival_count_array[i], ln_survival_count_array[i]));
                 } else {
                     writer.write(String.format(Locale.US, "%d,%d\n", score_histogram[i], survival_count_array[i]));
                 }
@@ -189,7 +188,7 @@ public class CalEValue {
         }
     }
 
-    private static int generateRandomRandomScores(int gap_num, float tolerance, float toleranceStep, TreeMap<Integer, List<Double>> binScoresMap, float precursorMass, float massWithoutLinker, int precursorCharge, SparseVector xcorrPL, BuildIndex buildIndex, TreeMap<Integer, Set<String>> binSequencesMap, Map<String, ChainEntry> seqEntryMap, MassTool massTool, ResultEntry resultEntry, int maxBinIdx, double singleChainT) {
+    private static int generateRandomRandomScores(int gap_num, double tolerance, double toleranceStep, TreeMap<Integer, List<Double>> binScoresMap, double precursorMass, double massWithoutLinker, int precursorCharge, SparseVector xcorrPL, BuildIndex buildIndex, TreeMap<Integer, Set<String>> binSequencesMap, Map<String, ChainEntry> seqEntryMap, MassTool massTool, ResultEntry resultEntry, int maxBinIdx, double singleChainT) {
         for (int binIdx1 : binSequencesMap.keySet()) {
             if (binIdx1 < maxBinIdx) {
                 int leftBinIdx1 = buildIndex.massToBin(massWithoutLinker - tolerance - toleranceStep) - binIdx1;
@@ -217,7 +216,7 @@ public class CalEValue {
         return gap_num;
     }
 
-    private static List<Double> subFunction(int binIdx, TreeMap<Integer, List<Double>> binScoresMap, TreeMap<Integer, Set<String>> binSequencesMap, Map<String, ChainEntry> seqEntryMap, MassTool massTool, float precursorMass, int precursorCharge, SparseVector xcorrPL, double singleChainT) {
+    private static List<Double> subFunction(int binIdx, TreeMap<Integer, List<Double>> binScoresMap, TreeMap<Integer, Set<String>> binSequencesMap, Map<String, ChainEntry> seqEntryMap, MassTool massTool, double precursorMass, int precursorCharge, SparseVector xcorrPL, double singleChainT) {
         List<Double> scoreList = new ArrayList<>();
         if (binScoresMap.containsKey(binIdx)) {
             scoreList = binScoresMap.get(binIdx);

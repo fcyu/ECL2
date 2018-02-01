@@ -31,9 +31,9 @@ public class ResultEntry{
     private long candidate_num;
     private int score_count = 0;
     private double e_value = 9999;
-    private float r_square;
-    private float slope;
-    private float intercept;
+    private double r_square;
+    private double slope;
+    private double intercept;
     private int start_idx;
     private int end_idx;
 
@@ -97,7 +97,7 @@ public class ResultEntry{
         }
     }
 
-    public void setEValueDetails(float r_square, float slope, float intercept, int start_idx, int end_idx) {
+    public void setEValueDetails(double r_square, double slope, double intercept, int start_idx, int end_idx) {
         this.r_square = r_square;
         this.slope = slope;
         this.intercept = intercept;
@@ -152,15 +152,15 @@ public class ResultEntry{
         return score_count;
     }
 
-    public float getRSquare() {
+    public double getRSquare() {
         return r_square;
     }
 
-    public float getSlope() {
+    public double getSlope() {
         return slope;
     }
 
-    public float getIntercept() {
+    public double getIntercept() {
         return intercept;
     }
 

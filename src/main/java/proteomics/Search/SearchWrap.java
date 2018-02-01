@@ -23,7 +23,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
     private final PreSpectrum preSpectrumObj;
     private final Map<String, Set<String>> seqProMap;
     private final boolean cal_evalue;
-    private final float delta_c_t;
+    private final double delta_c_t;
 
     public SearchWrap(Search search_obj, SpectrumEntry spectrumEntry, BuildIndex build_index_obj, MassTool mass_tool_obj, Map<String, Set<String>> seqProMap, boolean cal_evalue, float delta_c_t, boolean flankingPeaks) {
         this.search_obj = search_obj;
@@ -51,7 +51,7 @@ public class SearchWrap implements Callable<FinalResultEntry> {
         if (resultEntry != null) {
             if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) >= delta_c_t) {
                 if (cal_evalue) {
-                    float originalTolerance;
+                    double originalTolerance;
                     if (search_obj.ms1_tolerance_unit == 1) {
                         originalTolerance = resultEntry.spectrum_mass * search_obj.ms1_tolerance * 1e-6f;
                     } else {

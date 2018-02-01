@@ -81,7 +81,7 @@ public class ECL2 {
             cal_evalue = false;
         }
 
-        float delta_c_t = Float.valueOf(parameter_map.get("delta_c_t"));
+        double delta_c_t = Double.valueOf(parameter_map.get("delta_c_t"));
 
         boolean flankingPeaks = true;
         if (parameter_map.get("flanking_peaks").contentEquals("0")) {

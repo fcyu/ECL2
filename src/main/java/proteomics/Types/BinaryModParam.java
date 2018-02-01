@@ -2,12 +2,12 @@ package proteomics.Types;
 
 
 public class BinaryModParam {
-    public final float modMass;
+    public final double modMass;
     public final String aas;
 
     private final int hashCode;
 
-    public BinaryModParam(float modMass, String aas) {
+    public BinaryModParam(double modMass, String aas) {
         this.modMass = modMass;
         this.aas = aas;
         String toString = modMass + "@" + aas + "(binary)";
