@@ -139,7 +139,7 @@ public class ECL2 {
 
         int thread_num = Integer.valueOf(parameter_map.get("thread_num"));
         if (thread_num == 0) {
-            thread_num = 1 + Runtime.getRuntime().availableProcessors();
+            thread_num = 3 + Runtime.getRuntime().availableProcessors();
         }
         if (debug) {
             thread_num = 1;
