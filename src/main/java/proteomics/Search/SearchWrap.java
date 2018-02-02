@@ -111,7 +111,7 @@ public class SearchWrap implements Callable<Boolean> {
         double theo_mass = chain_entry_1.chain_mass + chain_entry_2.chain_mass + build_index_obj.linker_mass;
 
         int C13_Diff_num = getC13Num(precursorMass, theo_mass);
-        precursorMass += C13_Diff_num * 1.00335483;
+        precursorMass += C13_Diff_num * MassTool.C13_DIFF;
         double ppm = (precursorMass - theo_mass) * 1e6 / theo_mass;
 
         Set<String> pro1Set = new TreeSet<>();
@@ -207,8 +207,8 @@ public class SearchWrap implements Callable<Boolean> {
         double min_diff = 10;
         int num = 0;
 
-            double temp = Math.abs(exp_mass + i * 1.00335483 - theo_mass);
         for (int i : isotopeCorrectionArray) {
+            double temp = Math.abs(exp_mass + i * MassTool.C13_DIFF - theo_mass);
             if (temp < min_diff) {
                 min_diff = temp;
                 num = i;

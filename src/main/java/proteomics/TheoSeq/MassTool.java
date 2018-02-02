@@ -10,6 +10,8 @@ public class MassTool {
 
     private static final int max_charge = 6;
     private static final Pattern mod_aa_pattern = Pattern.compile("([A-Znc])(\\[([0-9\\.\\-]+)\\])?");
+    public static final double PROTON = 1.00727646688;
+    public static final double C13_DIFF = 1.00335483;
 
     public static final double H2O = 18.010564684;
 
@@ -128,35 +130,35 @@ public class MassTool {
             bIonMass += mass_table.get(aaArray[i].aa) + aaArray[i].delta_mass;
             if (i < linkSite) {
                 for (double inverseCharge : inverseChargeArray) {
-                    xcorr += xcorrPL.get(mzToBin(bIonMass * inverseCharge + 1.00727646688));
+                    xcorr += xcorrPL.get(mzToBin(bIonMass * inverseCharge + PROTON));
                 }
             } else {
                 for (double inverseCharge : inverseChargeArray) {
-                    xcorr += xcorrPL.get(mzToBin((bIonMass + additional_mass) * inverseCharge + 1.00727646688));
+                    xcorr += xcorrPL.get(mzToBin((bIonMass + additional_mass) * inverseCharge + PROTON));
                 }
             }
         }
         // calculate the last b-ion with C-term modification
         bIonMass +=  mass_table.get(aaArray[aaArray.length - 2].aa) + aaArray[aaArray.length - 2].delta_mass + mass_table.get(aaArray[aaArray.length - 1].aa) + aaArray[aaArray.length - 1].delta_mass;
         for (double inverseCharge : inverseChargeArray) {
-            xcorr += xcorrPL.get(mzToBin((bIonMass + additional_mass) * inverseCharge + 1.00727646688)); // for the fragment containing all amino acids, the additional mass is always included.
+            xcorr += xcorrPL.get(mzToBin((bIonMass + additional_mass) * inverseCharge + PROTON)); // for the fragment containing all amino acids, the additional mass is always included.
         }
 
         // traverse the sequence with reversed order to get y-ion
         // the whole sequence
         double yIonMass = bIonMass + H2O;
         for (double inverseCharge : inverseChargeArray) {
-            xcorr += xcorrPL.get(mzToBin((yIonMass + additional_mass) * inverseCharge + 1.00727646688)); // for the fragment containing all amino acids, the additional mass is always included.
+            xcorr += xcorrPL.get(mzToBin((yIonMass + additional_mass) * inverseCharge + PROTON)); // for the fragment containing all amino acids, the additional mass is always included.
         }
         // delete the first amino acid and N-term modification
         yIonMass -= mass_table.get(aaArray[0].aa) + aaArray[0].delta_mass + mass_table.get(aaArray[1].aa) + aaArray[1].delta_mass;
         if (1 >= linkSite) {
             for (double inverseCharge : inverseChargeArray) {
-                xcorr += xcorrPL.get(mzToBin(yIonMass * inverseCharge + 1.00727646688));
+                xcorr += xcorrPL.get(mzToBin(yIonMass * inverseCharge + PROTON));
             }
         } else {
             for (double inverseCharge : inverseChargeArray) {
-                xcorr += xcorrPL.get(mzToBin((yIonMass + additional_mass) * inverseCharge + 1.00727646688));
+                xcorr += xcorrPL.get(mzToBin((yIonMass + additional_mass) * inverseCharge + PROTON));
             }
         }
         // rest of the sequence
@@ -164,11 +166,11 @@ public class MassTool {
             yIonMass -= mass_table.get(aaArray[i].aa) + aaArray[i].delta_mass;
             if (i >= linkSite) { // caution: here, it is different from b-ion
                 for (double inverseCharge : inverseChargeArray) {
-                    xcorr += xcorrPL.get(mzToBin(yIonMass * inverseCharge + 1.00727646688));
+                    xcorr += xcorrPL.get(mzToBin(yIonMass * inverseCharge + PROTON));
                 }
             } else {
                 for (double inverseCharge : inverseChargeArray) {
-                    xcorr += xcorrPL.get(mzToBin((yIonMass + additional_mass) * inverseCharge + 1.00727646688));
+                    xcorr += xcorrPL.get(mzToBin((yIonMass + additional_mass) * inverseCharge + PROTON));
                 }
             }
         }

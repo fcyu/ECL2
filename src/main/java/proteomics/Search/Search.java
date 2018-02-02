@@ -46,7 +46,7 @@ public class Search {
     }
 
     ResultEntry doSearch(SparseVector xcorrPL, TreeMap<Integer, List<Double>> binScoresMap, double massWithoutLinker, int precursorCharge, double precursorMass, String scanId) throws IOException {
-        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(massWithoutLinker + C13_correction_range[C13_correction_range.length - 1] * 1.00335483) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
+        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(massWithoutLinker + C13_correction_range[C13_correction_range.length - 1] * MassTool.C13_DIFF) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
         if (max_chain_bin_idx < min_chain_bin_idx) {
@@ -70,7 +70,7 @@ public class Search {
         Set<Integer> checkedBinSet = new HashSet<>(bin_seq_map.size() + 1, 1);
         long candidate_num = 0;
         ResultEntry resultEntry = new ResultEntry(scanId, cal_evalue, binChainMap);
-        int stopIdx = (int) Math.ceil(build_index_obj.massToBin((massWithoutLinker + 1.00335483) * 0.5 + rightMs1Tol));
+        int stopIdx = (int) Math.ceil(build_index_obj.massToBin((massWithoutLinker + MassTool.C13_DIFF) * 0.5 + rightMs1Tol));
         for (int idx_1 : bin_seq_map.keySet()) {
             if (idx_1 > stopIdx) {
                 break;
@@ -84,8 +84,8 @@ public class Search {
 
             // consider C13 correction
             for (int i : C13_correction_range) {
-                left_mass_2 = massWithoutLinker + i * 1.00335483 - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
-                right_mass_2 = massWithoutLinker + i * 1.00335483 - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
+                left_mass_2 = massWithoutLinker + i * MassTool.C13_DIFF - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
+                right_mass_2 = massWithoutLinker + i * MassTool.C13_DIFF - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
                 left_idx_2 = build_index_obj.massToBin(left_mass_2);
                 right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
                 sub_map.putAll(bin_seq_map.subMap(left_idx_2, true, right_idx_2, true));
