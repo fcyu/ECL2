@@ -145,7 +145,7 @@ public class ECL2 {
             thread_num = 1;
         }
         ExecutorService thread_pool = Executors.newFixedThreadPool(thread_num);
-        Search search_obj = new Search(build_index_obj, parameter_map);
+        Search search_obj = new Search(build_index_obj, parameter_map, ms1Tolerance, leftInverseMs1Tolerance, rightInverseMs1Tolerance, ms1ToleranceUnit);
         List<Future<Boolean>> taskList = new LinkedList<>();
         Connection sqlConnection = DriverManager.getConnection(sqlPath);
         Statement sqlStatement = sqlConnection.createStatement();

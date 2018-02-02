@@ -13,6 +13,8 @@ import java.util.*;
 public class Search {
 
     public final double ms1_tolerance;
+    public final double leftInverseMs1Tolerance;
+    public final double rightInverseMs1Tolerance;
     public final int ms1_tolerance_unit;
     private final Map<String, ChainEntry> chain_entry_map;
     private final MassTool mass_tool_obj;
@@ -23,12 +25,14 @@ public class Search {
     private final boolean cal_evalue;
 
     /////////////////////////////////////////public methods////////////////////////////////////////////////////////////
-    public Search(BuildIndex build_index_obj, Map<String, String> parameter_map) {
+    public Search(BuildIndex build_index_obj, Map<String, String> parameter_map, double ms1_tolerance, double leftInverseMs1Tolerance, double rightInverseMs1Tolerance, int ms1ToleranceUnit) {
         this.build_index_obj = build_index_obj;
         chain_entry_map = build_index_obj.getSeqEntryMap();
         mass_tool_obj = build_index_obj.returnMassTool();
-        ms1_tolerance_unit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
-        ms1_tolerance = Double.valueOf(parameter_map.get("ms1_tolerance"));
+        this.ms1_tolerance = ms1_tolerance;
+        this.leftInverseMs1Tolerance = leftInverseMs1Tolerance;
+        this.rightInverseMs1Tolerance = rightInverseMs1Tolerance;
+        this.ms1_tolerance_unit = ms1ToleranceUnit;
         bin_seq_map = build_index_obj.getMassBinSeqMap();
         single_chain_t = Double.valueOf(parameter_map.get("single_chain_t"));
         if (parameter_map.get("cal_evalue").contentEquals("0")) {
@@ -57,8 +61,8 @@ public class Search {
         double leftMs1Tol = ms1_tolerance;
         double rightMs1Tol = ms1_tolerance;
         if (ms1_tolerance_unit == 1) {
-            leftMs1Tol = precursorMass - (precursorMass / (1 + ms1_tolerance * 1e-6));
-            rightMs1Tol = (precursorMass / (1 - ms1_tolerance * 1e-6)) - precursorMass;
+            leftMs1Tol = precursorMass - (precursorMass * leftInverseMs1Tolerance);
+            rightMs1Tol = (precursorMass * rightInverseMs1Tolerance) - precursorMass;
         }
 
         // for debug

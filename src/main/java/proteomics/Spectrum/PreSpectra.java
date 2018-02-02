@@ -25,7 +25,7 @@ public class PreSpectra {
     private static final Pattern scanNumPattern2 = Pattern.compile("scan=([0-9]+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern scanNumPattern3 = Pattern.compile("^[^.]+\\.([0-9]+)\\.[0-9]+\\.[0-9]");
 
-    public PreSpectra(JMzReader spectra_parser, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext, String sqlPath) throws MzXMLParsingException, IOException, SQLException {
+    public PreSpectra(JMzReader spectra_parser, double ms1Tolerance, double leftInverseMs1Tolerance, double rightInverseMs1Tolerance, int ms1ToleranceUnit, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext, String sqlPath) throws MzXMLParsingException, IOException, SQLException, JMzReaderException {
         Set<Integer> debug_scan_num_set = new HashSet<>();
         //  In DEBUG mode, filter out unlisted scan num
         if (ECL2.debug) {
