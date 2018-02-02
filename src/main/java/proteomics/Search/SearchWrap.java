@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static proteomics.ECL2.C13CorrectionRange;
+import static proteomics.ECL2.isotopeCorrectionArray;
 
 public class SearchWrap implements Callable<Boolean> {
 
@@ -207,8 +207,8 @@ public class SearchWrap implements Callable<Boolean> {
         double min_diff = 10;
         int num = 0;
 
-        for (int i : C13CorrectionRange) {
             double temp = Math.abs(exp_mass + i * 1.00335483 - theo_mass);
+        for (int i : isotopeCorrectionArray) {
             if (temp < min_diff) {
                 min_diff = temp;
                 num = i;

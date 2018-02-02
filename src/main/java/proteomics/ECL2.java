@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ECL2 {
 
     public static final int score_point_t = 15000;
-    public static final int[] C13CorrectionRange = new int[]{-2, -1, 0};
+    public static final int[] isotopeCorrectionArray = new int[]{-2, -1, 0}; // do not change it
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
     public static final String version = "2.1.5";
