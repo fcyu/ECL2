@@ -109,7 +109,7 @@ public class PreSpectrum {
 
             if (maxWindowIntensity > 0) {
                 double temp1 = 50 / maxWindowIntensity;
-                double temp2 = 0.05 * maxIntensity;
+                double temp2 = 0.05 * maxIntensity; // caution: Xolik does not have this
                 for (int j = 0; j < windowSize; ++j) {
                     int idx = i * windowSize + j;
                     if (idx < plArray.length) {
