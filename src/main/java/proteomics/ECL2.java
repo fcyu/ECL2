@@ -176,22 +176,61 @@ public class ECL2 {
             int precursorCharge = sqlResultSet.getInt("precursorCharge");
             double massWithoutLinker = sqlResultSet.getDouble("massWithoutLinker");
             double precursorMass = sqlResultSet.getDouble("precursorMass");
-            taskList.add(thread_pool.submit(new SearchWrap(search_obj, build_index_obj, mass_tool_obj, cal_evalue, delta_c_t, flankingPeaks, spectra_parser, lock, scanId, precursorCharge, massWithoutLinker, precursorMass, sqlConnection)));
+            taskList.add(thread_pool.submit(new SearchWrap(search_obj, build_index_obj, mass_tool_obj, cal_evalue, delta_c_t, flankingPeaks, spectra_parser, lock, scanId, precursorCharge, massWithoutLinker, precursorMass, sqlPath)));
         }
         sqlResultSet.close();
         sqlStatement.close();
 
         // check progress every minute, record results,and delete finished tasks.
+        PreparedStatement sqlPreparedStatement = sqlConnection.prepareStatement("REPLACE INTO spectraTable (scanNum, scanId, precursorCharge, precursorMz, precursorMass, rt, massWithoutLinker, mgfTitle, isotopeCorrectionNum, ms1PearsonCorrelationCoefficient, theoMass, score, deltaC, rank, ppm, seq1, linkSite1, proId1, seq2, linkSite2, proId2, clType, hitType, eValue, candidateNum, pointCount, rSquare, slope, intercept, startIdx, endIdx, chainScore1, chainRank1, chainScore2, chainRank2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        sqlConnection.setAutoCommit(false);
         int lastProgress = 0;
         int resultCount = 0;
         int totalCount = taskList.size();
         int count = 0;
         while (count < totalCount) {
             // record search results and delete finished ones.
-            for (Future<Boolean> task : taskList) {
             List<Future<SearchWrap.Entry>> toBeDeleteTaskList = new ArrayList<>(totalCount - count);
+            for (Future<SearchWrap.Entry> task : taskList) {
                 if (task.isDone()) {
-                    if (task.get()) {
+                    if (task.get() != null) {
+                        SearchWrap.Entry entry = task.get();
+                        sqlPreparedStatement.setInt(1, entry.scanNum);
+                        sqlPreparedStatement.setString(2, entry.scanId);
+                        sqlPreparedStatement.setInt(3, entry.precursorCharge);
+                        sqlPreparedStatement.setDouble(4, entry.precursorMz);
+                        sqlPreparedStatement.setDouble(5, entry.precursorMass);
+                        sqlPreparedStatement.setInt(6, entry.rt);
+                        sqlPreparedStatement.setDouble(7, entry.massWithoutLinker);
+                        sqlPreparedStatement.setString(8, entry.mgfTitle);
+                        sqlPreparedStatement.setInt(9, entry.isotopeCorrectionNum);
+                        sqlPreparedStatement.setDouble(10, entry.ms1PearsonCorrelationCoefficient);
+                        sqlPreparedStatement.setDouble(11, entry.theoMass);
+                        sqlPreparedStatement.setDouble(12, entry.score);
+                        sqlPreparedStatement.setDouble(13, entry.delteC);
+                        sqlPreparedStatement.setInt(14, entry.rank);
+                        sqlPreparedStatement.setDouble(15, entry.ppm);
+                        sqlPreparedStatement.setString(16, entry.seq1);
+                        sqlPreparedStatement.setInt(17, entry.linkSite1);
+                        sqlPreparedStatement.setString(18, entry.pro1);
+                        sqlPreparedStatement.setString(19, entry.seq2);
+                        sqlPreparedStatement.setInt(20, entry.linkSite2);
+                        sqlPreparedStatement.setString(21, entry.pro2);
+                        sqlPreparedStatement.setString(22, entry.clType);
+                        sqlPreparedStatement.setInt(23, entry.hitType);
+                        sqlPreparedStatement.setDouble(24, entry.eValue);
+                        sqlPreparedStatement.setLong(25, entry.candidateNum);
+                        sqlPreparedStatement.setInt(26, entry.scoreCount);
+                        sqlPreparedStatement.setDouble(27, entry.rSquare);
+                        sqlPreparedStatement.setDouble(28, entry.slope);
+                        sqlPreparedStatement.setDouble(29, entry.intercept);
+                        sqlPreparedStatement.setInt(30, entry.startIdx);
+                        sqlPreparedStatement.setInt(31, entry.endIdx);
+                        sqlPreparedStatement.setDouble(32, entry.chainScore1);
+                        sqlPreparedStatement.setInt(33, entry.chainRank1);
+                        sqlPreparedStatement.setDouble(34, entry.chainScore2);
+                        sqlPreparedStatement.setInt(35, entry.chainRank2);
+                        sqlPreparedStatement.executeUpdate();
                         ++resultCount;
                     }
                     toBeDeleteTaskList.add(task);
@@ -202,6 +241,8 @@ public class ECL2 {
             count += toBeDeleteTaskList.size();
             taskList.removeAll(toBeDeleteTaskList);
             taskList.trimToSize();
+
+            sqlConnection.commit();
 
             int progress = count * 20 / totalCount;
             if (progress != lastProgress) {
@@ -228,6 +269,8 @@ public class ECL2 {
                 System.err.println("Pool did not terminate");
         }
 
+        sqlConnection.commit();
+        sqlConnection.setAutoCommit(true);
         sqlConnection.close();
         if (lock.isLocked()) {
             lock.unlock();
