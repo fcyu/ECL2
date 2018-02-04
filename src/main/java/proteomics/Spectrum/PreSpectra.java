@@ -28,6 +28,7 @@ public class PreSpectra {
     private static final Pattern scanNumPattern3 = Pattern.compile("^[^.]+\\.([0-9]+)\\.[0-9]+\\.[0-9]");
 
     private Map<Integer, TreeMap<Integer, TreeSet<DevEntry>>> scanDevEntryMap = new HashMap<>();
+    private int usefulSpectraNum = 0;
 
     public PreSpectra(JMzReader spectra_parser, double ms1Tolerance, double leftInverseMs1Tolerance, double rightInverseMs1Tolerance, int ms1ToleranceUnit, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext, String sqlPath) throws MzXMLParsingException, IOException, SQLException, JMzReaderException {
         Set<Integer> debug_scan_num_set = new HashSet<>();
@@ -52,7 +53,6 @@ public class PreSpectra {
 
         PreparedStatement sqlPrepareStatement = sqlConnection.prepareStatement("INSERT INTO spectraTable (scanNum, scanId, precursorCharge, precursorMz, precursorMass, rt, massWithoutLinker, mgfTitle, isotopeCorrectionNum, ms1PearsonCorrelationCoefficient) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         sqlConnection.setAutoCommit(false);
-        int usefulSpectraNum = 0;
 
         Iterator<Spectrum> spectrumIterator = spectra_parser.getSpectrumIterator();
         String parentId = null;
@@ -152,6 +152,10 @@ public class PreSpectra {
 
     public Map<Integer, TreeMap<Integer, TreeSet<DevEntry>>> getScanDevEntryMap() {
         return scanDevEntryMap;
+    }
+
+    public int getUsefulSpectraNum() {
+        return usefulSpectraNum;
     }
 
     private Entry getIsotopeCorrectionNum(double precursorMz, int charge, double inverseCharge, TreeMap<Double, Double> parentPeakList, double ms1Tolerance, double leftInverseMs1Tolerance, double rightInverseMs1Tolerance, int ms1ToleranceUnit, IsotopeDistribution isotopeDistribution, TreeMap<Integer, TreeSet<DevEntry>> chargeDevEntryMap) {

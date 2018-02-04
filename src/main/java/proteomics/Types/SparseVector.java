@@ -43,13 +43,13 @@ public class SparseVector {
     }
 
     double getMaxValue() {
-        List<Double> intensity_list = new LinkedList<>(sparse_vector.values());
+        List<Double> intensity_list = new ArrayList<>(sparse_vector.values());
         intensity_list.sort(Collections.reverseOrder());
         return intensity_list.get(0);
     }
 
     double getMinValue() {
-        List<Double> intensity_list = new LinkedList<>(sparse_vector.values());
+        List<Double> intensity_list = new ArrayList<>(sparse_vector.values());
         Collections.sort(intensity_list);
         return intensity_list.get(0);
     }

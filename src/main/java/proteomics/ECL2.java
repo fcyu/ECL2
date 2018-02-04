@@ -166,7 +166,7 @@ public class ECL2 {
         }
         ExecutorService thread_pool = Executors.newFixedThreadPool(thread_num);
         Search search_obj = new Search(build_index_obj, parameter_map, ms1Tolerance, leftInverseMs1Tolerance, rightInverseMs1Tolerance, ms1ToleranceUnit);
-        List<Future<Boolean>> taskList = new LinkedList<>();
+        ArrayList<Future<SearchWrap.Entry>> taskList = new ArrayList<>(preSpectra.getUsefulSpectraNum() + 10);
         Connection sqlConnection = DriverManager.getConnection(sqlPath);
         Statement sqlStatement = sqlConnection.createStatement();
         ResultSet sqlResultSet = sqlStatement.executeQuery("SELECT scanId, precursorCharge, massWithoutLinker, precursorMass FROM spectraTable");
@@ -188,8 +188,8 @@ public class ECL2 {
         int count = 0;
         while (count < totalCount) {
             // record search results and delete finished ones.
-            List<Future<Boolean>> toBeDeleteTaskList = new LinkedList<>();
             for (Future<Boolean> task : taskList) {
+            List<Future<SearchWrap.Entry>> toBeDeleteTaskList = new ArrayList<>(totalCount - count);
                 if (task.isDone()) {
                     if (task.get()) {
                         ++resultCount;
@@ -201,6 +201,7 @@ public class ECL2 {
             }
             count += toBeDeleteTaskList.size();
             taskList.removeAll(toBeDeleteTaskList);
+            taskList.trimToSize();
 
             int progress = count * 20 / totalCount;
             if (progress != lastProgress) {
@@ -270,12 +271,12 @@ public class ECL2 {
             interTargetWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
             interDecoyWriter.write("scan_num,spectrum_id,spectrum_mz,spectrum_mass,peptide_mass,rt,C13_correction,charge,score,delta_C,ppm,peptide,protein,protein_annotation_1,protein_annotation_2,e_value,q_value,mgf_title,\n");
         }
-        List<CalFDR.Entry> entryList = new LinkedList<>(result.values());
+        List<CalFDR.Entry> entryList = new ArrayList<>(result.values());
         entryList.sort(Comparator.reverseOrder());
         for (CalFDR.Entry entry : entryList) {
             sqlResultSet = sqlStatement.executeQuery(String.format(Locale.US, "SELECT scanNum, precursorMz, precursorMass, rt, isotopeCorrectionNum, ms1PearsonCorrelationCoefficient, precursorCharge, theoMass, score, deltaC, ppm, seq1, linkSite1, seq2, linkSite2, proId1, proId2, eValue, mgfTitle, candidateNum, pointCount, rSquare, slope, intercept, startIdx, endIdx, chainScore1, chainRank1, chainScore2, chainRank2, hitType, clType FROM spectraTable WHERE scanId='%s'", entry.scanId));
             if (sqlResultSet.next()) {
-                List<String> proAnnotationList1 = new LinkedList<>();
+                List<String> proAnnotationList1 = new ArrayList<>();
                 for (String s : sqlResultSet.getString("proId1").split(";")) {
                     if (s.startsWith("DECOY_")) {
                         proAnnotationList1.add("DECOY");
@@ -283,7 +284,7 @@ public class ECL2 {
                         proAnnotationList1.add(pro_annotate_map.get(s));
                     }
                 }
-                List<String> proAnnotationList2 = new LinkedList<>();
+                List<String> proAnnotationList2 = new ArrayList<>();
                 for (String s : sqlResultSet.getString("proId2").split(";")) {
                     if (s.startsWith("DECOY_")) {
                         proAnnotationList2.add("DECOY");
