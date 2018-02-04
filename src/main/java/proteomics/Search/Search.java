@@ -20,7 +20,6 @@ public class Search {
     private final MassTool mass_tool_obj;
     private final TreeMap<Integer, Set<String>> bin_seq_map;
     private final BuildIndex build_index_obj;
-    private final int[] C13_correction_range;
     final double single_chain_t;
     private final boolean cal_evalue;
 
@@ -40,17 +39,10 @@ public class Search {
         } else {
             cal_evalue = true;
         }
-
-        String[] temp = parameter_map.get("C13_correction_range").split(",");
-        C13_correction_range = new int[temp.length];
-        for (int i = 0; i < temp.length; ++i) {
-            C13_correction_range[i] = Integer.valueOf(temp[i].trim());
-        }
-        Arrays.sort(C13_correction_range);
     }
 
     ResultEntry doSearch(SparseVector xcorrPL, TreeMap<Integer, List<Double>> binScoresMap, double massWithoutLinker, int precursorCharge, double precursorMass, String scanId) throws IOException {
-        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(massWithoutLinker + C13_correction_range[C13_correction_range.length - 1] * MassTool.C13_DIFF) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
+        int max_chain_bin_idx = Math.min(build_index_obj.massToBin(massWithoutLinker) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
         if (max_chain_bin_idx < min_chain_bin_idx) {
@@ -80,20 +72,11 @@ public class Search {
                 break;
             }
 
-            double left_mass_2;
-            double right_mass_2;
-            int left_idx_2;
-            int right_idx_2;
-            NavigableMap<Integer, Set<String>> sub_map = new TreeMap<>();
-
-            // consider C13 correction
-            for (int i : C13_correction_range) {
-                left_mass_2 = massWithoutLinker + i * MassTool.C13_DIFF - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
-                right_mass_2 = massWithoutLinker + i * MassTool.C13_DIFF - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
-                left_idx_2 = build_index_obj.massToBin(left_mass_2);
-                right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
-                sub_map.putAll(bin_seq_map.subMap(left_idx_2, true, right_idx_2, true));
-            }
+            double left_mass_2 = massWithoutLinker - build_index_obj.binToRightMass(idx_1) - leftMs1Tol;
+            double right_mass_2 = massWithoutLinker - build_index_obj.binToLeftMass(idx_1) + rightMs1Tol;
+            int left_idx_2 = build_index_obj.massToBin(left_mass_2);
+            int right_idx_2 = build_index_obj.massToBin(right_mass_2) + 1;
+            NavigableMap<Integer, Set<String>> sub_map  = bin_seq_map.subMap(left_idx_2, true, right_idx_2, true);
 
             if (!sub_map.isEmpty()) {
                 if (!checkedBinSet.contains(idx_1)) {

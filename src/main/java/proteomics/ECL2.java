@@ -133,7 +133,27 @@ public class ECL2 {
             System.exit(1);
         }
 
-        new PreSpectra(spectra_parser, build_index_obj, parameter_map, ext, sqlPath);
+        double ms1Tolerance = Double.valueOf(parameter_map.get("ms1_tolerance"));
+        double leftInverseMs1Tolerance = 1 / (1 + ms1Tolerance * 1e-6);
+        double rightInverseMs1Tolerance = 1 / (1 - ms1Tolerance * 1e-6);
+        int ms1ToleranceUnit = Integer.valueOf(parameter_map.get("ms1_tolerance_unit"));
+
+        PreSpectra preSpectra = new PreSpectra(spectra_parser, ms1Tolerance, leftInverseMs1Tolerance, rightInverseMs1Tolerance, ms1ToleranceUnit, build_index_obj, parameter_map, ext, sqlPath);
+
+        if (dev && parameter_map.get("C13_correction").contentEquals("1")) {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("spectrum.dev.csv"));
+            writer.write("scanNum,charge,finalIsotopeCorrectionNum,isotopeCorrectionNum,pearsonCorrelationCoefficient,expMz1,expMz2,expMz3,expInt1,expInt2,expInt3,theoMz1,theoMz2,theoMz3,theoInt1,theoInt2,theoInt3\n");
+            Map<Integer, TreeMap<Integer, TreeSet<PreSpectra.DevEntry>>> scanDevEntryMap = preSpectra.getScanDevEntryMap();
+            for (int scanNum : scanDevEntryMap.keySet()) {
+                TreeMap<Integer, TreeSet<PreSpectra.DevEntry>> chargeDevEntryMap = scanDevEntryMap.get(scanNum);
+                for (int charge : chargeDevEntryMap.keySet()) {
+                    for (PreSpectra.DevEntry devEntry : chargeDevEntryMap.get(charge)) {
+                        writer.write(String.format(Locale.US, "%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", scanNum, charge, devEntry.isotopeCorrectionNum, devEntry.isotopeCorrectionNum, devEntry.pearsonCorrelationCoefficient, devEntry.expMatrix[0][0], devEntry.expMatrix[1][0], devEntry.expMatrix[2][0], devEntry.expMatrix[0][1], devEntry.expMatrix[1][1], devEntry.expMatrix[2][1], devEntry.theoMatrix[0][0], devEntry.theoMatrix[1][0], devEntry.theoMatrix[2][0], devEntry.theoMatrix[0][1], devEntry.theoMatrix[1][1], devEntry.theoMatrix[2][1]));
+                    }
+                }
+            }
+            writer.close();
+        }
 
         logger.info("Start searching...");
 
