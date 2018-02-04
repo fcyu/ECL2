@@ -48,6 +48,9 @@ public class CalFDR {
         sqlConnection.close();
 
         final int array_length = 1 + (int) Math.ceil((max_score - min_score) * inversePrecision);
+        if (array_length <= 0) { // there is no hit
+            return scanIdEntryMap;
+        }
         double[] decoy_count_vector = new double[array_length];
         double[] target_count_vector = new double[array_length];
         double[] fuse_count_vector = new double[array_length];
