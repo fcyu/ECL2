@@ -41,6 +41,7 @@ public class BuildIndex {
         double one_minus_bin_offset = 1 - Double.valueOf(parameter_map.get("mz_bin_offset"));
         ms1_bin_size = Double.valueOf(parameter_map.get("ms1_bin_size"));
         inverseMs1BinSize = 1 / ms1_bin_size;
+        boolean cutNTermM = parameter_map.get("cut_nterm_methionine").contentEquals("1");
 
         // Read fix modification
         fix_mod_map.put('G', Double.valueOf(parameter_map.get("G")));
@@ -106,7 +107,7 @@ public class BuildIndex {
 
         // generate seq_pro_map
         Map<String, boolean[]> seq_term_map = new HashMap<>();
-        seqProMap = buildSeqProMap(pro_seq_map, seq_term_map, min_chain_length, max_chain_length);
+        seqProMap = buildSeqProMap(pro_seq_map, seq_term_map, min_chain_length, max_chain_length, cutNTermM);
 
         // read var mods
         Set<VarModParam> varModParamSet = new HashSet<>(30, 1);
@@ -222,12 +223,15 @@ public class BuildIndex {
         return (int) Math.floor(mass * inverseMs1BinSize);
     }
 
-    private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, Map<String, boolean[]> seq_term_map, int min_chain_length, int max_chain_length) {
+    private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, Map<String, boolean[]> seq_term_map, int min_chain_length, int max_chain_length, boolean cutNTermM) {
         Map<String, Set<String>> seq_pro_map = new HashMap<>(pro_seq_map.size() * 150, 1);
         Set<String> for_check_duplicate = new HashSet<>();
         for (String pro_id : pro_seq_map.keySet()) {
             String pro_seq = pro_seq_map.get(pro_id);
             Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq, linker_type);
+            if (cutNTermM && pro_seq.startsWith("M")) {
+                seq_set.addAll(mass_tool_obj.buildChainSet(pro_seq.substring(1), linker_type));
+            }
             for (String target_seq : seq_set) {
                 if ((target_seq.length() >= min_chain_length) && (target_seq.length() <= max_chain_length) && !target_seq.contains("B") && !target_seq.contains("J") && !target_seq.contains("X") && !target_seq.contains("Z")) {
                     if (!for_check_duplicate.contains(target_seq.replace('L', 'I'))) {
@@ -237,6 +241,9 @@ public class BuildIndex {
                         boolean n_term = false;
                         boolean c_term = false;
                         if (pro_seq.startsWith(target_seq.substring(1, target_seq.length() - 1))) {
+                            n_term = true;
+                        }
+                        if (cutNTermM && pro_seq.startsWith("M") && pro_seq.substring(1).startsWith(target_seq.substring(1, target_seq.length() - 1))) { // consider the first "M" being cut situation.
                             n_term = true;
                         }
                         if (pro_seq.endsWith(target_seq.substring(1, target_seq.length() - 1))) {
@@ -262,6 +269,9 @@ public class BuildIndex {
             String pro_seq = pro_seq_map.get(pro_id);
             String decoy_pro_seq = (new StringBuilder(pro_seq)).reverse().toString();
             Set<String> decoy_seq_set = mass_tool_obj.buildChainSet(decoy_pro_seq, linker_type);
+            if (cutNTermM && pro_seq.startsWith("M")) {
+                decoy_seq_set.addAll(mass_tool_obj.buildChainSet((new StringBuilder(pro_seq.substring(1))).reverse().toString(), linker_type));
+            }
             for (String decoy_seq : decoy_seq_set) {
                 if ((decoy_seq.length() >= min_chain_length) && (decoy_seq.length() <= max_chain_length) && !decoy_seq.contains("B") && !decoy_seq.contains("J") && !decoy_seq.contains("X") && !decoy_seq.contains("Z")) {
                     if (!for_check_duplicate.contains(decoy_seq.replace('L', 'I'))) {
@@ -269,7 +279,7 @@ public class BuildIndex {
 
                         boolean n_term = false;
                         boolean c_term = false;
-                        if (decoy_pro_seq.startsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
+                        if (decoy_pro_seq.startsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) { // here, we don't consider the first "M" being cut situation.
                             n_term = true;
                         }
                         if (decoy_pro_seq.endsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
