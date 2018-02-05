@@ -60,6 +60,11 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
         }
 
         SparseVector xcorrPL = preSpectrumObj.preSpectrum(rawPLMap, precursorMass, scanId);
+
+        if (xcorrPL == null) {
+            return null;
+        }
+
         if (ECL2.debug) {
             BufferedWriter writer = new BufferedWriter(new FileWriter(scanId + ".xcorr.spectrum.csv"));
             writer.write("bin_idx,intensity\n");

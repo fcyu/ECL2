@@ -30,6 +30,10 @@ public class PreSpectrum {
             }
         }
 
+        if (sqrt_pl_map.isEmpty()) {
+            return null;
+        }
+
         // digitize the spectrum
         double[] pl_array = digitizeSpec(sqrt_pl_map);
 
