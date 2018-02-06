@@ -58,94 +58,98 @@ public class PreSpectra {
         Iterator<Spectrum> spectrumIterator = spectra_parser.getSpectrumIterator();
         String parentId = null;
         while (spectrumIterator.hasNext()) {
-            Spectrum spectrum = spectrumIterator.next();
+            try {
+                Spectrum spectrum = spectrumIterator.next();
 
-            if (ECL2.debug && !debug_scan_num_set.contains(Integer.valueOf(spectrum.getId()))) {
-                continue;
-            }
-
-            if (spectrum.getMsLevel() == 1) {
-                parentId = spectrum.getId();
-                continue;
-            }
-
-            if (spectrum.getPrecursorCharge() == null) {
-                logger.warn("Scan {} doesn't have charge information. Skip.", spectrum.getId());
-                continue;
-            }
-            int precursor_charge = spectrum.getPrecursorCharge();
-            double precursor_mz = spectrum.getPrecursorMZ();
-            double precursor_mass = (precursor_mz * precursor_charge - precursor_charge * MassTool.PROTON);
-
-            Map<Double, Double> raw_mz_intensity_map = spectrum.getPeakList();
-
-            if (raw_mz_intensity_map.size() < 5) {
-                continue;
-            }
-
-            if (ECL2.debug) {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".raw.spectrum.csv"));
-                writer.write("mz,intensity\n");
-                for (double mz : raw_mz_intensity_map.keySet()) {
-                    if (Math.abs(raw_mz_intensity_map.get(mz)) > 1e-6) {
-                        writer.write(mz + "," + raw_mz_intensity_map.get(mz) + "\n");
-                    }
+                if (ECL2.debug && !debug_scan_num_set.contains(Integer.valueOf(spectrum.getId()))) {
+                    continue;
                 }
-                writer.close();
-            }
 
-            int scan_num = -1;
-            String mgfTitle = "";
-            int rt = -1;
-            int isotopeCorrectionNum = 0;
-            double pearsonCorrelationCoefficient = -1;
-            TreeMap<Integer, TreeSet<DevEntry>> chargeDevEntryMap = new TreeMap<>();
-            if (ext.toLowerCase().contentEquals("mgf")) {
-                mgfTitle = ((Ms2Query) spectrum).getTitle();
-                Matcher matcher1 = scanNumPattern1.matcher(mgfTitle);
-                Matcher matcher2 = scanNumPattern2.matcher(mgfTitle);
-                Matcher matcher3 = scanNumPattern3.matcher(mgfTitle);
-                if (matcher1.find()) {
-                    scan_num = Integer.valueOf(matcher1.group(1));
-                } else if (matcher2.find()) {
-                    scan_num = Integer.valueOf(matcher2.group(1));
-                } else if (matcher3.find()) {
-                    scan_num = Integer.valueOf(matcher3.group(1));
+                if (spectrum.getMsLevel() == 1) {
+                    parentId = spectrum.getId();
+                    continue;
+                }
+
+                if (spectrum.getPrecursorCharge() == null) {
+                    logger.warn("Scan {} doesn't have charge information. Skip.", spectrum.getId());
+                    continue;
+                }
+                int precursor_charge = spectrum.getPrecursorCharge();
+                double precursor_mz = spectrum.getPrecursorMZ();
+                double precursor_mass = (precursor_mz * precursor_charge - precursor_charge * MassTool.PROTON);
+
+                Map<Double, Double> raw_mz_intensity_map = spectrum.getPeakList();
+
+                if (raw_mz_intensity_map.size() < 5) {
+                    continue;
+                }
+
+                if (ECL2.debug) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(Integer.valueOf(spectrum.getId()) + ".raw.spectrum.csv"));
+                    writer.write("mz,intensity\n");
+                    for (double mz : raw_mz_intensity_map.keySet()) {
+                        if (Math.abs(raw_mz_intensity_map.get(mz)) > 1e-6) {
+                            writer.write(mz + "," + raw_mz_intensity_map.get(mz) + "\n");
+                        }
+                    }
+                    writer.close();
+                }
+
+                int scan_num = -1;
+                String mgfTitle = "";
+                int rt = -1;
+                int isotopeCorrectionNum = 0;
+                double pearsonCorrelationCoefficient = -1;
+                TreeMap<Integer, TreeSet<DevEntry>> chargeDevEntryMap = new TreeMap<>();
+                if (ext.toLowerCase().contentEquals("mgf")) {
+                    mgfTitle = ((Ms2Query) spectrum).getTitle();
+                    Matcher matcher1 = scanNumPattern1.matcher(mgfTitle);
+                    Matcher matcher2 = scanNumPattern2.matcher(mgfTitle);
+                    Matcher matcher3 = scanNumPattern3.matcher(mgfTitle);
+                    if (matcher1.find()) {
+                        scan_num = Integer.valueOf(matcher1.group(1));
+                    } else if (matcher2.find()) {
+                        scan_num = Integer.valueOf(matcher2.group(1));
+                    } else if (matcher3.find()) {
+                        scan_num = Integer.valueOf(matcher3.group(1));
+                    } else {
+                        logger.error("Cannot get scan number from the MGF title {}. Please report your MGF title to the author.", mgfTitle);
+                        System.exit(1);
+                    }
                 } else {
-                    logger.error("Cannot get scan number from the MGF title {}. Please report your MGF title to the author.", mgfTitle);
-                    System.exit(1);
-                }
-            } else {
-                scan_num = Integer.valueOf(spectrum.getId());
-                Scan scan = ((MzXMLFile) spectra_parser).getScanByNum((long) scan_num);
-                rt = scan.getRetentionTime().getSeconds();
-                if (parameter_map.get("C13_correction").contentEquals("1")) {
-                    TreeMap<Double, Double> parentPeakList = new TreeMap<>(spectra_parser.getSpectrumById(parentId).getPeakList());
-                    // We do not try to correct the precursor charge if there is one.
-                    Entry entry = getIsotopeCorrectionNum(precursor_mz, precursor_charge, 1 / (double) precursor_charge, parentPeakList, ms1Tolerance, leftInverseMs1Tolerance, rightInverseMs1Tolerance, ms1ToleranceUnit, isotopeDistribution, chargeDevEntryMap);
-                    if (entry.pearsonCorrelationCoefficient >= 0.7) { // If the Pearson correlation coefficient is smaller than 0.7, there is not enough evidence to change the original precursor mz.
-                        isotopeCorrectionNum = entry.isotopeCorrectionNum;
-                        pearsonCorrelationCoefficient = entry.pearsonCorrelationCoefficient;
+                    scan_num = Integer.valueOf(spectrum.getId());
+                    Scan scan = ((MzXMLFile) spectra_parser).getScanByNum((long) scan_num);
+                    rt = scan.getRetentionTime().getSeconds();
+                    if (parameter_map.get("C13_correction").contentEquals("1")) {
+                        TreeMap<Double, Double> parentPeakList = new TreeMap<>(spectra_parser.getSpectrumById(parentId).getPeakList());
+                        // We do not try to correct the precursor charge if there is one.
+                        Entry entry = getIsotopeCorrectionNum(precursor_mz, precursor_charge, 1 / (double) precursor_charge, parentPeakList, ms1Tolerance, leftInverseMs1Tolerance, rightInverseMs1Tolerance, ms1ToleranceUnit, isotopeDistribution, chargeDevEntryMap);
+                        if (entry.pearsonCorrelationCoefficient >= 0.7) { // If the Pearson correlation coefficient is smaller than 0.7, there is not enough evidence to change the original precursor mz.
+                            isotopeCorrectionNum = entry.isotopeCorrectionNum;
+                            pearsonCorrelationCoefficient = entry.pearsonCorrelationCoefficient;
+                        }
+                        precursor_mass += isotopeCorrectionNum * MassTool.C13_DIFF;
                     }
-                    precursor_mass += isotopeCorrectionNum * MassTool.C13_DIFF;
                 }
-            }
 
-            sqlPrepareStatement.setInt(1, scan_num);
-            sqlPrepareStatement.setString(2, spectrum.getId());
-            sqlPrepareStatement.setInt(3, precursor_charge);
-            sqlPrepareStatement.setDouble(4, precursor_mz);
-            sqlPrepareStatement.setDouble(5, precursor_mass);
-            sqlPrepareStatement.setInt(6, rt);
-            sqlPrepareStatement.setDouble(7, precursor_mass - build_index_obj.linker_mass);
-            sqlPrepareStatement.setString(8, mgfTitle);
-            sqlPrepareStatement.setInt(9, isotopeCorrectionNum);
-            sqlPrepareStatement.setDouble(10, pearsonCorrelationCoefficient);
-            sqlPrepareStatement.executeUpdate();
-            ++usefulSpectraNum;
+                sqlPrepareStatement.setInt(1, scan_num);
+                sqlPrepareStatement.setString(2, spectrum.getId());
+                sqlPrepareStatement.setInt(3, precursor_charge);
+                sqlPrepareStatement.setDouble(4, precursor_mz);
+                sqlPrepareStatement.setDouble(5, precursor_mass);
+                sqlPrepareStatement.setInt(6, rt);
+                sqlPrepareStatement.setDouble(7, precursor_mass - build_index_obj.linker_mass);
+                sqlPrepareStatement.setString(8, mgfTitle);
+                sqlPrepareStatement.setInt(9, isotopeCorrectionNum);
+                sqlPrepareStatement.setDouble(10, pearsonCorrelationCoefficient);
+                sqlPrepareStatement.executeUpdate();
+                ++usefulSpectraNum;
 
-            if (ECL2.dev) {
-                scanDevEntryMap.put(scan_num, chargeDevEntryMap);
+                if (ECL2.dev) {
+                    scanDevEntryMap.put(scan_num, chargeDevEntryMap);
+                }
+            } catch (RuntimeException ex) {
+                logger.error(ex.toString());
             }
         }
         sqlConnection.commit();
