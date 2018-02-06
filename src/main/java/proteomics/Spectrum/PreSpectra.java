@@ -65,9 +65,11 @@ public class PreSpectra {
                     continue;
                 }
 
-                if (spectrum.getMsLevel() == 1) {
-                    parentId = spectrum.getId();
-                    continue;
+                if (ext.toLowerCase().contentEquals("mzxml")) {
+                    if (spectrum.getMsLevel() == 1) {
+                        parentId = spectrum.getId();
+                        continue;
+                    }
                 }
 
                 if (spectrum.getPrecursorCharge() == null) {
