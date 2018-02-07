@@ -49,17 +49,21 @@ public class ECL2 {
         logger.info("Author: Fengchao Yu. Email: fyuab@connect.ust.hk");
 
         String dbName = null;
+        String hostName = "unknown-host";
         try {
-            String hostName = InetAddress.getLocalHost().getHostName();
+            hostName = InetAddress.getLocalHost().getHostName();
             logger.info("Computer: {}.", hostName);
+        } catch (UnknownHostException ex) {
+            logger.warn("Cannot get the computer's name.");
+        }
+
+        try {
             dbName = String.format(Locale.US, "ECL2.%s.%s.temp.db", hostName, new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(Calendar.getInstance().getTime()));
 
             logger.info("Parameter file: {}.", parameter_path);
             logger.info("Spectra file: {}.", spectra_path);
 
             new ECL2(parameter_path, spectra_path, dbName);
-        } catch (UnknownHostException ex) {
-            logger.warn("Cannot get the computer's name.");
         } catch (IOException | MzXMLParsingException | JMzReaderException | ExecutionException | InterruptedException | ClassNotFoundException | IllegalAccessException | InstantiationException | SQLException ex) {
             ex.printStackTrace();
             logger.error(ex.toString());
