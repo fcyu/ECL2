@@ -18,12 +18,11 @@ public class Parameter {
 
     private Map<String, String> parameterMap = new LinkedHashMap<>(); // keep the parameter order as it is in the parameter.def
 
-    public Parameter(String parameterFile) throws IOException {
+    public Parameter(String parameterFile) throws Exception {
         BufferedReader parameterReader = new BufferedReader(new FileReader(parameterFile));
         String line = parameterReader.readLine().trim();
         if (!line.contentEquals("# " + ECL2.version)) {
-            logger.error("The parameter file version ({}) is not compatible with current ECL2 version ({}).", line.substring(2), ECL2.version);
-            System.exit(1);
+            throw new Exception(String.format(Locale.US, "The parameter file version (%s) is not compatible with current ECL2 version (%s).", line.substring(2), ECL2.version));
         }
         while ((line = parameterReader.readLine()) != null) {
             line = line.trim();

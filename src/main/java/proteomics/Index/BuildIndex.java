@@ -7,7 +7,6 @@ import proteomics.TheoSeq.DbTool;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Types.*;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,7 +30,7 @@ public class BuildIndex {
     private final double ms1_bin_size;
     private final double inverseMs1BinSize;
 
-    public BuildIndex(Map<String, String> parameter_map) throws IOException {
+    public BuildIndex(Map<String, String> parameter_map) throws Exception {
         // initialize parameters
         int min_chain_length = Integer.valueOf(parameter_map.get("min_chain_length")) + 2; // n and c are counted in the sequence
         int max_chain_length = Integer.valueOf(parameter_map.get("max_chain_length")) + 2; // n and c are counted in the sequence
@@ -75,8 +74,7 @@ public class BuildIndex {
         if (linker_type == 1) {
             if (Math.abs(fix_mod_map.get('K') - fix_mod_map.get('n')) > 1e-6) {
                 linker_mass = 0;
-                logger.error("The link sites have different fix modifications.");
-                System.exit(1);
+                throw new Exception("The link sites have different fix modifications.");
             } else {
                 linker_mass = Double.valueOf(parameter_map.get("cl_mass")) - fix_mod_map.get('K');
             }
@@ -84,8 +82,7 @@ public class BuildIndex {
             linker_mass = Double.valueOf(parameter_map.get("cl_mass"));
         } else {
             linker_mass = 0;
-            logger.error("The cross-linker type cannot be recognized.");
-            System.exit(1);
+            throw new Exception("The cross-linker type cannot be recognized.");
         }
 
         // read protein database
@@ -576,7 +573,7 @@ public class BuildIndex {
         return output;
     }
 
-    private void getVarModParams(String v, Set<VarModParam> varModParamSet, Set<BinaryModParam> binaryModParamSet) {
+    private void getVarModParams(String v, Set<VarModParam> varModParamSet, Set<BinaryModParam> binaryModParamSet) throws Exception {
         Matcher varModMatcher = varModParamPattern.matcher(v);
         if (varModMatcher.matches()) {
             double modMass = Double.valueOf(varModMatcher.group(1));
@@ -594,8 +591,7 @@ public class BuildIndex {
                 }
             }
         } else {
-            logger.error("Cannot parse variable modification parameter from {}.", v);
-            System.exit(1);
+            throw new Exception(String.format(Locale.US, "Cannot parse variable modification parameter from %s.", v));
         }
     }
 }

@@ -115,8 +115,7 @@ public class PreSpectra {
                     } else if (matcher3.find()) {
                         scan_num = Integer.valueOf(matcher3.group(1));
                     } else {
-                        logger.error("Cannot get scan number from the MGF title {}. Please report your MGF title to the author.", mgfTitle);
-                        System.exit(1);
+                        throw new NullPointerException(String.format(Locale.US, "Cannot get scan number from the MGF title %s. Please report your MGF title to the author.", mgfTitle));
                     }
                 } else {
                     scan_num = Integer.valueOf(spectrum.getId());

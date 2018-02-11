@@ -10,10 +10,8 @@ import proteomics.Spectrum.PreSpectra;
 import proteomics.TheoSeq.MassTool;
 import proteomics.Validation.CalFDR;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
-import uk.ac.ebi.pride.tools.jmzreader.JMzReaderException;
 import uk.ac.ebi.pride.tools.mgf_parser.MgfFile;
 import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLFile;
-import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLParsingException;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -64,10 +62,9 @@ public class ECL2 {
             logger.info("Spectra file: {}.", spectra_path);
 
             new ECL2(parameter_path, spectra_path, dbName);
-        } catch (IOException | MzXMLParsingException | JMzReaderException | ExecutionException | InterruptedException | ClassNotFoundException | IllegalAccessException | InstantiationException | SQLException ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
             logger.error(ex.toString());
-            System.exit(1);
         } finally {
             if (dbName != null) {
                 (new File(dbName)).delete();
@@ -75,7 +72,7 @@ public class ECL2 {
         }
     }
 
-    private ECL2(String parameter_path, String spectra_path, String dbName) throws IOException, MzXMLParsingException, JMzReaderException, ExecutionException, InterruptedException, ClassNotFoundException, IllegalAccessException, InstantiationException, SQLException {
+    private ECL2(String parameter_path, String spectra_path, String dbName) throws Exception{
         // Get the parameter map
         Parameter parameter = new Parameter(parameter_path);
         Map<String, String> parameter_map = parameter.returnParameterMap();
@@ -133,8 +130,7 @@ public class ECL2 {
         } else if (ext.toLowerCase().contentEquals("mgf")) {
             spectra_parser = new MgfFile(spectra_file);
         } else {
-            logger.error("Unsupported data format {}. ECL2 only support mzXML and MGF.", ext);
-            System.exit(1);
+            throw new Exception(String.format(Locale.US, "Unsupported data format %s. ECL2 only support mzXML and MGF.", ext));
         }
 
         double ms1Tolerance = Double.valueOf(parameter_map.get("ms1_tolerance"));
