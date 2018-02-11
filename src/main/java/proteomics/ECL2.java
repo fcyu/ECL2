@@ -68,6 +68,8 @@ public class ECL2 {
         } finally {
             if (dbName != null) {
                 (new File(dbName)).delete();
+                (new File(dbName + "-wal")).delete();
+                (new File(dbName + "-shm")).delete();
             }
         }
     }
