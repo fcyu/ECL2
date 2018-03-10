@@ -251,10 +251,8 @@ public class BuildIndex {
                         Set<String> pro_set = new HashSet<>(5, 1);
                         pro_set.add(pro_id);
                         seq_pro_map.put(target_seq, pro_set);
-                    }
-
-                    // considering the case that the sequence has multiple proteins. In the above if clock, such a protein wasn't recorded.
-                    if (seq_pro_map.containsKey(target_seq)) {
+                    } else if (seq_pro_map.containsKey(target_seq)) {
+                        // considering the case that the sequence has multiple proteins. In the above if clock, such a protein wasn't recorded.
                         seq_pro_map.get(target_seq).add(pro_id);
                     }
                 }
