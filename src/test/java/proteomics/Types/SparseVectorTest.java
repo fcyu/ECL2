@@ -3,6 +3,7 @@ package proteomics.Types;
 import org.junit.Before;
 import org.junit.Test;
 
+import ProteomicsLibrary.Types.SparseVector;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -48,7 +49,7 @@ public class SparseVectorTest {
 
     @Test
     public void idxSet() throws Exception {
-        Set<Integer> result = vector.getIdxSet();
+        Set<Integer> result = vector.getNonzeroIdx();
         Set<Integer> ground_truth = new HashSet<>();
         ground_truth.add(1);
         ground_truth.add(3);
@@ -97,10 +98,5 @@ public class SparseVectorTest {
         ground_truth.add(3);
         ground_truth.add(11);
         assertEquals(ground_truth, vector.getNonzeroIdx());
-    }
-
-    @Test
-    public void getNonzeroNum() throws Exception {
-        assertEquals(3, vector.getNonzeroNum());
     }
 }

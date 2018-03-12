@@ -4,7 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
-import proteomics.TheoSeq.MassTool;
+import ProteomicsLibrary.MassTool;
+import ProteomicsLibrary.Types.*;
 import proteomics.Types.*;
 
 import java.io.BufferedWriter;

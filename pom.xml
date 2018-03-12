@@ -76,6 +76,11 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.21.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>hk.ust.bioinformatics</groupId>
+            <artifactId>ProteomicsLibrary</artifactId>
+            <version>1.0</version>
+        </dependency>
     </dependencies>
 
     <repositories>

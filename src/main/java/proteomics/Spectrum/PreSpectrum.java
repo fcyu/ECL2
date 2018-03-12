@@ -1,8 +1,8 @@
 package proteomics.Spectrum;
 
 import proteomics.ECL2;
-import proteomics.TheoSeq.MassTool;
-import proteomics.Types.SparseVector;
+import ProteomicsLibrary.MassTool;
+import ProteomicsLibrary.Types.*;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

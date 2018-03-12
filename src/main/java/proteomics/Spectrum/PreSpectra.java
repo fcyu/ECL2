@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
-import proteomics.TheoSeq.MassTool;
+import ProteomicsLibrary.MassTool;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReaderException;
 import uk.ac.ebi.pride.tools.jmzreader.model.*;
@@ -42,7 +42,7 @@ public class PreSpectra {
             }
         }
 
-        IsotopeDistribution isotopeDistribution = new IsotopeDistribution(build_index_obj.returnMassTool().elementTable, 0, "N14");
+        IsotopeDistribution isotopeDistribution = new IsotopeDistribution(build_index_obj.returnMassTool().getElementTable(), 0, "N14");
 
         // prepare SQL database
         Connection sqlConnection = DriverManager.getConnection(sqlPath);

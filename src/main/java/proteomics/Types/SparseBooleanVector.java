@@ -1,5 +1,6 @@
 package proteomics.Types;
 
+import ProteomicsLibrary.Types.SparseVector;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 

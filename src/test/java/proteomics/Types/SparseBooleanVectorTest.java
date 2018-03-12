@@ -4,9 +4,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.HashSet;
-import java.util.Set;
+import ProteomicsLibrary.Types.*;
 
 import static org.junit.Assert.*;
 

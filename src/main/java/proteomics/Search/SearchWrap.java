@@ -3,7 +3,8 @@ package proteomics.Search;
 import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
 import proteomics.Spectrum.PreSpectrum;
-import proteomics.TheoSeq.MassTool;
+import ProteomicsLibrary.MassTool;
+import ProteomicsLibrary.Types.*;
 import proteomics.Types.*;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReaderException;
@@ -68,7 +69,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
         if (ECL2.debug) {
             BufferedWriter writer = new BufferedWriter(new FileWriter(scanId + ".xcorr.spectrum.csv"));
             writer.write("bin_idx,intensity\n");
-            for (int idx : xcorrPL.getIdxSet()) {
+            for (int idx : xcorrPL.getNonzeroIdx()) {
                 writer.write(idx + "," + xcorrPL.get(idx) + "\n");
             }
             writer.close();
@@ -214,7 +215,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
 
     private String addFixMod(String seq, int linkSite) {
         Map<Character, Double> fix_mod_map = build_index_obj.getFixModMap();
-        AA[] aaList = MassTool.seqToAAList(seq);
+        AA[] aaList = MassTool.seqToAAList(seq, "[]");
         StringBuilder sb = new StringBuilder(seq.length() * 3);
         for (int i = 0; i < aaList.length; ++i) {
             AA aa = aaList[i];
@@ -223,8 +224,8 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
             } else if (Math.abs(fix_mod_map.get(aa.aa)) > 1e-6) {
                 sb.append(String.format(Locale.US, "%c[%.3f]", aa.aa, fix_mod_map.get(aa.aa)));
             } else {
-                if (Math.abs(aa.delta_mass) > 1e-6) {
-                    sb.append(String.format(Locale.US, "%c[%.3f]", aa.aa, aa.delta_mass));
+                if (Math.abs(aa.ptmDeltaMass) > 1e-6) {
+                    sb.append(String.format(Locale.US, "%c[%.3f]", aa.aa, aa.ptmDeltaMass));
                 } else {
                     sb.append(aa.aa);
                 }

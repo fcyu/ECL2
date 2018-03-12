@@ -1,7 +1,8 @@
 package proteomics.Search;
 
 import proteomics.ECL2;
-import proteomics.TheoSeq.MassTool;
+import ProteomicsLibrary.MassTool;
+import ProteomicsLibrary.Types.*;
 import proteomics.Types.*;
 import proteomics.Index.BuildIndex;
 

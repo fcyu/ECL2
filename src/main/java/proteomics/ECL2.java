@@ -7,7 +7,7 @@ import proteomics.Parameter.Parameter;
 import proteomics.Search.SearchWrap;
 import proteomics.Search.Search;
 import proteomics.Spectrum.PreSpectra;
-import proteomics.TheoSeq.MassTool;
+import ProteomicsLibrary.MassTool;
 import proteomics.Validation.CalFDR;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
 import uk.ac.ebi.pride.tools.mgf_parser.MgfFile;

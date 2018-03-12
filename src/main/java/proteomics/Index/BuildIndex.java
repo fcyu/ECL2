@@ -3,8 +3,8 @@ package proteomics.Index;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import proteomics.TheoSeq.DbTool;
-import proteomics.TheoSeq.MassTool;
+import ProteomicsLibrary.*;
+import ProteomicsLibrary.Types.*;
 import proteomics.Types.*;
 
 import java.util.*;
@@ -90,17 +90,17 @@ public class BuildIndex {
         DbTool db_tool_obj = new DbTool(db_path, parameter_map.get("database_type"));
         if (parameter_map.get("append_contaminants").contentEquals("1")) {
             DbTool contaminantsDb = new DbTool(null, "contaminants");
-            pro_seq_map = contaminantsDb.getProSeqMap();
-            pro_seq_map.putAll(db_tool_obj.getProSeqMap()); // using the target sequence to replace contaminant sequence if there is conflict.
-            pro_annotate_map = contaminantsDb.getProAnnotateMap();
-            pro_annotate_map.putAll(db_tool_obj.getProAnnotateMap()); // using the target sequence to replace contaminant sequence if there is conflict.
+            pro_seq_map = contaminantsDb.getProteinSequenceMap();
+            pro_seq_map.putAll(db_tool_obj.getProteinSequenceMap()); // using the target sequence to replace contaminant sequence if there is conflict.
+            pro_annotate_map = contaminantsDb.getProteinAnnotateMap();
+            pro_annotate_map.putAll(db_tool_obj.getProteinAnnotateMap()); // using the target sequence to replace contaminant sequence if there is conflict.
         } else {
-            pro_seq_map = db_tool_obj.getProSeqMap();
-            pro_annotate_map = db_tool_obj.getProAnnotateMap();
+            pro_seq_map = db_tool_obj.getProteinSequenceMap();
+            pro_annotate_map = db_tool_obj.getProteinAnnotateMap();
         }
 
         // define a new MassTool object
-        mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, "KR", "P", mz_bin_size, one_minus_bin_offset);
+        mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, "KR", "P", true, mz_bin_size * 0.5, one_minus_bin_offset, "N14", "[]");
 
         // generate seq_pro_map
         Map<String, boolean[]> seq_term_map = new HashMap<>();
@@ -142,7 +142,7 @@ public class BuildIndex {
             // mod free
             Set<Short> linkSiteSet = getLinkSiteSet(seq, proteinNTerm, proteinCTerm, linker_type);
             if (!linkSiteSet.isEmpty()) {
-                double totalMass = (mass_tool_obj.calResidueMass(seq) + MassTool.H2O);
+                double totalMass = (mass_tool_obj.calResidueMass(seq) + mass_tool_obj.H2O);
                 int bin = massToBin(totalMass);
                 if (bin_seq_map.containsKey(bin)) {
                     bin_seq_map.get(bin).add(seq);
@@ -161,7 +161,7 @@ public class BuildIndex {
                 linkSiteSet = new HashSet<>(5, 1);
                 linkSiteSet.add(varSeq.linkSite);
                 if (!linkSiteSet.isEmpty()) {
-                    double totalMass = (mass_tool_obj.calResidueMass(varSeq.seq) + MassTool.H2O);
+                    double totalMass = (mass_tool_obj.calResidueMass(varSeq.seq) + mass_tool_obj.H2O);
                     int bin = massToBin(totalMass);
                     if (bin_seq_map.containsKey(bin)) {
                         bin_seq_map.get(bin).add(varSeq.seq);
@@ -517,10 +517,10 @@ public class BuildIndex {
     private Set<String> checkKCTermMod(Set<String> varSeqSet) { // eliminate those sequence that the middle amino acids having the same mod mass and the n-term and the first amino acid or the c-term and the last amino acid have the same mod mass. todo: check
         String[] varSeqArray = varSeqSet.toArray(new String[varSeqSet.size()]);
         Arrays.sort(varSeqArray); // Make sure that nK[].... is before n[]K..., so that n[]K... will be kept.
-        int seqLength = MassTool.seqToAAList(varSeqArray[0]).length;
+        int seqLength = MassTool.seqToAAList(varSeqArray[0], "[]").length;
         AA[][] aaArrays = new AA[varSeqArray.length][seqLength];
         for (int i = 0; i < varSeqArray.length; ++i) {
-            aaArrays[i] = MassTool.seqToAAList(varSeqArray[i]);
+            aaArrays[i] = MassTool.seqToAAList(varSeqArray[i], "[]");
         }
 
         if (aaArrays.length > 1) {
@@ -528,10 +528,10 @@ public class BuildIndex {
             for (int i = 0; i < aaArrays.length - 1; ++i) {
                 boolean keep = true;
                 for (int j = i + 1; j < aaArrays.length; ++j) {
-                    if ((Math.abs(aaArrays[i][0].delta_mass - aaArrays[j][1].delta_mass) < varModMassResolution) && (Math.abs(aaArrays[i][1].delta_mass - aaArrays[j][0].delta_mass) < varModMassResolution) && (Math.abs(aaArrays[i][seqLength - 2].delta_mass - aaArrays[j][seqLength - 1].delta_mass) < varModMassResolution) && (Math.abs(aaArrays[i][seqLength - 1].delta_mass - aaArrays[j][seqLength - 2].delta_mass) < varModMassResolution)) {
+                    if ((Math.abs(aaArrays[i][0].ptmDeltaMass - aaArrays[j][1].ptmDeltaMass) < varModMassResolution) && (Math.abs(aaArrays[i][1].ptmDeltaMass - aaArrays[j][0].ptmDeltaMass) < varModMassResolution) && (Math.abs(aaArrays[i][seqLength - 2].ptmDeltaMass - aaArrays[j][seqLength - 1].ptmDeltaMass) < varModMassResolution) && (Math.abs(aaArrays[i][seqLength - 1].ptmDeltaMass - aaArrays[j][seqLength - 2].ptmDeltaMass) < varModMassResolution)) {
                         keep = false;
                         for (int k = 2; k < seqLength - 2; ++k) {
-                            if (Math.abs(aaArrays[i][k].delta_mass - aaArrays[j][k].delta_mass) > varModMassResolution) {
+                            if (Math.abs(aaArrays[i][k].ptmDeltaMass - aaArrays[j][k].ptmDeltaMass) > varModMassResolution) {
                                 keep = true;
                                 break;
                             }
@@ -553,19 +553,19 @@ public class BuildIndex {
     }
 
     private Set<Short> getLinkSiteSet(String seq, boolean n_term, boolean c_term, short linker_type) {
-        AA[] aa_list = MassTool.seqToAAList(seq);
+        AA[] aa_list = MassTool.seqToAAList(seq, "[]");
         Set<Short> output = new HashSet<>(5, 1);
         for (int i = 1; i < aa_list.length - 2; ++i) {
-            if (linker_type == 1 && aa_list[i].aa == 'K' && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
+            if (linker_type == 1 && aa_list[i].aa == 'K' && (Math.abs(aa_list[i].ptmDeltaMass) < varModMassResolution)) {
                 output.add((short) i);
-            } else if (linker_type == 2 && aa_list[i].aa == 'C' && (Math.abs(aa_list[i].delta_mass) < varModMassResolution)) {
+            } else if (linker_type == 2 && aa_list[i].aa == 'C' && (Math.abs(aa_list[i].ptmDeltaMass) < varModMassResolution)) {
                 output.add((short) i);
             }
         }
-        if (linker_type == 1 && n_term && !output.contains((short) 1) && (Math.abs(aa_list[0].delta_mass) < varModMassResolution)) {
+        if (linker_type == 1 && n_term && !output.contains((short) 1) && (Math.abs(aa_list[0].ptmDeltaMass) < varModMassResolution)) {
             output.add((short) 0);
         }
-        if (linker_type == 1 && c_term && aa_list[aa_list.length - 2].aa == 'K' && (Math.abs(aa_list[aa_list.length - 2].delta_mass) < varModMassResolution)) {
+        if (linker_type == 1 && c_term && aa_list[aa_list.length - 2].aa == 'K' && (Math.abs(aa_list[aa_list.length - 2].ptmDeltaMass) < varModMassResolution)) {
             output.add((short) (aa_list.length - 2));
         }
         return output;
