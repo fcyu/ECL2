@@ -226,11 +226,8 @@ public class BuildIndex {
         for (String pro_id : pro_seq_map.keySet()) {
             String pro_seq = pro_seq_map.get(pro_id);
             Set<String> seq_set = mass_tool_obj.buildChainSet(pro_seq, linker_type);
-            if (cutNTermM && pro_seq.startsWith("M")) {
-                seq_set.addAll(mass_tool_obj.buildChainSet(pro_seq.substring(1), linker_type));
-            }
             for (String target_seq : seq_set) {
-                if ((target_seq.length() >= min_chain_length) && (target_seq.length() <= max_chain_length) && !target_seq.contains("B") && !target_seq.contains("J") && !target_seq.contains("X") && !target_seq.contains("Z")) {
+                if ((target_seq.length() >= min_chain_length) && (target_seq.length() <= max_chain_length) && !MassTool.containsNonAAAndNC(target_seq)) {
                     if (!for_check_duplicate.contains(target_seq.replace('L', 'I'))) {
                         // Add the sequence to the check set for duplicate check
                         for_check_duplicate.add(target_seq.replace('L', 'I')); // "L" and "I" have the same mass
@@ -268,7 +265,7 @@ public class BuildIndex {
                 decoy_seq_set.addAll(mass_tool_obj.buildChainSet((new StringBuilder(pro_seq.substring(1))).reverse().toString(), linker_type));
             }
             for (String decoy_seq : decoy_seq_set) {
-                if ((decoy_seq.length() >= min_chain_length) && (decoy_seq.length() <= max_chain_length) && !decoy_seq.contains("B") && !decoy_seq.contains("J") && !decoy_seq.contains("X") && !decoy_seq.contains("Z")) {
+                if ((decoy_seq.length() >= min_chain_length) && (decoy_seq.length() <= max_chain_length) && !MassTool.containsNonAAAndNC(decoy_seq)) {
                     if (!for_check_duplicate.contains(decoy_seq.replace('L', 'I'))) {
                         for_check_duplicate.add(decoy_seq.replace('L', 'I'));
 
