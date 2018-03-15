@@ -40,7 +40,6 @@ public class BuildIndex {
         double one_minus_bin_offset = 1 - Double.valueOf(parameter_map.get("mz_bin_offset"));
         ms1_bin_size = Double.valueOf(parameter_map.get("ms1_bin_size"));
         inverseMs1BinSize = 1 / ms1_bin_size;
-        boolean cutNTermM = parameter_map.get("cut_nterm_methionine").contentEquals("1");
 
         // Read fix modification
         fix_mod_map.put('G', Double.valueOf(parameter_map.get("G")));
@@ -104,7 +103,7 @@ public class BuildIndex {
 
         // generate seq_pro_map
         Map<String, boolean[]> seq_term_map = new HashMap<>();
-        seqProMap = buildSeqProMap(pro_seq_map, seq_term_map, min_chain_length, max_chain_length, cutNTermM);
+        seqProMap = buildSeqProMap(pro_seq_map, seq_term_map, min_chain_length, max_chain_length);
 
         // read var mods
         Set<VarModParam> varModParamSet = new HashSet<>(30, 1);
@@ -220,7 +219,7 @@ public class BuildIndex {
         return (int) Math.floor(mass * inverseMs1BinSize);
     }
 
-    private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, Map<String, boolean[]> seq_term_map, int min_chain_length, int max_chain_length, boolean cutNTermM) {
+    private Map<String, Set<String>> buildSeqProMap(Map<String, String> pro_seq_map, Map<String, boolean[]> seq_term_map, int min_chain_length, int max_chain_length) {
         Map<String, Set<String>> seq_pro_map = new HashMap<>(pro_seq_map.size() * 150, 1);
         Set<String> for_check_duplicate = new HashSet<>();
         for (String pro_id : pro_seq_map.keySet()) {
@@ -237,7 +236,7 @@ public class BuildIndex {
                         if (pro_seq.startsWith(target_seq.substring(1, target_seq.length() - 1))) {
                             n_term = true;
                         }
-                        if (cutNTermM && pro_seq.startsWith("M") && pro_seq.substring(1).startsWith(target_seq.substring(1, target_seq.length() - 1))) { // consider the first "M" being cut situation.
+                        if (pro_seq.startsWith("M") && pro_seq.substring(1).startsWith(target_seq.substring(1, target_seq.length() - 1))) { // consider the first "M" being cut situation.
                             n_term = true;
                         }
                         if (pro_seq.endsWith(target_seq.substring(1, target_seq.length() - 1))) {
@@ -261,7 +260,7 @@ public class BuildIndex {
             String pro_seq = pro_seq_map.get(pro_id);
             String decoy_pro_seq = (new StringBuilder(pro_seq)).reverse().toString();
             Set<String> decoy_seq_set = mass_tool_obj.buildChainSet(decoy_pro_seq, linker_type);
-            if (cutNTermM && pro_seq.startsWith("M")) {
+            if (pro_seq.startsWith("M")) {
                 decoy_seq_set.addAll(mass_tool_obj.buildChainSet((new StringBuilder(pro_seq.substring(1))).reverse().toString(), linker_type));
             }
             for (String decoy_seq : decoy_seq_set) {

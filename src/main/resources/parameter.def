@@ -73,7 +73,7 @@ cal_evalue = 1 # 1 = calculate e-value; 0 = not.
 ms1_bin_size = 0.001
 delta_c_t = 0.00 # DeltaC threshold.
 flanking_peaks = 0 # 1 = use flanking peaks; 0 = not.
-append_contaminants = 0 # 1 = append contaminant proteins to the database; 0 = not
+append_contaminants = 1 # 1 = append contaminant proteins to the database; 0 = not
 
 # For debug.
 # Put interested scan numbers below. One number each line.
