@@ -270,7 +270,7 @@ public class BuildIndex {
 
                         boolean n_term = false;
                         boolean c_term = false;
-                        if (decoy_pro_seq.startsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) { // here, we don't consider the first "M" being cut situation.
+                        if (decoy_pro_seq.startsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) { // here, we don't consider the first "M" being cut situation because it is the decoy sequence. The first "M" doesn't have any meaning.
                             n_term = true;
                         }
                         if (decoy_pro_seq.endsWith(decoy_seq.substring(1, decoy_seq.length() - 1))) {
