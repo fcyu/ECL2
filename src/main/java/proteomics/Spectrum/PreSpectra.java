@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
 import ProteomicsLibrary.MassTool;
+import ProteomicsLibrary.IsotopeDistribution;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReaderException;
 import uk.ac.ebi.pride.tools.jmzreader.model.*;
@@ -27,7 +28,7 @@ public class PreSpectra {
     private static final Pattern scanNumPattern2 = Pattern.compile("scan=([0-9]+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern scanNumPattern3 = Pattern.compile("^[^.]+\\.([0-9]+)\\.[0-9]+\\.[0-9]");
 
-    private Map<Integer, TreeMap<Integer, TreeSet<DevEntry>>> scanDevEntryMap = new HashMap<>();
+    private Map<Integer, TreeMap<Integer, TreeSet<IsotopeDistribution.DevEntry>>> scanDevEntryMap = new HashMap<>();
     private int usefulSpectraNum = 0;
 
     public PreSpectra(JMzReader spectra_parser, double ms1Tolerance, double leftInverseMs1Tolerance, double rightInverseMs1Tolerance, int ms1ToleranceUnit, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext, String sqlPath) throws MzXMLParsingException, IOException, SQLException, JMzReaderException {
@@ -102,7 +103,10 @@ public class PreSpectra {
                 int rt = -1;
                 int isotopeCorrectionNum = 0;
                 double pearsonCorrelationCoefficient = -1;
-                TreeMap<Integer, TreeSet<DevEntry>> chargeDevEntryMap = new TreeMap<>();
+                TreeMap<Integer, TreeSet<IsotopeDistribution.DevEntry>> chargeDevEntryMap = null;
+                if (ECL2.dev) {
+                    chargeDevEntryMap = new TreeMap<>();
+                }
                 if (ext.toLowerCase().contentEquals("mgf")) {
                     mgfTitle = ((Ms2Query) spectrum).getTitle();
                     Matcher matcher1 = scanNumPattern1.matcher(mgfTitle);
@@ -124,7 +128,7 @@ public class PreSpectra {
                     if (parameter_map.get("C13_correction").contentEquals("1")) {
                         TreeMap<Double, Double> parentPeakList = new TreeMap<>(spectra_parser.getSpectrumById(parentId).getPeakList());
                         // We do not try to correct the precursor charge if there is one.
-                        Entry entry = getIsotopeCorrectionNum(precursor_mz, precursor_charge, 1 / (double) precursor_charge, parentPeakList, ms1Tolerance, leftInverseMs1Tolerance, rightInverseMs1Tolerance, ms1ToleranceUnit, isotopeDistribution, chargeDevEntryMap);
+                        IsotopeDistribution.Entry entry = isotopeDistribution.getIsotopeCorrectionNum(precursor_mz, ms1Tolerance, ms1ToleranceUnit, precursor_charge, parentPeakList, chargeDevEntryMap);
                         if (entry.pearsonCorrelationCoefficient >= 0.7) { // If the Pearson correlation coefficient is smaller than 0.7, there is not enough evidence to change the original precursor mz.
                             isotopeCorrectionNum = entry.isotopeCorrectionNum;
                             pearsonCorrelationCoefficient = entry.pearsonCorrelationCoefficient;
@@ -160,159 +164,11 @@ public class PreSpectra {
         logger.info("Useful MS/MS spectra number: {}.", usefulSpectraNum);
     }
 
-    public Map<Integer, TreeMap<Integer, TreeSet<DevEntry>>> getScanDevEntryMap() {
+    public Map<Integer, TreeMap<Integer, TreeSet<IsotopeDistribution.DevEntry>>> getScanDevEntryMap() {
         return scanDevEntryMap;
     }
 
     public int getUsefulSpectraNum() {
         return usefulSpectraNum;
-    }
-
-    private Entry getIsotopeCorrectionNum(double precursorMz, int charge, double inverseCharge, TreeMap<Double, Double> parentPeakList, double ms1Tolerance, double leftInverseMs1Tolerance, double rightInverseMs1Tolerance, int ms1ToleranceUnit, IsotopeDistribution isotopeDistribution, TreeMap<Integer, TreeSet<DevEntry>> chargeDevEntryMap) {
-        Entry entry = new Entry(0, 0);
-        double leftTol = ms1Tolerance * 2;
-        double rightTol = ms1Tolerance * 2;
-        if (ms1ToleranceUnit == 1) {
-            leftTol = (precursorMz - precursorMz * leftInverseMs1Tolerance) * 2;
-            rightTol = (precursorMz * rightInverseMs1Tolerance - precursorMz) * 2;
-        }
-        for (int isotopeCorrectionNum : ECL2.isotopeCorrectionArray) {
-            double[][] expMatrix = new double[3][2];
-            for (int i = 0; i < 3; ++i) {
-                expMatrix[i][0] = precursorMz + (isotopeCorrectionNum + i) * MassTool.C13_DIFF * inverseCharge;
-                NavigableMap<Double, Double> subMap = parentPeakList.subMap(expMatrix[i][0] - leftTol, true, expMatrix[i][0] + rightTol, true);
-                for (double intensity : subMap.values()) {
-                    expMatrix[i][1] = Math.max(expMatrix[i][1], intensity);
-                }
-            }
-
-            if (Math.abs(expMatrix[0][1]) > 1) { // In bottom-up proteomics, the precursor mass won't be so large that we cannot observe the monoisotopic peak.
-                Map<String, Integer> elementMap = isotopeDistribution.getElementMapFromMonoMass((expMatrix[0][0] - MassTool.PROTON) * charge);
-                List<IsotopeDistribution.Peak> theoIsotopeDistribution = isotopeDistribution.calculate(elementMap);
-                double pearsonCorrelationCoefficient = scaleAndCalPearsonCorrelationCoefficient(expMatrix, theoIsotopeDistribution, charge, isotopeCorrectionNum);
-                if (isotopeCorrectionNum == 0 && pearsonCorrelationCoefficient > 0.8) { // Unless there is a strong evidence, we prefer the original MZ.
-                    entry.pearsonCorrelationCoefficient = pearsonCorrelationCoefficient;
-                    entry.isotopeCorrectionNum = isotopeCorrectionNum;
-                    break;
-                } else if (pearsonCorrelationCoefficient > entry.pearsonCorrelationCoefficient) {
-                    entry.pearsonCorrelationCoefficient = pearsonCorrelationCoefficient;
-                    entry.isotopeCorrectionNum = isotopeCorrectionNum;
-                }
-                if (ECL2.dev) {
-                    double[][] theoMatrix = new double[expMatrix.length][2];
-                    for (int i = 0; i < expMatrix.length; ++i) {
-                        IsotopeDistribution.Peak peak = theoIsotopeDistribution.get(i);
-                        theoMatrix[i][0] = peak.mass * inverseCharge + MassTool.PROTON;
-                        theoMatrix[i][1] = peak.realArea;
-                    }
-                    if (chargeDevEntryMap.containsKey(charge)) {
-                        chargeDevEntryMap.get(charge).add(new DevEntry(isotopeCorrectionNum, pearsonCorrelationCoefficient, expMatrix, theoMatrix));
-                    } else {
-                        TreeSet<DevEntry> tempSet = new TreeSet<>();
-                        tempSet.add(new DevEntry(isotopeCorrectionNum, pearsonCorrelationCoefficient, expMatrix, theoMatrix));
-                        chargeDevEntryMap.put(charge, tempSet);
-                    }
-                }
-            }
-        }
-        return entry;
-    }
-
-    private double scaleAndCalPearsonCorrelationCoefficient(double[][] expMatrix, List<IsotopeDistribution.Peak> theoIsotopeDistribution, int precursorCharge, int isotopeCorrection) {
-        // get theo peaks.
-        int peakNum = Math.min(expMatrix.length, theoIsotopeDistribution.size());
-        double[][] theoMatrix = new double[peakNum][2];
-        for (int i = 0; i < peakNum; ++i) {
-            IsotopeDistribution.Peak peak = theoIsotopeDistribution.get(i);
-            theoMatrix[i][0] = peak.mass / precursorCharge + MassTool.PROTON;
-            theoMatrix[i][1] = peak.realArea;
-        }
-
-        // scale theo peaks
-        double scale = expMatrix[-1 * isotopeCorrection][1] / theoMatrix[-1 * isotopeCorrection][1];
-        if (Math.abs(scale) > 1e-6) {
-            for (int i = 0; i < peakNum; ++i) {
-                theoMatrix[i][1] *= scale;
-            }
-            // calculate Pearson correlation coefficient.
-            double theoIntensityMean = 0;
-            double expIntensityMean = 0;
-            for (int i = 0; i < peakNum; ++i) {
-                theoIntensityMean += theoMatrix[i][1];
-                expIntensityMean += expMatrix[i][1];
-            }
-            theoIntensityMean /= peakNum;
-            expIntensityMean /= peakNum;
-            double temp1 = 0;
-            double temp2 = 0;
-            double temp3 = 0;
-            for (int i = 0; i < peakNum; ++i) {
-                temp1 += (theoMatrix[i][1] - theoIntensityMean) * (expMatrix[i][1] - expIntensityMean);
-                temp2 += Math.pow(theoMatrix[i][1] - theoIntensityMean, 2);
-                temp3 += Math.pow(expMatrix[i][1] - expIntensityMean, 2);
-            }
-            return (temp1 == 0 || temp2 == 0) ? 0 : temp1 / (Math.sqrt(temp2 * temp3));
-        } else {
-            return 0;
-        }
-    }
-
-
-    private class Entry {
-
-        double pearsonCorrelationCoefficient;
-        int isotopeCorrectionNum;
-
-        Entry(double pearsonCorrelationCoefficient, int isotopeCorrectionNum) {
-            this.pearsonCorrelationCoefficient = pearsonCorrelationCoefficient;
-            this.isotopeCorrectionNum = isotopeCorrectionNum;
-        }
-    }
-
-
-    public static class DevEntry implements Comparable<DevEntry> {
-
-        public final int isotopeCorrectionNum;
-        public final double pearsonCorrelationCoefficient;
-        public final double[][] expMatrix;
-        public final double[][] theoMatrix;
-        private final String toString;
-        private final int hashCode;
-
-        public DevEntry(int isotopeCorrectionNum, double pearsonCorrelationCoefficient, double[][] expMatrix, double[][] theoMatrix) {
-            this.isotopeCorrectionNum = isotopeCorrectionNum;
-            this.pearsonCorrelationCoefficient = pearsonCorrelationCoefficient;
-            this.expMatrix = expMatrix;
-            this.theoMatrix = theoMatrix;
-            toString = isotopeCorrectionNum + "-" + pearsonCorrelationCoefficient;
-            hashCode = toString.hashCode();
-        }
-
-        public String toString() {
-            return toString;
-        }
-
-        public int hashCode() {
-            return hashCode;
-        }
-
-        public boolean equals(Object other) {
-            if (other instanceof DevEntry) {
-                DevEntry temp = (DevEntry) other;
-                return isotopeCorrectionNum == temp.isotopeCorrectionNum && pearsonCorrelationCoefficient == temp.pearsonCorrelationCoefficient;
-            } else {
-                return false;
-            }
-        }
-
-        public int compareTo(DevEntry other) {
-            if (isotopeCorrectionNum > other.isotopeCorrectionNum) {
-                return 1;
-            } else if (isotopeCorrectionNum < other.isotopeCorrectionNum) {
-                return -1;
-            } else {
-                return 0;
-            }
-        }
     }
 }
