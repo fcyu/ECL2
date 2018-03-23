@@ -6,6 +6,7 @@ import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
 import ProteomicsLibrary.MassTool;
 import ProteomicsLibrary.IsotopeDistribution;
+import static ProteomicsLibrary.Utilities.*;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReaderException;
 import uk.ac.ebi.pride.tools.jmzreader.model.*;
@@ -24,9 +25,6 @@ public class PreSpectra {
 
     private static final Logger logger = LoggerFactory.getLogger(PreSpectra.class);
     private static final Pattern pattern = Pattern.compile("^[0-9]+$");
-    private static final Pattern scanNumPattern1 = Pattern.compile("Scan:([0-9]+) ", Pattern.CASE_INSENSITIVE);
-    private static final Pattern scanNumPattern2 = Pattern.compile("scan=([0-9]+)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern scanNumPattern3 = Pattern.compile("^[^.]+\\.([0-9]+)\\.[0-9]+\\.[0-9]");
 
     private Map<Integer, TreeMap<Integer, TreeSet<IsotopeDistribution.DevEntry>>> scanDevEntryMap = new HashMap<>();
     private int usefulSpectraNum = 0;
@@ -109,18 +107,7 @@ public class PreSpectra {
                 }
                 if (ext.toLowerCase().contentEquals("mgf")) {
                     mgfTitle = ((Ms2Query) spectrum).getTitle();
-                    Matcher matcher1 = scanNumPattern1.matcher(mgfTitle);
-                    Matcher matcher2 = scanNumPattern2.matcher(mgfTitle);
-                    Matcher matcher3 = scanNumPattern3.matcher(mgfTitle);
-                    if (matcher1.find()) {
-                        scan_num = Integer.valueOf(matcher1.group(1));
-                    } else if (matcher2.find()) {
-                        scan_num = Integer.valueOf(matcher2.group(1));
-                    } else if (matcher3.find()) {
-                        scan_num = Integer.valueOf(matcher3.group(1));
-                    } else {
-                        throw new NullPointerException(String.format(Locale.US, "Cannot get scan number from the MGF title %s. Please report your MGF title to the author.", mgfTitle));
-                    }
+                    scan_num = getScanNum(mgfTitle);
                 } else {
                     scan_num = Integer.valueOf(spectrum.getId());
                     Scan scan = ((MzXMLFile) spectra_parser).getScanByNum((long) scan_num);
