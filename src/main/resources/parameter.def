@@ -12,7 +12,7 @@ min_chain_length = 5 # Minimum length of a peptide chain.
 max_chain_length = 50
 
 # Spectrum
-C13_correction = 0 # 1 = perform correction; 0 = not.
+C13_correction = 1 # 1 = perform correction; 0 = not.
 
 # Tolerance
 ms1_tolerance_unit = 1 # 0: Da; 1: ppm
@@ -69,7 +69,7 @@ c = 0
 # Advanced parameters.
 # Don't change them unless necessary.
 single_chain_t = 0 # Single chain score threshold.
-cal_evalue = 1 # 1 = calculate e-value; 0 = not.
+cal_evalue = 0 # 1 = calculate e-value; 0 = not.
 ms1_bin_size = 0.001
 delta_c_t = 0.00 # DeltaC threshold.
 flanking_peaks = 0 # 1 = use flanking peaks; 0 = not.
