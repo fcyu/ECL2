@@ -1,8 +1,9 @@
 package proteomics.Search;
 
+import ProteomicsLibrary.DbTool;
 import proteomics.ECL2;
 import proteomics.Index.BuildIndex;
-import proteomics.Spectrum.PreSpectrum;
+import ProteomicsLibrary.PrepareSpectrum;
 import ProteomicsLibrary.MassTool;
 import ProteomicsLibrary.Types.*;
 import proteomics.Types.*;
@@ -23,7 +24,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
 
     private final Search search_obj;
     private final BuildIndex build_index_obj;
-    private final PreSpectrum preSpectrumObj;
+    private final PrepareSpectrum preSpectrumObj;
     private final boolean cal_evalue;
     private final double delta_c_t;
     private final JMzReader spectraParser;
@@ -33,11 +34,12 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
     private final double massWithoutLinker;
     private final double precursorMass;
     private final String sqlPath;
+    private final boolean flankingPeaks;
 
     public SearchWrap(Search search_obj, BuildIndex build_index_obj, MassTool mass_tool_obj, boolean cal_evalue, double delta_c_t, boolean flankingPeaks, JMzReader spectraParser, ReentrantLock lock, String scanId, int precursorCharge, double massWithoutLinker, double precursorMass, String sqlPath) {
         this.search_obj = search_obj;
         this.build_index_obj = build_index_obj;
-        preSpectrumObj = new PreSpectrum(mass_tool_obj, flankingPeaks);
+        preSpectrumObj = new PrepareSpectrum(mass_tool_obj);
         this.cal_evalue = cal_evalue;
         this.delta_c_t = delta_c_t;
         this.spectraParser = spectraParser;
@@ -47,6 +49,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
         this.massWithoutLinker = massWithoutLinker;
         this.precursorMass = precursorMass;
         this.sqlPath = sqlPath;
+        this.flankingPeaks = flankingPeaks;
     }
 
     @Override
@@ -60,9 +63,9 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
             lock.unlock();
         }
 
-        SparseVector xcorrPL = preSpectrumObj.preSpectrum(rawPLMap, precursorMass, scanId);
+        SparseVector xcorrPL = preSpectrumObj.preSpectrumCometStyle(rawPLMap, precursorMass, flankingPeaks);
 
-        if (xcorrPL == null) {
+        if (xcorrPL.isEmpty()) {
             return null;
         }
 
@@ -120,7 +123,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
 
         Set<String> pro1Set = new TreeSet<>();
         boolean isDecoy1 = false;
-        for (String temp : seqProMap.get(chain_entry_1.seq.replaceAll("[^A-Znc]", ""))) {
+        for (String temp : seqProMap.get(DbTool.getPtmFreePeptide(chain_entry_1.seq))) {
             pro1Set.add(temp);
             if (temp.startsWith("DECOY")) { // there is no overlapped peptide between target and decoy.
                 isDecoy1 = true;
@@ -128,7 +131,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
         }
         Set<String> pro2Set = new TreeSet<>();
         boolean isDecoy2 = false;
-        for (String temp : seqProMap.get(chain_entry_2.seq.replaceAll("[^A-Znc]", ""))) {
+        for (String temp : seqProMap.get(DbTool.getPtmFreePeptide(chain_entry_2.seq))) {
             pro2Set.add(temp);
             if (temp.startsWith("DECOY")) { // there is no overlapped peptide between target and decoy.
                 isDecoy2 = true;
@@ -146,11 +149,11 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
 
         String cl_type = "intra_protein";
         boolean keep = false;
-        for (String temp_1 : seqProMap.get(chain_entry_1.seq.replaceAll("[^A-Znc]", ""))) {
+        for (String temp_1 : seqProMap.get(DbTool.getPtmFreePeptide(chain_entry_1.seq))) {
             if (temp_1.startsWith("DECOY_")) {
                 temp_1 = temp_1.substring(6);
             }
-            for (String temp_2 : seqProMap.get(chain_entry_2.seq.replaceAll("[^A-Znc]", ""))) {
+            for (String temp_2 : seqProMap.get(DbTool.getPtmFreePeptide(chain_entry_2.seq))) {
                 if (temp_2.startsWith("DECOY_")) {
                     temp_2 = temp_2.substring(6);
                 }

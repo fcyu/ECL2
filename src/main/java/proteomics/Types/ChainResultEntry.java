@@ -1,5 +1,7 @@
 package proteomics.Types;
 
+import ProteomicsLibrary.DbTool;
+
 public class ChainResultEntry implements Comparable<ChainResultEntry>{
 
     private String seq;
@@ -14,12 +16,12 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
 
     public void setSeq(String seq) {
         this.seq = seq;
-        ptmFreeSeq = seq.replaceAll("[^A-Znc]", "");
+        ptmFreeSeq = DbTool.getPtmFreePeptide(seq);
     }
 
     public void setSecondSeq(String second_seq) {
         this.second_seq = second_seq;
-        secondPtmFreeSeq = second_seq.replaceAll("[^A-Znc]", "");
+        secondPtmFreeSeq = DbTool.getPtmFreePeptide(second_seq);
     }
 
     public void setLinkSite(int link_site) {
