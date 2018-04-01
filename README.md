@@ -4,7 +4,7 @@ ECL2 is an advanced version of ECL. It has a linear computational complexity, su
 ## How to use it?
 Requirements: Java 1.8 or later
 
-Download the ECL2-2.1.6.zip from the latest release page [https://github.com/fcyu/ECL2/releases/latest/](https://github.com/fcyu/ECL2/releases/latest/) and unzip the file.
+Download the ECL2-2.1.7.zip from the latest release page [https://github.com/fcyu/ECL2/releases/latest/](https://github.com/fcyu/ECL2/releases/latest/) and unzip the file.
 
 Usage:
 ```
