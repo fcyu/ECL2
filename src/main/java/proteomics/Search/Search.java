@@ -1,5 +1,6 @@
 package proteomics.Search;
 
+import ProteomicsLibrary.DbTool;
 import proteomics.ECL2;
 import ProteomicsLibrary.MassTool;
 import ProteomicsLibrary.Types.*;
@@ -42,7 +43,7 @@ public class Search {
         }
     }
 
-    ResultEntry doSearch(SparseVector xcorrPL, TreeMap<Integer, List<Double>> binScoresMap, double massWithoutLinker, int precursorCharge, double precursorMass, String scanId) throws IOException {
+    ResultEntry doSearch(SparseVector xcorrPL, TreeMap<Integer, List<Double>> binScoresMap, double massWithoutLinker, int precursorCharge, double precursorMass, String scanId, boolean linkSamePeptide) throws IOException {
         int max_chain_bin_idx = Math.min(build_index_obj.massToBin(massWithoutLinker) + 1 - bin_seq_map.firstKey(), bin_seq_map.lastKey());
         int min_chain_bin_idx = bin_seq_map.firstKey();
 
@@ -91,6 +92,7 @@ public class Search {
 
                 if (binChainMap.containsKey(idx_1)) { // There may be no chain with chain score > single_chain_t
                     ChainResultEntry chain_score_entry_1 = binChainMap.get(idx_1);
+                    String sequence1 = DbTool.getSequenceOnly(chain_score_entry_1.getPtmFreeSeq());
                     for (int idx_2 : sub_map.keySet()) {
                         if (!checkedBinSet.contains(idx_2)) {
                             // this bin hasn't been visited. Linear scan first.
@@ -106,46 +108,149 @@ public class Search {
 
                             // only two sequences with the same binary mod type can be linked.
                             if (chain_entry_map.get(chain_score_entry_1.getSeq()).binaryModType == chain_entry_map.get(chain_score_entry_2.getSeq()).binaryModType) {
-                                double score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
+                                String sequence2 = DbTool.getSequenceOnly(chain_score_entry_2.getPtmFreeSeq());
                                 ++candidate_num;
+                                if (linkSamePeptide || (!sequence1.contains(sequence2) && !sequence2.contains(sequence1))) {
+                                    double score = chain_score_entry_1.getScore() + chain_score_entry_2.getScore();
+                                    double second_score;
 
-                                // calculate second score
-                                double second_score = 0;
-                                double temp_1 = -1;
-                                if (chain_score_entry_1.getSecondSeq() != null) {
-                                    temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
-                                }
-                                double temp_2 = -1;
-                                if (chain_score_entry_2.getSecondSeq() != null) {
-                                    temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
-                                }
-
-                                if (temp_1 > 0) {
-                                    if (temp_1 >= temp_2) {
-                                        second_score = temp_1;
+                                    // calculate second score
+                                    Double[] tempArray = new Double[]{-1d, -1d, -1d};
+                                    if (chain_score_entry_1.getSecondSeq() != null) {
+                                        String sequence12 = DbTool.getSequenceOnly(chain_score_entry_1.getSecondSeq());
+                                        if (linkSamePeptide || (!sequence12.contains(sequence2) && !sequence2.contains(sequence12))) {
+                                            tempArray[0] = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
+                                        }
                                     }
-                                } else if (temp_2 > 0) {
-                                    if (temp_2 > temp_1) {
-                                        second_score = temp_2;
+                                    if (chain_score_entry_2.getSecondSeq() != null) {
+                                        String sequence22 = DbTool.getSequenceOnly(chain_score_entry_2.getSecondSeq());
+                                        if (linkSamePeptide || (!sequence22.contains(sequence1) && !sequence1.contains(sequence22))) {
+                                            tempArray[1] = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
+                                        }
+                                    }
+                                    if (chain_score_entry_1.getSecondSeq() != null && chain_score_entry_2.getSecondSeq() != null) {
+                                        String sequence12 = DbTool.getSequenceOnly(chain_score_entry_1.getSecondSeq());
+                                        String sequence22 = DbTool.getSequenceOnly(chain_score_entry_2.getSecondSeq());
+                                        if (linkSamePeptide || (!sequence22.contains(sequence12) && !sequence12.contains(sequence22))) {
+                                            tempArray[2] = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getSecondScore();
+                                        }
+                                    }
+
+                                    Arrays.sort(tempArray, Collections.reverseOrder());
+                                    second_score = Math.max(0, tempArray[0]);
+
+                                    // record results
+                                    if (score > resultEntry.getScore()) {
+                                        resultEntry.setSecondScore(Math.max(resultEntry.getScore(), second_score));
+                                        resultEntry.setScore(score);
+                                        resultEntry.setChain1(chain_score_entry_1.getSeq());
+                                        resultEntry.setChain2(chain_score_entry_2.getSeq());
+                                        resultEntry.setLinkSite1(chain_score_entry_1.getLinkSite());
+                                        resultEntry.setLinkSite2(chain_score_entry_2.getLinkSite());
+                                    } else if (Math.max(score, second_score) > resultEntry.getSecondScore()) {
+                                        resultEntry.setSecondScore(Math.max(score, second_score));
+                                    }
+                                } else {
+                                    double temp_1 = -1;
+                                    if (chain_score_entry_1.getSecondSeq() != null) {
+                                        String sequence12 = DbTool.getSequenceOnly(chain_score_entry_1.getSecondSeq());
+                                        if (!sequence12.contains(sequence2) && !sequence2.contains(sequence12)) {
+                                            temp_1 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getScore();
+                                        }
+                                    }
+                                    double temp_2 = -1;
+                                    if (chain_score_entry_2.getSecondSeq() != null) {
+                                        String sequence22 = DbTool.getSequenceOnly(chain_score_entry_2.getSecondSeq());
+                                        if (!sequence22.contains(sequence1) && !sequence1.contains(sequence22)) {
+                                            temp_2 = chain_score_entry_1.getScore() + chain_score_entry_2.getSecondScore();
+                                        }
+                                    }
+                                    double temp_3 = -1;
+                                    if (chain_score_entry_1.getSecondSeq() != null && chain_score_entry_2.getSecondSeq() != null) {
+                                        String sequence12 = DbTool.getSequenceOnly(chain_score_entry_1.getSecondSeq());
+                                        String sequence22 = DbTool.getSequenceOnly(chain_score_entry_2.getSecondSeq());
+                                        if (!sequence12.contains(sequence22) && !sequence22.contains(sequence12)) {
+                                            temp_3 = chain_score_entry_1.getSecondScore() + chain_score_entry_2.getSecondScore();
+                                        }
+                                    }
+
+                                    // record results
+                                    if (temp_1 >= temp_2 && temp_2 >= temp_3) {
+                                        if (temp_1 > resultEntry.getScore()) {
+                                            resultEntry.setSecondScore(Math.max(resultEntry.getScore(), temp_2));
+                                            resultEntry.setScore(temp_1);
+                                            resultEntry.setChain1(chain_score_entry_1.getSecondSeq());
+                                            resultEntry.setChain2(chain_score_entry_2.getSeq());
+                                            resultEntry.setLinkSite1(chain_score_entry_1.getSecondLinkSite());
+                                            resultEntry.setLinkSite2(chain_score_entry_2.getLinkSite());
+                                        } else if (Math.max(temp_1, temp_2) > resultEntry.getSecondScore()) {
+                                            resultEntry.setSecondScore(Math.max(temp_1, temp_2));
+                                        }
+                                    } else if (temp_1 >= temp_3 && temp_3 >= temp_2) {
+                                        if (temp_1 > resultEntry.getScore()) {
+                                            resultEntry.setSecondScore(Math.max(resultEntry.getScore(), temp_3));
+                                            resultEntry.setScore(temp_1);
+                                            resultEntry.setChain1(chain_score_entry_1.getSecondSeq());
+                                            resultEntry.setChain2(chain_score_entry_2.getSeq());
+                                            resultEntry.setLinkSite1(chain_score_entry_1.getSecondLinkSite());
+                                            resultEntry.setLinkSite2(chain_score_entry_2.getLinkSite());
+                                        } else if (Math.max(temp_1, temp_3) > resultEntry.getSecondScore()) {
+                                            resultEntry.setSecondScore(Math.max(temp_1, temp_3));
+                                        }
+                                    } else if (temp_2 >= temp_3 && temp_3 >= temp_1) {
+                                        if (temp_2 > resultEntry.getScore()) {
+                                            resultEntry.setSecondScore(Math.max(resultEntry.getScore(), temp_3));
+                                            resultEntry.setScore(temp_2);
+                                            resultEntry.setChain1(chain_score_entry_1.getSeq());
+                                            resultEntry.setChain2(chain_score_entry_2.getSecondSeq());
+                                            resultEntry.setLinkSite1(chain_score_entry_1.getLinkSite());
+                                            resultEntry.setLinkSite2(chain_score_entry_2.getSecondLinkSite());
+                                        } else if (Math.max(temp_2, temp_3) > resultEntry.getSecondScore()) {
+                                            resultEntry.setSecondScore(Math.max(temp_2, temp_3));
+                                        }
+                                    } else if (temp_2 >= temp_1 && temp_1 >= temp_3) {
+                                        if (temp_2 > resultEntry.getScore()) {
+                                            resultEntry.setSecondScore(Math.max(resultEntry.getScore(), temp_1));
+                                            resultEntry.setScore(temp_2);
+                                            resultEntry.setChain1(chain_score_entry_1.getSeq());
+                                            resultEntry.setChain2(chain_score_entry_2.getSecondSeq());
+                                            resultEntry.setLinkSite1(chain_score_entry_1.getLinkSite());
+                                            resultEntry.setLinkSite2(chain_score_entry_2.getSecondLinkSite());
+                                        } else if (Math.max(temp_1, temp_2) > resultEntry.getSecondScore()) {
+                                            resultEntry.setSecondScore(Math.max(temp_1, temp_2));
+                                        }
+                                    } else if (temp_3 >= temp_1 && temp_1 >= temp_2) {
+                                        if (temp_3 > resultEntry.getScore()) {
+                                            resultEntry.setSecondScore(Math.max(resultEntry.getScore(), temp_1));
+                                            resultEntry.setScore(temp_3);
+                                            resultEntry.setChain1(chain_score_entry_1.getSecondSeq());
+                                            resultEntry.setChain2(chain_score_entry_2.getSecondSeq());
+                                            resultEntry.setLinkSite1(chain_score_entry_1.getSecondLinkSite());
+                                            resultEntry.setLinkSite2(chain_score_entry_2.getSecondLinkSite());
+                                        } else if (Math.max(temp_1, temp_3) > resultEntry.getSecondScore()) {
+                                            resultEntry.setSecondScore(Math.max(temp_1, temp_3));
+                                        }
+                                    } else if (temp_3 >= temp_2 && temp_2 >= temp_1) {
+                                        if (temp_3 > resultEntry.getScore()) {
+                                            resultEntry.setSecondScore(Math.max(resultEntry.getScore(), temp_2));
+                                            resultEntry.setScore(temp_3);
+                                            resultEntry.setChain1(chain_score_entry_1.getSecondSeq());
+                                            resultEntry.setChain2(chain_score_entry_2.getSecondSeq());
+                                            resultEntry.setLinkSite1(chain_score_entry_1.getSecondLinkSite());
+                                            resultEntry.setLinkSite2(chain_score_entry_2.getSecondLinkSite());
+                                        } else if (Math.max(temp_2, temp_3) > resultEntry.getSecondScore()) {
+                                            resultEntry.setSecondScore(Math.max(temp_2, temp_3));
+                                        }
                                     }
                                 }
 
+                                // record data points if need to calculate e-value;
                                 if (cal_evalue && (resultEntry.getScoreCount() < ECL2.score_point_t)) {
                                     for (double s1 : binScoresMap.get(idx_1)) {
                                         for (double s2 : binScoresMap.get(idx_2)) {
                                             resultEntry.addToScoreHistogram(s1 + s2);
                                         }
                                     }
-                                }
-                                if (score > resultEntry.getScore()) {
-                                    resultEntry.setSecondScore(Math.max(resultEntry.getScore(), second_score));
-                                    resultEntry.setScore(score);
-                                    resultEntry.setChain1(chain_score_entry_1.getSeq());
-                                    resultEntry.setChain2(chain_score_entry_2.getSeq());
-                                    resultEntry.setLinkSite1(chain_score_entry_1.getLinkSite());
-                                    resultEntry.setLinkSite2(chain_score_entry_2.getLinkSite());
-                                } else if (Math.max(score, second_score) > resultEntry.getSecondScore()) {
-                                    resultEntry.setSecondScore(Math.max(score, second_score));
                                 }
                             }
                         }
@@ -215,12 +320,14 @@ public class Search {
                     if (dot_product > chain_result_entry.getScore()) {
                         chain_result_entry.setSecondScore(chain_result_entry.getScore());
                         chain_result_entry.setSecondSeq(chain_result_entry.getSeq());
+                        chain_result_entry.setSecondLinkSite(chain_result_entry.getLinkSite());
                         chain_result_entry.setScore(dot_product);
                         chain_result_entry.setSeq(chainEntry.seq);
                         chain_result_entry.setLinkSite(link_site_1);
                     } else if (dot_product > chain_result_entry.getSecondScore()) {
                         chain_result_entry.setSecondScore(dot_product);
                         chain_result_entry.setSecondSeq(chainEntry.seq);
+                        chain_result_entry.setSecondLinkSite(link_site_1);
                     }
                 } else {
                     ChainResultEntry chain_result_entry = new ChainResultEntry();
@@ -228,6 +335,7 @@ public class Search {
                     chain_result_entry.setLinkSite(link_site_1);
                     chain_result_entry.setScore(dot_product);
                     chain_result_entry.setSecondScore(0);
+                    chain_result_entry.setSecondLinkSite(-1);
                     binChainMap.put(binInx, chain_result_entry);
                 }
             }

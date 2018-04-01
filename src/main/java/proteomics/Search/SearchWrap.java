@@ -35,8 +35,9 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
     private final double precursorMass;
     private final String sqlPath;
     private final boolean flankingPeaks;
+    private final boolean linkSamePeptide;
 
-    public SearchWrap(Search search_obj, BuildIndex build_index_obj, MassTool mass_tool_obj, boolean cal_evalue, double delta_c_t, boolean flankingPeaks, JMzReader spectraParser, ReentrantLock lock, String scanId, int precursorCharge, double massWithoutLinker, double precursorMass, String sqlPath) {
+    public SearchWrap(Search search_obj, BuildIndex build_index_obj, MassTool mass_tool_obj, boolean cal_evalue, double delta_c_t, boolean flankingPeaks, JMzReader spectraParser, ReentrantLock lock, String scanId, int precursorCharge, double massWithoutLinker, double precursorMass, String sqlPath, boolean linkSamePeptide) {
         this.search_obj = search_obj;
         this.build_index_obj = build_index_obj;
         preSpectrumObj = new PrepareSpectrum(mass_tool_obj);
@@ -50,6 +51,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
         this.precursorMass = precursorMass;
         this.sqlPath = sqlPath;
         this.flankingPeaks = flankingPeaks;
+        this.linkSamePeptide = linkSamePeptide;
     }
 
     @Override
@@ -78,7 +80,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
             writer.close();
         }
         TreeMap<Integer, List<Double>> binScoresMap = new TreeMap<>();
-        ResultEntry resultEntry =  search_obj.doSearch(xcorrPL, binScoresMap, massWithoutLinker, precursorCharge, precursorMass, scanId);
+        ResultEntry resultEntry =  search_obj.doSearch(xcorrPL, binScoresMap, massWithoutLinker, precursorCharge, precursorMass, scanId, linkSamePeptide);
         if (resultEntry != null) {
             if (1 - (resultEntry.getSecondScore() / resultEntry.getScore()) >= delta_c_t) {
                 if (cal_evalue) {

@@ -9,6 +9,7 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
     private String second_seq;
     private String secondPtmFreeSeq;
     private int link_site;
+    private int secondLinkSite;
     private double score;
     private double second_score;
 
@@ -26,6 +27,10 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
 
     public void setLinkSite(int link_site) {
         this.link_site = link_site;
+    }
+
+    public void setSecondLinkSite(int secondLinkSite) {
+        this.secondLinkSite = secondLinkSite;
     }
 
     public void setScore(double score) {
@@ -54,6 +59,10 @@ public class ChainResultEntry implements Comparable<ChainResultEntry>{
 
     public int getLinkSite() {
         return link_site;
+    }
+
+    public int getSecondLinkSite() {
+        return secondLinkSite;
     }
 
     public double getScore() {

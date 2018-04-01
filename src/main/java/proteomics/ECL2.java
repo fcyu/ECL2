@@ -179,7 +179,7 @@ public class ECL2 {
             int precursorCharge = sqlResultSet.getInt("precursorCharge");
             double massWithoutLinker = sqlResultSet.getDouble("massWithoutLinker");
             double precursorMass = sqlResultSet.getDouble("precursorMass");
-            taskList.add(thread_pool.submit(new SearchWrap(search_obj, build_index_obj, mass_tool_obj, cal_evalue, delta_c_t, flankingPeaks, spectra_parser, lock, scanId, precursorCharge, massWithoutLinker, precursorMass, sqlPath)));
+            taskList.add(thread_pool.submit(new SearchWrap(search_obj, build_index_obj, mass_tool_obj, cal_evalue, delta_c_t, flankingPeaks, spectra_parser, lock, scanId, precursorCharge, massWithoutLinker, precursorMass, sqlPath, parameter_map.get("link_same_peptide").contentEquals("1"))));
         }
         sqlResultSet.close();
         sqlStatement.close();
