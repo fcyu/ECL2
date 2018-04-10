@@ -347,7 +347,7 @@ public class BuildIndex {
                             Map<Integer, List<Double>> idxBinaryVarModMassMap = new HashMap<>(seq.length(), 1);
                             idxBinaryVarModMassMap.putAll(idxBinaryModMassMap);
                             idxBinaryVarModMassMap.putAll(idxVarModMassMap);
-                            Integer[] allIdxArray = idxVarModMassMap.keySet().toArray(new Integer[idxVarModMassMap.size()]);
+                            Integer[] allIdxArray = idxVarModMassMap.keySet().toArray(new Integer[0]);
                             Arrays.sort(allIdxArray);
                             for (int i = 1; i <= Math.min(varModMaxNum - idxBinaryModMassMap.size(), idxVarModMassMap.size()); ++i) {
                                 List<int[]> idxCombinationList = generateIdxCombinations(allIdxArray, i);
@@ -395,7 +395,7 @@ public class BuildIndex {
             }
             if (!idxVarModMassMap.isEmpty()) {
                 // generate var containing sequences
-                Integer[] allIdxArray = idxVarModMassMap.keySet().toArray(new Integer[idxVarModMassMap.size()]);
+                Integer[] allIdxArray = idxVarModMassMap.keySet().toArray(new Integer[0]);
                 Arrays.sort(allIdxArray);
                 for (int i = 1; i <= Math.min(varModMaxNum, idxVarModMassMap.size()); ++i) {
                     List<int[]> idxCombinationList = generateIdxCombinations(allIdxArray, i);
@@ -511,7 +511,7 @@ public class BuildIndex {
     }
 
     private Set<String> checkKCTermMod(Set<String> varSeqSet) { // eliminate those sequence that the middle amino acids having the same mod mass and the n-term and the first amino acid or the c-term and the last amino acid have the same mod mass. todo: check
-        String[] varSeqArray = varSeqSet.toArray(new String[varSeqSet.size()]);
+        String[] varSeqArray = varSeqSet.toArray(new String[0]);
         Arrays.sort(varSeqArray); // Make sure that nK[].... is before n[]K..., so that n[]K... will be kept.
         int seqLength = MassTool.seqToAAList(varSeqArray[0], "[]").length;
         AA[][] aaArrays = new AA[varSeqArray.length][seqLength];
