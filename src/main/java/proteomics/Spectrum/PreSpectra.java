@@ -26,10 +26,9 @@ public class PreSpectra {
     private static final Logger logger = LoggerFactory.getLogger(PreSpectra.class);
     private static final Pattern pattern = Pattern.compile("^[0-9]+$");
 
-    private Map<Integer, TreeMap<Integer, TreeSet<IsotopeDistribution.DevEntry>>> scanDevEntryMap = new HashMap<>();
     private int usefulSpectraNum = 0;
 
-    public PreSpectra(JMzReader spectra_parser, double ms1Tolerance, double leftInverseMs1Tolerance, double rightInverseMs1Tolerance, int ms1ToleranceUnit, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext, String sqlPath) throws MzXMLParsingException, IOException, SQLException, JMzReaderException {
+    public PreSpectra(JMzReader spectra_parser, double ms1Tolerance, double leftInverseMs1Tolerance, double rightInverseMs1Tolerance, int ms1ToleranceUnit, BuildIndex build_index_obj, Map<String, String> parameter_map, String ext, String sqlPath) throws Exception {
         Set<Integer> debug_scan_num_set = new HashSet<>();
         //  In DEBUG mode, filter out unlisted scan num
         if (ECL2.debug) {
@@ -101,10 +100,6 @@ public class PreSpectra {
                 int rt = -1;
                 int isotopeCorrectionNum = 0;
                 double pearsonCorrelationCoefficient = -1;
-                TreeMap<Integer, TreeSet<IsotopeDistribution.DevEntry>> chargeDevEntryMap = null;
-                if (ECL2.dev) {
-                    chargeDevEntryMap = new TreeMap<>();
-                }
                 if (ext.toLowerCase().contentEquals("mgf")) {
                     mgfTitle = ((Ms2Query) spectrum).getTitle();
                     scan_num = getScanNum(mgfTitle);
@@ -115,7 +110,7 @@ public class PreSpectra {
                     if (parameter_map.get("C13_correction").contentEquals("1")) {
                         TreeMap<Double, Double> parentPeakList = new TreeMap<>(spectra_parser.getSpectrumById(parentId).getPeakList());
                         // We do not try to correct the precursor charge if there is one.
-                        IsotopeDistribution.Entry entry = isotopeDistribution.getIsotopeCorrectionNum(precursor_mz, ms1Tolerance, ms1ToleranceUnit, precursor_charge, parentPeakList, chargeDevEntryMap);
+                        IsotopeDistribution.Entry entry = isotopeDistribution.getIsotopeCorrectionNum(precursor_mz, ms1Tolerance, ms1ToleranceUnit, precursor_charge, parentPeakList);
                         if (entry.pearsonCorrelationCoefficient >= 0.7) { // If the Pearson correlation coefficient is smaller than 0.7, there is not enough evidence to change the original precursor mz.
                             isotopeCorrectionNum = entry.isotopeCorrectionNum;
                             pearsonCorrelationCoefficient = entry.pearsonCorrelationCoefficient;
@@ -136,10 +131,6 @@ public class PreSpectra {
                 sqlPrepareStatement.setDouble(10, pearsonCorrelationCoefficient);
                 sqlPrepareStatement.executeUpdate();
                 ++usefulSpectraNum;
-
-                if (ECL2.dev) {
-                    scanDevEntryMap.put(scan_num, chargeDevEntryMap);
-                }
             } catch (RuntimeException ex) {
                 logger.error(ex.toString());
             }
@@ -149,10 +140,6 @@ public class PreSpectra {
         sqlPrepareStatement.close();
         sqlConnection.close();
         logger.info("Useful MS/MS spectra number: {}.", usefulSpectraNum);
-    }
-
-    public Map<Integer, TreeMap<Integer, TreeSet<IsotopeDistribution.DevEntry>>> getScanDevEntryMap() {
-        return scanDevEntryMap;
     }
 
     public int getUsefulSpectraNum() {

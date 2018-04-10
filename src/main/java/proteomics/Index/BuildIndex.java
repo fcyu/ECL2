@@ -99,7 +99,7 @@ public class BuildIndex {
         }
 
         // define a new MassTool object
-        mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, "KR", "P", true, mz_bin_size * 0.5, one_minus_bin_offset, "N14", "[]");
+        mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, "KR", "P", true, mz_bin_size * 0.5, one_minus_bin_offset, "N14");
 
         // generate seq_pro_map
         Map<String, boolean[]> seq_term_map = new HashMap<>();
@@ -513,10 +513,10 @@ public class BuildIndex {
     private Set<String> checkKCTermMod(Set<String> varSeqSet) { // eliminate those sequence that the middle amino acids having the same mod mass and the n-term and the first amino acid or the c-term and the last amino acid have the same mod mass. todo: check
         String[] varSeqArray = varSeqSet.toArray(new String[0]);
         Arrays.sort(varSeqArray); // Make sure that nK[].... is before n[]K..., so that n[]K... will be kept.
-        int seqLength = MassTool.seqToAAList(varSeqArray[0], "[]").length;
+        int seqLength = MassTool.seqToAAList(varSeqArray[0]).length;
         AA[][] aaArrays = new AA[varSeqArray.length][seqLength];
         for (int i = 0; i < varSeqArray.length; ++i) {
-            aaArrays[i] = MassTool.seqToAAList(varSeqArray[i], "[]");
+            aaArrays[i] = MassTool.seqToAAList(varSeqArray[i]);
         }
 
         if (aaArrays.length > 1) {
@@ -549,7 +549,7 @@ public class BuildIndex {
     }
 
     private Set<Short> getLinkSiteSet(String seq, boolean n_term, boolean c_term, short linker_type) {
-        AA[] aa_list = MassTool.seqToAAList(seq, "[]");
+        AA[] aa_list = MassTool.seqToAAList(seq);
         Set<Short> output = new HashSet<>(5, 1);
         for (int i = 1; i < aa_list.length - 2; ++i) {
             if (linker_type == 1 && aa_list[i].aa == 'K' && (Math.abs(aa_list[i].ptmDeltaMass) < varModMassResolution)) {

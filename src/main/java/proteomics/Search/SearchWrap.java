@@ -220,7 +220,7 @@ public class SearchWrap implements Callable<SearchWrap.Entry> {
 
     private String addFixMod(String seq, int linkSite) {
         Map<Character, Double> fix_mod_map = build_index_obj.getFixModMap();
-        AA[] aaList = MassTool.seqToAAList(seq, "[]");
+        AA[] aaList = MassTool.seqToAAList(seq);
         StringBuilder sb = new StringBuilder(seq.length() * 3);
         for (int i = 0; i < aaList.length; ++i) {
             AA aa = aaList[i];
