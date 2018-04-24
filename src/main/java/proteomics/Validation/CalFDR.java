@@ -1,10 +1,15 @@
 package proteomics.Validation;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.util.*;
 
 public class CalFDR {
+
+    private static final Logger logger = LoggerFactory.getLogger(CalFDR.class);
 
     public static Map<String, Entry> calFDR(String sqlPath, boolean cal_evalue, String clType) throws SQLException {
         double min_score = 999;
@@ -47,6 +52,10 @@ public class CalFDR {
         sqlStatement.close();
         sqlConnection.close();
 
+        if (scanIdEntryMap.size() < 500) {
+            logger.warn("For {}, There are only {} hits in total, which is not enough to estimate an accurate FDR/q-value.", clType, scanIdEntryMap.size());
+        }
+
         final int array_length = 1 + (int) Math.ceil((max_score - min_score) * inversePrecision);
         if (array_length <= 0) { // there is no hit
             return scanIdEntryMap;
@@ -71,6 +80,7 @@ public class CalFDR {
         }
 
         // Calculate FDR
+        boolean printWarning = false;
         for (int idx_1 = 0; idx_1 < array_length - 1; ++idx_1) {
             int decoy_count = 0;
             int fuse_count = 0;
@@ -85,6 +95,7 @@ public class CalFDR {
             if (target_count == 0) {
                 fdr = 0;
             } else if (fuse_count < decoy_count) {
+                printWarning = true;
                 fdr = 0;
             } else {
                 fdr = (double) (fuse_count - decoy_count) / (double) target_count;
@@ -92,6 +103,10 @@ public class CalFDR {
 
             fdr = Math.min(fdr, 1); // Adjust those fdrs that are larger than 1
             fdr_array[idx_1] = fdr;
+        }
+
+        if (printWarning) {
+            logger.warn("For {}, there are less T-D hits than D-D hits. The estimated FDR/q-value is not accurate.", clType);
         }
 
         // Convert FDR to qvalue
