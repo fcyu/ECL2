@@ -6,7 +6,7 @@ dev = 0 # Output development information.
 
 # Database
 db = small+random50.fasta # The protein database.
-database_type = UniProt # Different types have different fasta header patterns. Available values: UniProt, SwissProt, TAIR, ITAG, Others
+database_type = UniProt # Different types have different fasta header patterns. Available values: UniProt, SwissProt, TAIR, ITAG, RefSeq, Others
 missed_cleavage = 2 # Maximum number of allowed missed cleavage.
 min_chain_length = 5 # Minimum length of a peptide chain.
 max_chain_length = 50
