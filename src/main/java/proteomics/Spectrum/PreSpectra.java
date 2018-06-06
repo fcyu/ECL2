@@ -8,10 +8,8 @@ import ProteomicsLibrary.MassTool;
 import ProteomicsLibrary.IsotopeDistribution;
 import static ProteomicsLibrary.Utilities.*;
 import uk.ac.ebi.pride.tools.jmzreader.JMzReader;
-import uk.ac.ebi.pride.tools.jmzreader.JMzReaderException;
 import uk.ac.ebi.pride.tools.jmzreader.model.*;
 import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLFile;
-import uk.ac.ebi.pride.tools.mzxml_parser.MzXMLParsingException;
 import uk.ac.ebi.pride.tools.mzxml_parser.mzxml.model.Scan;
 import uk.ac.ebi.pride.tools.mgf_parser.model.Ms2Query;
 

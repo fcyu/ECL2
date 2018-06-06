@@ -135,7 +135,7 @@
                         <lib>${java.home}/lib/rt.jar</lib>
                     </libs>
                     <options>
-                        <option>-keep class !proteomics.**,!ProteomicsLibrary.** { *;}</option>
+                        <option>-keep class !proteomics.**,!ProteomicsLibrary.** { *; }</option>
                         <option>-keepclasseswithmembers public class * { public static void main(java.lang.String[]); }</option>
                         <option>-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod</option>
                         <option>-keepclasseswithmembernames,includedescriptorclasses class * { native &lt;methods&gt;; } </option>

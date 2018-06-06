@@ -1,6 +1,5 @@
 package proteomics;
 
-import ProteomicsLibrary.IsotopeDistribution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import proteomics.Index.BuildIndex;
@@ -121,7 +120,7 @@ public class ECL2 {
         Class.forName("org.sqlite.JDBC").newInstance();
 
         logger.info("Reading spectra...");
-        JMzReader spectra_parser = null;
+        JMzReader spectra_parser;
         File spectra_file = new File(spectra_path);
         if ((!spectra_file.exists() || (spectra_file.isDirectory()))) {
             throw new FileNotFoundException("The spectra file not found.");
