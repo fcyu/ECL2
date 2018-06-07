@@ -34,6 +34,8 @@ public class ECL2 {
     public static boolean dev;
 
     public static void main(String[] args) {
+        long startTime = System.nanoTime();
+
         // Process inputs
         if (args.length != 2) {
             help();
@@ -72,6 +74,10 @@ public class ECL2 {
                 (new File(dbName + "-shm")).delete();
             }
         }
+
+        double totalHour = (double) (System.nanoTime() - startTime) * 1e-9 / 3600;
+        logger.info("Running time: {} hours.", totalHour);
+        logger.info("Done!");
     }
 
     private ECL2(String parameter_path, String spectra_path, String dbName) throws Exception{
@@ -277,7 +283,6 @@ public class ECL2 {
             allResult.putAll(intra_result);
             saveTargetResult(allResult, build_index_obj.getProAnnotateMap(), spectra_path, cal_evalue, sqlPath);
         }
-        logger.info("Done.");
     }
 
     private static void saveTargetResult(Map<String, CalFDR.Entry> result, Map<String, String> pro_annotate_map, String id_file_name, boolean cal_evalue, String sqlPath) throws IOException, SQLException, NullPointerException {
