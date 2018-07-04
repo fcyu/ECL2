@@ -66,7 +66,7 @@ O = 0
 n = 0
 c = 0
 
-# Enzyme digestion specifications. Only support one enzyme at a time.
+# Enzyme digestion specifications. Support up to two enzymes simultaneously.
 # enzyme name  	 is cut from C-term 	 cleavage site 	 protection site
 Trypsin        	 1                  	 KR            	 P
 # Trypsin/P      1                  	 KR            	 -

@@ -99,7 +99,7 @@ public class BuildIndex {
         }
 
         // define a new MassTool object
-        mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, parameter_map.get("cleavage_site").trim(), parameter_map.get("protection_site").trim(), parameter_map.get("is_from_C_term").trim().contentEquals("1"), mz_bin_size * 0.5, one_minus_bin_offset, "N14");
+        mass_tool_obj = new MassTool(missed_cleavage, fix_mod_map, parameter_map.get("cleavage_site_1").trim(), parameter_map.get("protection_site_1").trim(), parameter_map.get("is_from_C_term_1").trim().contentEquals("1"), parameter_map.getOrDefault("cleavage_site_2", null), parameter_map.getOrDefault("protection_site_2", null), parameter_map.containsKey("is_from_C_term_2") ? parameter_map.get("is_from_C_term_2").trim().contentEquals("1") : null, mz_bin_size * 0.5, one_minus_bin_offset, "N14");
 
         // generate seq_pro_map
         Map<String, boolean[]> seq_term_map = new HashMap<>();
@@ -139,7 +139,7 @@ public class BuildIndex {
             boolean proteinCTerm = seq_term_map.get(seq)[1];
 
             // mod free
-            Set<Short> linkSiteSet = getLinkSiteSet(seq, parameter_map.get("is_from_C_term").trim().contentEquals("1"), parameter_map.get("cleavage_site"), proteinNTerm, proteinCTerm, linker_type);
+            Set<Short> linkSiteSet = getLinkSiteSet(seq, parameter_map.get("is_from_C_term_1").trim().contentEquals("1"), parameter_map.get("cleavage_site_1"), parameter_map.containsKey("is_from_C_term_2") ? parameter_map.get("is_from_C_term_2").trim().contentEquals("1") : null, parameter_map.getOrDefault("cleavage_site_2", null), proteinNTerm, proteinCTerm, linker_type);
             if (!linkSiteSet.isEmpty()) {
                 double totalMass = (mass_tool_obj.calResidueMass(seq) + mass_tool_obj.H2O);
                 int bin = massToBin(totalMass);
@@ -548,28 +548,52 @@ public class BuildIndex {
         }
     }
 
-    private Set<Short> getLinkSiteSet(String seq, boolean is_from_C_term, String cleavage_site, boolean n_term, boolean c_term, short linker_type) {
+    private Set<Short> getLinkSiteSet(String seq, boolean is_from_C_term_1, String cleavage_site_1, Boolean is_from_C_term_2, String cleavage_site_2, boolean n_term, boolean c_term, short linker_type) {
         AA[] aa_list = MassTool.seqToAAList(seq);
         Set<Short> output = new HashSet<>(5, 1);
         for (int i = 1; i < aa_list.length - 1; ++i) {
             if (linker_type == 1 && aa_list[i].aa == 'K' && (Math.abs(aa_list[i].ptmDeltaMass) < varModMassResolution)) {
-                if (is_from_C_term) {
-                    if (i < aa_list.length - 2 || !cleavage_site.contains("K")) {
+                if (is_from_C_term_2 == null) {
+                    if (is_from_C_term_1 && (i < aa_list.length - 2 || !cleavage_site_1.contains("K"))) {
+                        output.add((short) i);
+                    } else if (!is_from_C_term_1 && (i > 1 || !cleavage_site_1.contains("K"))) {
                         output.add((short) i);
                     }
                 } else {
-                    if (i > 1 || !cleavage_site.contains("K")) {
-                        output.add((short) i);
+                    if (is_from_C_term_1 && (i < aa_list.length - 2 || !cleavage_site_1.contains("K"))) {
+                        if (is_from_C_term_2 && (i < aa_list.length - 2 || !cleavage_site_2.contains("K"))) {
+                            output.add((short) i);
+                        } else if (!is_from_C_term_2 && (i > 1 || !cleavage_site_2.contains("K"))) {
+                            output.add((short) i);
+                        }
+                    } else if (!is_from_C_term_1 && (i > 1 || !cleavage_site_1.contains("K"))) {
+                        if (is_from_C_term_2 && (i < aa_list.length - 2 || !cleavage_site_2.contains("K"))) {
+                            output.add((short) i);
+                        } else if (!is_from_C_term_2 && (i > 1 || !cleavage_site_2.contains("K"))) {
+                            output.add((short) i);
+                        }
                     }
                 }
             } else if (linker_type == 2 && aa_list[i].aa == 'C' && (Math.abs(aa_list[i].ptmDeltaMass) < varModMassResolution)) {
-                if (is_from_C_term) {
-                    if (i < aa_list.length - 2 || !cleavage_site.contains("C")) {
+                if (is_from_C_term_2 == null) {
+                    if (is_from_C_term_1 && (i < aa_list.length - 2 || !cleavage_site_1.contains("C"))) {
+                        output.add((short) i);
+                    } else if (!is_from_C_term_1 && (i > 1 || !cleavage_site_1.contains("C"))) {
                         output.add((short) i);
                     }
                 } else {
-                    if (i > 1 || !cleavage_site.contains("C")) {
-                        output.add((short) i);
+                    if (is_from_C_term_1 && (i < aa_list.length - 2 || !cleavage_site_1.contains("C"))) {
+                        if (is_from_C_term_2 && (i < aa_list.length - 2 || !cleavage_site_2.contains("C"))) {
+                            output.add((short) i);
+                        } else if (!is_from_C_term_2 && (i > 1 || !cleavage_site_2.contains("C"))) {
+                            output.add((short) i);
+                        }
+                    } else if (!is_from_C_term_1 && (i > 1 || !cleavage_site_1.contains("C"))) {
+                        if (is_from_C_term_2 && (i < aa_list.length - 2 || !cleavage_site_2.contains("C"))) {
+                            output.add((short) i);
+                        } else if (!is_from_C_term_2 && (i > 1 || !cleavage_site_2.contains("C"))) {
+                            output.add((short) i);
+                        }
                     }
                 }
             }
