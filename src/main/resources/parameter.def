@@ -1,4 +1,4 @@
-# 2.1.7
+# 2.1.8-af07e84
 # The first line is the parameter file version. Do not change it.
 thread_num = 0 # The thread number. Set to 0 to use all the CPU resources of the computer.
 debug = 0 # For debug.
@@ -9,7 +9,7 @@ db = small+random50.fasta # The protein database.
 database_type = UniProt # Different types have different fasta header patterns. Available values: UniProt, SwissProt, TAIR, ITAG, RefSeq, Others
 missed_cleavage = 2 # Maximum number of allowed missed cleavage.
 min_chain_length = 5 # Minimum length of a peptide chain.
-max_chain_length = 50
+max_chain_length = 50 # Maximum length of a peptide chain.
 
 # Spectrum
 C13_correction = 1 # 1 = perform correction; 0 = not.
@@ -17,19 +17,19 @@ C13_correction = 1 # 1 = perform correction; 0 = not.
 # Tolerance
 ms1_tolerance_unit = 1 # 0: Da; 1: ppm
 ms1_tolerance = 10
-mz_bin_size = 0.02 # Bin size in digitizing a MS/MS spectrum.
-mz_bin_offset = 0 # Offset in digitizing a MS/MS spectrum.
+mz_bin_size = 0.02 # Bin size in digitizing a MS/MS spectrum. e.g. high-resolution MS/MS: 0.02; low-resolution MS/MS: 1.0005
+mz_bin_offset = 0 # Offset in digitizing a MS/MS spectrum. e.g. high-resolution MS/MS: 0; low-resolution MS/MS: 0.4
 
 # Cross-linking parameter.
-cl_mass = 138.0680796 # Cross-linker mass.
+cl_mass = 138.0680796 # Cross-linker mass after reaction.
 cl_type = 1 # Cross-linker type. 1 = Kn-Kn; 2 = C-C
 
-# Varibale modification.
+# Variable modification.
 # Format: <mass> <residues> <binary>
 # <binary> == 0/1
 # If <binary> = 1, all the specified amino acids in a peptide are either modified or not. Normally used for chemical labelling.
 # Binary modification is mutual exclusion with each other
-var_mod1 = 15.99 M 0
+var_mod1 = 15.9949 M 0
 var_mod2 = 0.0 X 0
 var_mod3 = 0.0 X 0
 var_mod4 = 0.0 X 0
@@ -38,7 +38,7 @@ var_mod6 = 0.0 X 0
 var_mod7 = 0.0 X 0
 var_mod8 = 0.0 X 0
 var_mod9 = 0.0 X 0
-var_mod_max_num = 5 # max number of modified amino acids in a peptide. The max value is 5
+var_mod_max_num = 5 # Maximum number of modified amino acids in a peptide. The maximum value is 5
 
 # Fix modification
 G = 0
@@ -66,14 +66,14 @@ O = 0
 n = 0
 c = 0
 
-# Enzyme digestion specificities. Only support one enzyme at a time.
+# Enzyme digestion specifications. Only support one enzyme at a time.
 # enzyme name  	 is cut from C-term 	 cleavage site 	 protection site
 Trypsin        	 1                  	 KR            	 P
 # Trypsin/P      1                  	 KR            	 -
 # TrypsinR     	 1                  	 R             	 P
 # LysC         	 1                  	 K             	 P
 # ArgC         	 1                  	 R             	 P
-# Chymotrypsin 	 1                  	 FYW           	 P
+# Chymotrypsin 	 1                  	 FYWL          	 P
 # GluC         	 1                  	 DE            	 P
 # LysN         	 0                  	 K             	 -
 # AspN         	 0                  	 D            	 -
@@ -81,7 +81,7 @@ Trypsin        	 1                  	 KR            	 P
 # Advanced parameters.
 # Don't change them unless necessary.
 single_chain_t = 0 # Single chain score threshold.
-cal_evalue = 0 # 1 = calculate e-value; 0 = not.
+cal_evalue = 0 # 1 = calculate e-value; 0 = not. For small database (< 500 proteins), set it to 0; For large database, set it to 1.
 ms1_bin_size = 0.001
 delta_c_t = 0.00 # DeltaC threshold.
 flanking_peaks = 0 # 1 = use flanking peaks; 0 = not.
