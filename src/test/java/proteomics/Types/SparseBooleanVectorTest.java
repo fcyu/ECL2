@@ -39,7 +39,7 @@ public class SparseBooleanVectorTest {
         SparseVector other = new SparseVector();
         other.put(1, 1.5);
         other.put(2, 3);
-        assertEquals(1.5, vector.dot(other), 0);
+        assertEquals(1.5, vector.dot(other), 1e-4);
     }
 
     @Test

@@ -28,23 +28,23 @@ public class SparseVectorTest {
     public void add() throws Exception {
         vector.add(1, 2.1);
         vector.add(2, 3);
-        assertEquals(2.6, vector.get(1), 0);
-        assertEquals(3, vector.get(2), 0);
+        assertEquals(2.6, vector.get(1), 1e-4);
+        assertEquals(3, vector.get(2), 1e-4);
     }
 
     @Test
     public void put() throws Exception {
         vector.put(1, 2.1);
         vector.put(2, 3);
-        assertEquals(2.1, vector.get(1), 0);
-        assertEquals(3, vector.get(2), 0);
+        assertEquals(2.1, vector.get(1), 1e-4);
+        assertEquals(3, vector.get(2), 1e-4);
     }
 
     @Test
     public void get() throws Exception {
-        assertEquals(0.5, vector.get(1), 0);
-        assertEquals(1.2, vector.get(3), 0);
-        assertEquals(3.2, vector.get(11), 0);
+        assertEquals(0.5, vector.get(1), 1e-4);
+        assertEquals(1.2, vector.get(3), 1e-4);
+        assertEquals(3.2, vector.get(11), 1e-4);
     }
 
     @Test
@@ -59,17 +59,17 @@ public class SparseVectorTest {
 
     @Test
     public void getMaxValue() throws Exception {
-        assertEquals(3.2, vector.getMaxValue(), 0);
+        assertEquals(3.2, vector.getMaxValue(), 1e-4);
     }
 
     @Test
     public void getMinValue() throws Exception {
-        assertEquals(0.5, vector.getMinValue(), 0);
+        assertEquals(0.5, vector.getMinValue(), 1e-4);
     }
 
     @Test
     public void norm2square() throws Exception {
-        assertEquals(11.93, vector.norm2square(), 0);
+        assertEquals(11.93, vector.norm2square(), 1e-4);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class SparseVectorTest {
         other.put(2, 5);
         other.put(11, 2);
         other.put(30, 4);
-        assertEquals(7.9, vector.dot(other), 1e-6);
+        assertEquals(7.9, vector.dot(other), 1e-4);
     }
 
     @Test
