@@ -96,7 +96,7 @@ public class CalFDR {
                 fdr = 0;
             } else if (fuse_count < decoy_count) {
                 printWarning = true;
-                fdr = 0;
+                fdr = (double) (fuse_count + decoy_count) / (double) target_count;
             } else {
                 fdr = (double) (fuse_count - decoy_count) / (double) target_count;
             }
