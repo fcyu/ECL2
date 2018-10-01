@@ -28,7 +28,7 @@ public class ECL2 {
     public static final int[] isotopeCorrectionArray = new int[]{-2, -1, 0}; // do not change it
 
     private static final Logger logger = LoggerFactory.getLogger(ECL2.class);
-    public static final String version = "2.1.7";
+    public static final String version = "2.1.8";
 
     public static boolean debug;
     public static boolean dev;
