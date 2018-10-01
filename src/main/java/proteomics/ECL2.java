@@ -379,7 +379,7 @@ public class ECL2 {
                 + "Email: fyuab@connect.ust.hk\r\n"
                 + "ECL2 usage: java -Xmx25g -jar /path/to/ECL2.jar <parameter_file> <data_file>\r\n"
                 + "\t<parameter_file>: parameter file. Can be download along with ECL2.\r\n"
-                + "\t<data_file>: spectra data file (mzXML)\r\n"
+                + "\t<data_file>: spectra data file (mzXML or MGF)\r\n"
                 + "\texample: java -Xmx32g -jar ECL2.jar parameter.def data.mzxml\r\n";
         System.out.print(help_str);
         System.exit(1);
