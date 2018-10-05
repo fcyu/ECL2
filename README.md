@@ -1,8 +1,8 @@
 # ECL2
-ECL2 is an advanced version of ECL. It has a linear computational complexity, supports multi-thread computation, and multiple variable modifications.
+ECL2 is an advanced version of [ECL](https://github.com/fcyu/ECL). It has a linear computational complexity. It also supports multi-thread computation and multiple variable modifications.
 
 ## How to use it?
-Requirements: Java 1.8 or later
+Requirements: Java 1.8.
 
 Download the ECL2-2.1.7.zip from the latest release page [https://github.com/fcyu/ECL2/releases/latest/](https://github.com/fcyu/ECL2/releases/latest/) and unzip the file.
 
@@ -13,7 +13,7 @@ java -Xmx128g -jar /path/to/ECL2.jar <parameter_file> <data_file>
 1. <parameter_file>: parameter file. Can be downloaded along with ECL2.
 2. <data_file>: spectra data file (mzXML or MGF).
 
-example: java -Xmx128g -jar ECL2.jar parameter.def data.mzxml
+Example: java -Xmx128g -jar ECL2.jar parameter.def data.mzxml
 
 ## Cite
 Yu, Fengchao, Ning Li, and Weichuan Yu. "Exhaustively Identifying Cross-Linked Peptides with a Linear Computational Complexity." Journal of Proteomics Research 16.10 (2017): 3942-3952.
