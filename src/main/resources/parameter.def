@@ -1,4 +1,4 @@
-# 2.1.8
+# 2.1.9
 # The first line is the parameter file version. Do not change it.
 thread_num = 0 # The thread number. Set to 0 to use all the CPU resources of the computer.
 debug = 0 # For debug.
