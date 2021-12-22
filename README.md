@@ -1,13 +1,33 @@
 # ECL2
 ECL2 is an advanced version of [ECL](https://github.com/fcyu/ECL). It has a linear computational complexity. It also supports multi-thread computation and multiple variable modifications.
 
-## Executable file:
+## Executable file
 Download the zipped file from https://github.com/fcyu/ECL2/releases/latest.
 
-## How to use it?
+## How to use it
 Requirements: Java 1.8.
 
-Usage:
+## How to compile from source
+Download and install JDK 8 from https://www.oracle.com/java/technologies/downloads/#java8
+
+Download Maven from https://maven.apache.org/download.cgi
+
+Download and install ProteomicsLibrary library:
+```
+git clone https://github.com/fcyu/ProteomicsLibrary.git
+cd ProteomicsLibrary
+mvn install
+```
+
+Download and compile ECL2:
+```
+git clone https://github.com/fcyu/ECL2.git
+cd ECL2
+mvn package
+```
+
+
+## Usage
 ```
 java -Xmx128g -jar /path/to/ECL2.jar <parameter_file> <data_file>
 ```
